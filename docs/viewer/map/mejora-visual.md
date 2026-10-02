@@ -6,7 +6,16 @@ threads:
   - Mejora visual del mapa | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLXHz2jKvhAeV5eEDc7P2x6y
 ---
 ## Summary
-Mejoras de aspecto del mapa (vista "Map"): cómo se ven las cajas, las líneas y las referencias, para que el mapa sea más claro y agradable de leer.
-Pendiente de que Ronald concrete qué mejora quiere.
+Mejoras de aspecto del mapa (vista "Map") para que la jerarquía sea más clara y agradable de leer.
+Primero se exploran tres conceptos gráficos distintos como maquetas estáticas, sin tocar el visor: A "Branches" (el árbol actual con tarjetas y color por área), B "Orbits" (jerarquía radial) y C "Floor plan" (nodos como salas anidadas).
+Pendiente de que Ronald elija uno (o una mezcla) para llevarlo al visor.
 
 ## Decisions
+- 2026-10-02 10:46 · Ronald pide tres propuestas conceptuales distintas de representación de la jerarquía, como páginas HTML estáticas, sin integrarlas aún en el visor.
+- 2026-10-02 11:05 · Las maquetas viven en `design/map-proposals/` (fuera de `docs/`, porque no son nodos). Comparten unos datos de ejemplo: los nodos de este proyecto y un proyecto inventado de unos 40 nodos para ver cómo escala cada diseño.
+- 2026-10-02 11:05 · En las tres propuestas cada área de primer nivel tiene su color, y al seleccionar un nodo se marca en verde de qué depende y en ámbar quién lo usa. Las dependencias no se repiten como cajas: van como etiquetas dentro del nodo (A y C) o como curvas solo del nodo seleccionado (B).
+
+## Propuestas
+- **A · Branches**: el mismo árbol de izquierda a derecha, con tarjetas (título, ruta, resumen en los dos primeros niveles, número de decisiones) y conectores curvos del color del área.
+- **B · Orbits**: el proyecto en el centro, un anillo por nivel y un sector de color por área; el tamaño del punto indica el número de decisiones.
+- **C · Floor plan**: sin líneas; cada nodo es una sala que contiene a sus hijos y cada área es un ala coloreada. Resumen y barra de decisiones visibles en el sitio.
