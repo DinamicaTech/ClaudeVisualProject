@@ -265,8 +265,22 @@ const READ_RULE =
 const UPDATE_RULE =
   'Before finishing, update the Summary and Decisions of every node you changed. ' +
   'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
-  'Also copy into the node\'s ## Requirements block (after Decisions; create it if missing) every requirement the owner ' +
-  'states in this thread: only the sentences that ask for something, word for word, one line each, starting with "YYYY-MM-DD HH:MM · ".';
+  'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
+  'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
+  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ".';
+// Before any change the thread proposes which node carries out each part of the task, and waits for the owner.
+// Changes across nodes are atomic: all in one branch, and only when no affected node has open work elsewhere.
+const breakdownRule = () => {
+  const docs = (state.rootName || 'docs') + '/';
+  return [
+    'Before changing any file, reply with a breakdown of the task and wait for the owner\'s confirmation:',
+    `1. Read the title and Summary of every node in the project (every md under ${docs}), not only the files listed above, and decide which node owns each part of the task.`,
+    '2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner\'s words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.',
+    '3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.',
+    '4. End by asking the owner to confirm, or to complete the request or change the breakdown.',
+    'Once confirmed, the change is atomic: do all of it in this thread and one branch, across every affected node, and push the branch as soon as you start. Add to depends_on of the node you work on any affected node that is not already a declared or inherited dependency.',
+  ].join('\n');
+};
 
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
@@ -693,7 +707,7 @@ function contextPack(n) {
     ...obsoleteWarning(n),
     `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
     ...packFiles(n, 'Node'),
-    '', READ_RULE, UPDATE_RULE, THREAD_RULE, '', 'Task: ',
+    '', READ_RULE, '', breakdownRule(), '', UPDATE_RULE, THREAD_RULE, '', 'Task: ',
   ].join('\n');
 }
 
@@ -718,14 +732,15 @@ function subTaskPack(n, title) {
     `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
     `The sub-task is a new node, ${childPath}, child of that node.`, '',
     ...packFiles(n, 'Parent node'), '',
-    'First:',
+    READ_RULE, '', breakdownRule(), '',
+    'After the confirmation:',
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
     '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
     '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
     '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
     'Then work on the sub-task in that node.', '',
-    READ_RULE, UPDATE_RULE, '', 'Task: ',
+    UPDATE_RULE, '', 'Task: ',
   ].join('\n');
 }
 
