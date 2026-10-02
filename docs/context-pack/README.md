@@ -7,7 +7,7 @@ threads:
 ## Summary
 Al hacer doble clic, copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo. Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
 El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas.
-Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
+Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte, buscándolo en el índice de nodos) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
 
 ## Decisions
 - 2026-10-02 09:00 · Solo rutas: no se pega contenido de los md en el prompt.
@@ -30,6 +30,8 @@ Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte) y
 - 2026-10-02 18:55 · Cambio atómico: confirmado el desglose, el hilo cambia todos los nodos afectados en una sola rama y la sube en cuanto empieza. Si algún nodo afectado tiene una rama o PR abierto que cambia su md, no empieza: lo dice (título, fecha, enlace del hilo) y espera a que se cierre. No fusiona ni cierra trabajo ajeno sin que el propietario lo pida. Se descartó encolar cambios en nodos ocupados porque deja cambios a medias y puede bloquear nodos entre sí; también una marca `in_progress` en el md, que solo serviría subida a main y quedaría colgada si un hilo se abandona.
 - 2026-10-02 18:55 · Los nodos afectados que no son ya dependencia (declarada o heredada) se añaden a `depends_on` del nodo trabajado.
 - 2026-10-02 18:55 · La regla de cuestionar y consensuar antes de programar es solo del AGENTS.md de este repositorio, no de los prompts: cada usuario configura su forma de trabajar con su asistente.
+- 2026-10-02 19:15 · Para el desglose, el hilo lee el índice de nodos (`context-pack/index`) en vez de todos los md; si no existe, lee el Summary de todos. Si una parte no tiene responsable, pregunta al propietario si hacerla desde el nodo actual o en un nodo nuevo, y propone dónde colocarlo.
+- 2026-10-02 19:15 · La regla de actualización pide además regenerar el índice tras cambiar cualquier nodo.
 
 ## Requirements
 - 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.

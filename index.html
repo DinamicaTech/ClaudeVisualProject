@@ -267,14 +267,15 @@ const UPDATE_RULE =
   'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
   'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
-  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ".';
+  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
+  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node.';
 // Before any change the thread proposes which node carries out each part of the task, and waits for the owner.
 // Changes across nodes are atomic: all in one branch, and only when no affected node has open work elsewhere.
 const breakdownRule = () => {
   const docs = (state.rootName || 'docs') + '/';
   return [
     'Before changing any file, reply with a breakdown of the task and wait for the owner\'s confirmation:',
-    `1. Read the title and Summary of every node in the project (every md under ${docs}), not only the files listed above, and decide which node owns each part of the task.`,
+    `1. Read the node index ${docs}${INDEX_FILE} (every node with its title, dependencies, children and Summary; if it is missing, read the Summary of every md under ${docs}), not only the files listed above, and decide which node owns each part of the task. If no node owns a part, say so and ask the owner whether to do it from this node or in a new node, proposing where the new node goes: under the closest node whose Summary covers that function, or at the top level.`,
     '2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner\'s words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.',
     '3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.',
     '4. End by asking the owner to confirm, or to complete the request or change the breakdown.',
@@ -408,6 +409,8 @@ function restoreViewState() {
 // ---------------------------------------------------------------------------
 // Parsing one md file
 // ---------------------------------------------------------------------------
+// From here to the "Context pack" section the code is also run by tools/build-index.mjs
+// (in Node), so the node index is built with the same rules as the page. Keep it free of DOM access.
 
 const STATUSES = ['draft', 'stable', 'obsolete'];
 
@@ -661,6 +664,29 @@ function markCycles(nodes) {
     }
   };
   for (const n of nodes.values()) if (!idx.has(n)) visit(n);
+}
+
+// Node index (.index.md in the docs folder): every node in tree order with its title, status,
+// dependencies, children and full Summary, so a thread can find which node owns a task in one read.
+const INDEX_FILE = '.index.md';
+function nodeIndex(nodes) {
+  const out = [
+    '# Node index', '',
+    'Generated from the md files of this folder by `node tools/build-index.mjs <docs folder>` ' +
+    '(ClaudeVisualProject). Do not edit by hand: run it again after changing any node.', '',
+  ];
+  const add = n => {
+    out.push(`## ${n.path || '(root)'} · ${n.title}`);
+    if (n.file) out.push(`- File: ${n.file}`); else out.push('- File: none (folder without README.md)');
+    if (n.status !== 'stable') out.push(`- Status: ${n.status}` + (n.replacedBy ? `, replaced by ${n.replacedBy}` : ''));
+    if (n.deps.length) out.push(`- Depends on: ${n.deps.join(', ')}`);
+    if (n.children.length) out.push(`- Children: ${n.children.map(c => c.path).join(', ')}`);
+    if (n.summary) out.push('', n.summary);
+    out.push('');
+    n.children.forEach(add);
+  };
+  add(nodes.get(''));
+  return out.join('\n');
 }
 
 // ---------------------------------------------------------------------------
