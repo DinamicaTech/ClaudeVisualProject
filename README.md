@@ -10,8 +10,9 @@ Visual, navigable map of AI-developed projects. Reads the Markdown docs in your 
 2. Click **Open folder** and choose your repository's `docs` folder.
 3. Browse the project as a map of boxes (hierarchy left to right, dependencies repeated as reference boxes) or as a tree. Click a node to see its summary, decisions, dependencies and warnings. Double-click it to copy a context pack: a short prompt with the files a new AI thread should read.
 4. Press F5 (or **Reload**) after the docs change.
+5. To rename a node, select it and click **Rename** (or press F2). You can change its title and, optionally, its file or folder name; every `depends_on`, `replaced_by` and relative link that points to it is updated. This is the only action that writes to your docs folder, and the browser asks for permission first. Commit the changes in git as usual.
 
-Your docs are read from disk and never copied or uploaded. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
+Your docs are read from disk and never copied or uploaded; the page only writes to them when you rename a node. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
 
 ## Status
 
