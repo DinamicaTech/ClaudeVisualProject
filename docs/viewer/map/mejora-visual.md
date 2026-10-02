@@ -8,12 +8,13 @@ threads:
 ## Summary
 Mejoras de aspecto del mapa (vista "Map") para que la jerarquía sea más clara y agradable de leer.
 Primero se exploran tres conceptos gráficos distintos como maquetas estáticas, sin tocar el visor: A "Branches" (el árbol actual con tarjetas y color por área), B "Orbits" (jerarquía radial) y C "Floor plan" (nodos como salas anidadas).
-Pendiente de que Ronald elija uno (o una mezcla) para llevarlo al visor.
+Ronald eligió la A, que ya está aplicada al mapa del visor (ver `viewer/map`). Pendiente de su validación en el visor real.
 
 ## Decisions
 - 2026-10-02 10:46 · Ronald pide tres propuestas conceptuales distintas de representación de la jerarquía, como páginas HTML estáticas, sin integrarlas aún en el visor.
 - 2026-10-02 11:05 · Las maquetas viven en `design/map-proposals/` (fuera de `docs/`, porque no son nodos). Comparten unos datos de ejemplo: los nodos de este proyecto y un proyecto inventado de unos 40 nodos para ver cómo escala cada diseño.
 - 2026-10-02 11:05 · En las tres propuestas cada área de primer nivel tiene su color, y al seleccionar un nodo se marca en verde de qué depende y en ámbar quién lo usa. Las dependencias no se repiten como cajas: van como etiquetas dentro del nodo (A y C) o como curvas solo del nodo seleccionado (B).
+- 2026-10-02 11:35 · Ronald elige la propuesta A (Branches) porque queda más clara. Se lleva al mapa real; B y C quedan solo como maquetas.
 
 ## Propuestas
 - **A · Branches**: el mismo árbol de izquierda a derecha, con tarjetas (título, ruta, resumen en los dos primeros niveles, número de decisiones) y conectores curvos del color del área.
