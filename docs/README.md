@@ -16,6 +16,7 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-02 09:13 · Se navega como árbol, la estructura más humana; un nodo del que dependen otros aparece también como referencia bajo cada uno de ellos. Sin vista de grafo en la v1.
 - 2026-10-02 09:00 · El paquete de contexto son solo rutas: el hilo nuevo lee los ficheros por sí mismo; no se pega contenido.
 - 2026-10-02 09:00 · Idioma: el producto publicado (código, comentarios, UI, documentación pública) en inglés; los documentos de desarrollo de este proyecto en español.
+- 2026-10-02 09:46 · La v1 está construida: `index.html` en la raíz del repositorio.
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
