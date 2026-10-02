@@ -5,4 +5,5 @@
 - Before finishing: update the Summary and Decisions of every node you changed. Each decision line starts with `YYYY-MM-DD HH:MM · `.
 - Requirements: copy every requirement the owner states in a thread into the `## Requirements` block of the node it belongs to, word for word, only the sentences that ask for something, one line each starting with `YYYY-MM-DD HH:MM · `.
 - Language: working docs in `docs/` are in Spanish. Code, code comments, UI and public-facing docs (README) are in English.
+- Git is not the owner's job. When he says a change is validated, the thread merges its own PR and updates his local clone (pull); never ask him to commit, merge or pull.
 - The owner does not review code. Report what he needs to decide and validate, not how the code is written.
