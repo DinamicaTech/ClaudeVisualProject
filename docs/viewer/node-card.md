@@ -15,3 +15,4 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-02 09:46 · Un botón en la cabecera de la página cuenta todos los avisos y los lista por nodo, con salto a cada uno.
 - 2026-10-02 10:38 · Sección "Threads" bajo los botones, con los chats del nodo (campo `threads`): las URL se abren en una pestaña nueva y el resto se muestra como texto para copiar.
 - 2026-10-02 10:38 · Botón "New sub-task": pide un título y copia el prompt de subtarea (ver `context-pack`).
+- 2026-10-02 10:52 · Botón "Rename" (también F2 con el nodo seleccionado): abre el diálogo de `viewer/rename`.

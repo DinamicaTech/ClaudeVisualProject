@@ -30,6 +30,7 @@
     border-radius: 6px; padding: 4px 10px; cursor: pointer;
   }
   button:hover { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; border-color: var(--line); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.link { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; text-align: left; }
   button.link:hover { text-decoration: underline; }
@@ -143,11 +144,17 @@
   dialog .dhead .t { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   dialog .dbody { padding: 6px 22px 20px; }
   dialog textarea { width: 100%; height: 320px; font-family: var(--mono); font-size: 12.5px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
-  #subTitle { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  #subTitle, #renTitle, #renName { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
   .md table { border-collapse: collapse; }
   .md th, .md td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
   .md blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
   .md a { color: var(--accent); }
+  #renForm label { display: block; margin: 12px 0 4px; }
+  #renForm label.check { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #renForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; }
+  #renForm .namerow input { flex: 1; font-family: var(--mono); font-size: 12.5px; }
+  #renPreview ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
+  #renError { color: var(--error); }
   .wgroup { margin: 12px 0; }
   .wgroup ul { margin: 4px 0; color: var(--warn); }
 
@@ -214,6 +221,20 @@
     <p class="empty-note">The prompt asks a new thread to create a child node with this title and then work on it.</p>
     <input id="subTitle" placeholder="Sub-task title" autocomplete="off">
     <p><button class="primary" type="submit">Copy prompt</button></p>
+  </form>
+</dialog>
+
+<dialog id="renDialog">
+  <div class="dhead"><span class="t">Rename <span id="renOld"></span></span><button data-close type="button">Close</button></div>
+  <form class="dbody" id="renForm">
+    <label for="renTitle">Title</label>
+    <input id="renTitle" autocomplete="off">
+    <label class="check"><input type="checkbox" id="renPathOn"> Also rename the file or folder, and update every reference to it</label>
+    <div class="namerow" id="renNameRow"><span id="renPrefix"></span><input id="renName" autocomplete="off" spellcheck="false"><span id="renSuffix"></span></div>
+    <div id="renPreview"></div>
+    <p id="renError" hidden></p>
+    <p><button class="primary" type="submit" id="renSubmit">Rename</button></p>
+    <p class="empty-note">The page writes the changes to the folder on your disk (the browser asks for permission the first time). Commit them in git as usual.</p>
   </form>
 </dialog>
 
@@ -1102,6 +1123,7 @@ function renderCard() {
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
     '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
+    '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>' +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
   if (n.obsoleteBy) {
@@ -1146,6 +1168,7 @@ function renderCard() {
   card.scrollTop = 0;
   $('copyPackBtn').onclick = () => copyPack(n);
   $('subTaskBtn').onclick = () => openSubTask(n);
+  $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
 }
 
@@ -1180,6 +1203,279 @@ document.addEventListener('click', e => {
   e.preventDefault();
   el.closest('dialog')?.close();
   select(el.dataset.node, true);
+});
+
+// ---------------------------------------------------------------------------
+// Rename: the only action that writes to the docs folder. It changes the title in
+// the node's front matter and, optionally, the node's file or folder name. A new
+// name changes the node path of the node and of all its descendants, so every
+// reference to them is rewritten: depends_on, replaced_by and relative md links.
+// ---------------------------------------------------------------------------
+
+const RESERVED = /^readme$/i;
+
+function splitLines(text) {
+  return { lines: text.split(/\r?\n/), eol: text.includes('\r\n') ? '\r\n' : '\n' };
+}
+function frontMatterEnd(lines) {
+  if (lines[0] === undefined || lines[0].trim() !== '---') return -1;
+  return lines.findIndex((l, k) => k > 0 && l.trim() === '---');
+}
+
+// A title as a YAML scalar the parser above (and any YAML reader) reads back unchanged.
+function yamlScalar(s) {
+  if (!/^[\[\]{}#&*!|>'"%@`,?:-]|:\s|\s#|:$/.test(s)) return s;
+  return s.includes('"') ? `'${s.replace(/'/g, "''")}'` : `"${s}"`;
+}
+
+// Maps a node path (or any docs-relative path) under `from` to the same place under `to`.
+function movePath(p, from, to) {
+  if (p === from) return to;
+  return p.startsWith(from + '/') ? to + p.slice(from.length) : null;
+}
+// Same for file paths: also maps the leaf file `from.md`.
+function moveFile(f, from, to) {
+  const leaf = f.match(/^(.*)(\.md)$/i);
+  if (leaf && leaf[1] === from) return to + leaf[2];
+  return movePath(f, from, to);
+}
+
+function rewriteFrontMatterRefs(lines, end, from, to) {
+  const ref = raw => movePath(normalizeNodePath(unquote(raw)), from, to);
+  let key = null;
+  for (let k = 1; k < end; k++) {
+    const item = lines[k].match(/^(\s*-\s+)(.*?)(\s*)$/);
+    if (item && key) {
+      const m = key === 'depends_on' && ref(item[2]);
+      if (m) lines[k] = item[1] + m + item[3];
+      continue;
+    }
+    const kv = lines[k].match(/^([A-Za-z_][\w-]*)(\s*:\s*)(.*?)(\s*)$/);
+    if (!kv) continue;
+    key = kv[1];
+    if (key === 'depends_on' && kv[3].startsWith('[')) {
+      const items = kv[3].replace(/^\[|\]$/g, '').split(',').map(x => x.trim()).filter(Boolean);
+      const out = items.map(x => ref(x) || x);
+      if (out.some((x, i) => x !== items[i])) lines[k] = `${kv[1]}${kv[2]}[${out.join(', ')}]${kv[4]}`;
+    } else if (key === 'replaced_by' && kv[3]) {
+      const m = ref(kv[3]);
+      if (m) lines[k] = kv[1] + kv[2] + m + kv[4];
+    }
+  }
+}
+
+// Relative path from folder `dir` to `target`, both relative to the docs root.
+function relativePath(dir, target) {
+  const a = dir ? dir.split('/') : [], b = target.split('/');
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i] === b[i]) i++;
+  return '../'.repeat(a.length - i) + b.slice(i).join('/');
+}
+
+// Rewrites relative links (outside code) of a file that lived in `oldDir` and now lives in `newDir`.
+function rewriteLinks(lines, start, oldDir, newDir, from, to) {
+  let fence = null;
+  for (let k = start; k < lines.length; k++) {
+    const f = lines[k].match(/^\s*(```|~~~)/);
+    if (f) { if (!fence) fence = f[1]; else if (f[1] === fence) fence = null; continue; }
+    if (fence) continue;
+    lines[k] = lines[k].split(/(`[^`]*`)/).map((part, j) => j % 2 ? part : part.replace(/(\]\()([^)\s]+)/g, (all, open, href) => {
+      if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return all;
+      const hash = href.includes('#') ? href.slice(href.indexOf('#')) : '';
+      const p = href.slice(0, href.length - hash.length);
+      const parts = oldDir ? oldDir.split('/') : [];
+      for (const seg of p.split('/')) {
+        if (seg === '..') { if (!parts.length) return all; parts.pop(); }
+        else if (seg && seg !== '.') parts.push(seg);
+      }
+      const target = parts.join('/');
+      const moved = target && moveFile(target, from, to);
+      if (!moved) return all;
+      return open + relativePath(newDir, moved) + (p.endsWith('/') ? '/' : '') + hash;
+    })).join('');
+  }
+}
+
+// Computes every file change of a rename. `files` are all md files ({ path, text }).
+// Returns the changed files as { path, newPath, text } (text is the new content).
+function planRename(files, node, title, newPath) {
+  const from = node.path, to = newPath;
+  const dirOf = f => f.split('/').slice(0, -1).join('/');
+  const out = [];
+  for (const f of files) {
+    const target = from !== to ? moveFile(f.path, from, to) || f.path : f.path;
+    const { lines, eol } = splitLines(f.text);
+    let end = frontMatterEnd(lines);
+    if (f.path === node.file && title !== null && title !== node.title) {
+      const line = `title: ${yamlScalar(title)}`;
+      if (end < 0) { lines.unshift('---', line, 'depends_on: []', '---'); end = 3; }
+      else {
+        const i = lines.slice(1, end).findIndex(l => /^title\s*:/.test(l));
+        if (i >= 0) lines[i + 1] = line; else { lines.splice(1, 0, line); end++; }
+      }
+    }
+    if (from !== to) {
+      if (end > 0) rewriteFrontMatterRefs(lines, end, from, to);
+      rewriteLinks(lines, end + 1, dirOf(f.path), dirOf(target), from, to);
+    }
+    const text = lines.join(eol);
+    if (text !== f.text || target !== f.path) out.push({ path: f.path, newPath: target, text });
+  }
+  return out;
+}
+
+// --- File System Access helpers -------------------------------------------
+
+async function dirAt(path, create) {
+  let d = state.dir;
+  for (const seg of path.split('/').filter(Boolean)) d = await d.getDirectoryHandle(seg, { create });
+  return d;
+}
+async function entryExists(dir, name) {
+  for await (const n of dir.keys()) if (n.toLowerCase() === name.toLowerCase()) return n;
+  return null;
+}
+async function writeFileAt(path, data) {
+  const parts = path.split('/'), name = parts.pop();
+  const d = await dirAt(parts.join('/'), true);
+  const w = await (await d.getFileHandle(name, { create: true })).createWritable();
+  await w.write(data);
+  await w.close();
+}
+async function copyDir(src, dst) {
+  for await (const [name, e] of src.entries()) {
+    if (e.kind === 'directory') await copyDir(e, await dst.getDirectoryHandle(name, { create: true }));
+    else {
+      const w = await (await dst.getFileHandle(name, { create: true })).createWritable();
+      await w.write(await e.getFile());
+      await w.close();
+    }
+  }
+}
+
+// --- Dialog ----------------------------------------------------------------
+
+function renameTarget(n) {
+  if (!$('renPathOn').checked || n.path === '') return n.path;
+  const name = $('renName').value.trim().replace(/\.md$/i, '');
+  const parent = parentPathOf(n.path);
+  return parent ? parent + '/' + name : name;
+}
+
+function renameProblem(n, title, newPath) {
+  if (n.file && !title) return 'The title cannot be empty.';
+  if (newPath === n.path) return null;
+  const name = lastSegment(newPath);
+  if (!/^[\w][\w.-]*$/.test(name)) return 'Use only letters, digits, "-", "_" and "." in the name.';
+  if (RESERVED.test(name)) return 'README is reserved for folder documents.';
+  if (name.toLowerCase() === lastSegment(n.path).toLowerCase()) return 'The new name only differs in upper/lower case; pick a different name.';
+  if (state.nodes.has(newPath)) return `A node ${newPath} already exists.`;
+  return null;
+}
+
+function currentFiles() {
+  return [...state.nodes.values()].filter(x => x.file).map(x => ({ path: x.file, text: x.text }));
+}
+
+function updateRenamePreview(n) {
+  const title = n.file ? $('renTitle').value.trim() : null;
+  const newPath = renameTarget(n);
+  $('renNameRow').hidden = !$('renPathOn').checked;
+  const problem = renameProblem(n, title, newPath);
+  $('renError').hidden = !problem;
+  $('renError').textContent = problem || '';
+  const changes = problem ? [] : planRename(currentFiles(), n, title, newPath);
+  const moved = changes.filter(c => c.newPath !== c.path), edited = changes.filter(c => c.newPath === c.path);
+  const p = state.rootName + '/';
+  let h = '';
+  if (moved.length) h += '<p>Moves:</p><ul>' + moved.map(c => `<li>${esc(p + c.path)} → ${esc(p + c.newPath)}</li>`).join('') + '</ul>';
+  if (edited.length) h += '<p>Edits:</p><ul>' + edited.map(c => `<li>${esc(p + c.path)}</li>`).join('') + '</ul>';
+  if (newPath !== n.path) h += '<p class="empty-note">' + (n.file && !isReadme(n.file) ? '' : 'Other files inside the folder (images, etc.) move with it. ') +
+    'Paths written outside the docs folder are not updated.</p>';
+  $('renPreview').innerHTML = h;
+  $('renSubmit').disabled = !!problem || !changes.length;
+}
+
+function openRename(n) {
+  $('renOld').textContent = n.title;
+  $('renTitle').value = n.file ? n.title : '';
+  $('renTitle').disabled = !n.file;
+  $('renTitle').placeholder = n.file ? '' : 'This folder has no README.md, so it has no title to change';
+  const isRoot = n.path === '';
+  $('renPathOn').checked = !n.file && !isRoot;
+  $('renPathOn').disabled = isRoot;
+  $('renPathOn').parentElement.title = isRoot ? 'The root is the docs folder itself and cannot be renamed here' : '';
+  const parent = parentPathOf(n.path) || '';
+  $('renPrefix').textContent = state.rootName + '/' + (parent ? parent + '/' : '');
+  $('renSuffix').textContent = n.file && !isReadme(n.file) ? '.md' : '/';
+  $('renName').value = isRoot ? '' : lastSegment(n.path);
+  let nameEdited = false;
+  $('renName').oninput = () => { nameEdited = true; updateRenamePreview(n); };
+  $('renTitle').oninput = () => {
+    if (!nameEdited && $('renPathOn').checked) $('renName').value = slugify($('renTitle').value);
+    updateRenamePreview(n);
+  };
+  $('renPathOn').onchange = () => {
+    if ($('renPathOn').checked && !nameEdited && n.file && $('renTitle').value.trim() !== n.title) $('renName').value = slugify($('renTitle').value);
+    updateRenamePreview(n);
+  };
+  $('renForm').onsubmit = e => { e.preventDefault(); doRename(n); };
+  updateRenamePreview(n);
+  $('renDialog').showModal();
+  (n.file ? $('renTitle') : $('renName')).select();
+}
+
+async function doRename(n) {
+  const title = n.file ? $('renTitle').value.trim() : null;
+  const from = n.path, to = renameTarget(n);
+  const fail = msg => { $('renError').hidden = false; $('renError').textContent = msg; };
+  try {
+    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+      return fail('The browser did not grant permission to write to the folder.');
+    $('renSubmit').disabled = true;
+
+    // Plan again from what is on disk now, not from what was loaded.
+    const files = await readFolder(state.dir);
+    const fresh = buildModel(files, state.rootName).get(from);
+    if (!fresh) return fail('This node no longer exists on disk. Press Reload.');
+    const changes = planRename(files, fresh, title, to);
+
+    if (to !== from) {
+      const parentDir = await dirAt(parentPathOf(from), false);
+      const oldName = lastSegment(from), newName = lastSegment(to);
+      const clash = await entryExists(parentDir, newName) || await entryExists(parentDir, newName + '.md');
+      if (clash) return fail(`${clash} already exists in that folder.`);
+      // Copy first, delete last: an error half-way leaves the old files in place.
+      const oldFolder = await parentDir.getDirectoryHandle(oldName).catch(() => null);
+      if (oldFolder) await copyDir(oldFolder, await parentDir.getDirectoryHandle(newName, { create: true }));
+      for (const c of changes) await writeFileAt(c.newPath, c.text);
+      const leaf = files.find(f => /\.md$/i.test(f.path) && f.path.slice(0, -3) === from);
+      if (leaf) await parentDir.removeEntry(lastSegment(leaf.path));
+      if (oldFolder) await parentDir.removeEntry(oldName, { recursive: true });
+    } else {
+      for (const c of changes) await writeFileAt(c.newPath, c.text);
+    }
+
+    // Keep the view where it was, under the new paths.
+    const remap = p => movePath(p, from, to) ?? p;
+    state.selected = remap(state.selected);
+    state.expanded = new Set([...state.expanded].map(remap));
+    for (const p of [...mapCollapsed]) { mapCollapsed.delete(p); mapCollapsed.add(remap(p)); }
+    $('renDialog').close();
+    await reload();
+    select(to, true);
+    toast(`Renamed. ${changes.length} file${changes.length === 1 ? '' : 's'} changed on disk; commit them in git.`);
+  } catch (e) {
+    fail('Could not finish the rename: ' + (e && e.message || e) + '. Press Reload and check the folder.');
+  } finally {
+    $('renSubmit').disabled = false;
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'F2' || $('app').hidden || document.querySelector('dialog[open]')) return;
+  const n = state.nodes.get(state.selected);
+  if (n) { e.preventDefault(); openRename(n); }
 });
 
 // ---------------------------------------------------------------------------
