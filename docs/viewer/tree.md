@@ -21,3 +21,4 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-02 09:46 · Doble clic sobre una entrada de referencia copia el paquete de contexto del nodo real.
 - 2026-10-02 09:46 · Las carpetas sin `README.md` se muestran en cursiva; los nodos `draft` llevan una etiqueta.
 - 2026-10-02 10:26 · Se añade a la v1 el mapa (`viewer/map`): el mismo árbol dibujado con cajas, vista por defecto; el árbol pasa a ser la vista alternativa. Sigue sin haber vista de grafo.
+- 2026-10-02 12:40 · La tecla Z (decidida en `viewer/map`) también aplica al árbol: muestra solo el nodo seleccionado y sus descendientes. El selector de vista se llama "Tree / Project".
