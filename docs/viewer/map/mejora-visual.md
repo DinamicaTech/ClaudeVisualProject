@@ -16,6 +16,11 @@ Ronald eligió la A, que ya está aplicada al mapa del visor (ver `viewer/map`).
 - 2026-10-02 11:05 · En las tres propuestas cada área de primer nivel tiene su color, y al seleccionar un nodo se marca en verde de qué depende y en ámbar quién lo usa. Las dependencias no se repiten como cajas: van como etiquetas dentro del nodo (A y C) o como curvas solo del nodo seleccionado (B).
 - 2026-10-02 11:35 · Ronald elige la propuesta A (Branches) porque queda más clara. Se lleva al mapa real; B y C quedan solo como maquetas.
 
+## Requirements
+- 2026-10-02 10:46 · Puedes hacer tres propuestas diferentes conceptuales de representación gráfica de la jerarquía ?
+- 2026-10-02 10:46 · No hace falta integrarlas en el index actual, pueden ser tres páginas HTML estáticas que simplemente muestren una propuesta de diseño
+- 2026-10-02 11:35 · Opción A, queda más clara
+
 ## Propuestas
 - **A · Branches**: el mismo árbol de izquierda a derecha, con tarjetas (título, ruta, resumen en los dos primeros niveles, número de decisiones) y conectores curvos del color del área.
 - **B · Orbits**: el proyecto en el centro, un anillo por nivel y un sector de color por área; el tamaño del punto indica el número de decisiones.

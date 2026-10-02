@@ -136,6 +136,7 @@
   .decisions li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
   .decisions .when { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; padding-top: 1px; }
   .decisions .when.none { color: var(--warn); }
+  .decisions.reqs li > span:last-child { border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic; }
   .links { list-style: none; padding: 0; margin: 0; }
   .links li { padding: 2px 0; }
   .links a { color: var(--accent); }
@@ -260,7 +261,9 @@ const READ_RULE =
   'Summary and Decisions blocks; open them in full only if needed.';
 const UPDATE_RULE =
   'Before finishing, update the Summary and Decisions of every node you changed. ' +
-  'Each decision line starts with "YYYY-MM-DD HH:MM · ".';
+  'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
+  'Also copy into the node\'s ## Requirements block (after Decisions; create it if missing) every requirement the owner ' +
+  'states in this thread: only the sentences that ask for something, word for word, one line each, starting with "YYYY-MM-DD HH:MM · ".';
 
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
@@ -468,19 +471,24 @@ function parseDoc(text) {
   const summary = iS >= 0 ? sectionText(iS) : '';
   if (summary.split('\n').filter(l => l.trim()).length > 5) warnings.push('Summary is longer than 5 lines.');
 
-  const decisions = [];
-  let undated = 0;
-  if (iD >= 0) {
-    for (const l of sectionText(iD).split('\n')) {
+  // Dated list blocks: one item per "- " line, starting with "YYYY-MM-DD HH:MM · ". Continuation lines join the item.
+  const dated = (idx, what) => {
+    const items = [];
+    let undated = 0;
+    if (idx < 0) return items;
+    for (const l of sectionText(idx).split('\n')) {
       if (!l.trim()) continue;
       const it = l.match(/^[-*+]\s+(.*)$/);
-      if (!it) { if (decisions.length) decisions[decisions.length - 1].text += '\n' + l.trim(); continue; }
+      if (!it) { if (items.length) items[items.length - 1].text += '\n' + l.trim(); continue; }
       const d = it[1].match(/^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s*·\s*(.*)$/);
-      if (d) decisions.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
-      else { decisions.push({ when: '', text: it[1] }); undated++; }
+      if (d) items.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
+      else { items.push({ when: '', text: it[1] }); undated++; }
     }
-  }
-  if (undated) warnings.push(`${undated} decision line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
+    if (undated) warnings.push(`${undated} ${what} line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
+    return items;
+  };
+  const decisions = dated(iD, 'decision');
+  const requirements = dated(sections.findIndex(s => /^requirements$/i.test(s.name)), 'requirement');
 
   let status = 'stable';
   if (typeof fm.status === 'string' && fm.status) {
@@ -496,7 +504,7 @@ function parseDoc(text) {
     deps, status,
     replacedBy: typeof fm.replaced_by === 'string' && fm.replaced_by ? normalizeNodePath(fm.replaced_by) : null,
     threads: parseThreads(fm.threads),
-    summary, decisions, warnings,
+    summary, decisions, requirements, warnings,
   };
 }
 
@@ -519,7 +527,7 @@ function makeNode(path, file, text) {
   const n = {
     path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
     placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null,
-    summary: '', decisions: [], title: '', threads: [],
+    summary: '', decisions: [], requirements: [], title: '', threads: [],
   };
   if (file) Object.assign(n, parseDoc(text));
   return n;
@@ -708,7 +716,7 @@ function subTaskPack(n, title) {
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
     '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
     '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
-    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '```', '',
+    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
     'Then work on the sub-task in that node.', '',
     READ_RULE, UPDATE_RULE, '', 'Task: ',
@@ -1136,10 +1144,12 @@ function renderCard() {
   withBase(n, () => {
     h += '<section><h2>Summary</h2>' +
       (n.summary ? `<div class="summary md">${renderMarkdown(n.summary)}</div>` : '<p class="empty-note">No summary.</p>') + '</section>';
-    h += '<section><h2>Decisions</h2>' + (n.decisions.length
-      ? '<ul class="decisions md">' + n.decisions.map(d =>
-          `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
-          `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>'
+    const datedList = (items, cls) => `<ul class="decisions ${cls} md">` + items.map(d =>
+      `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
+      `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>';
+    h += '<section><h2>Requirements</h2>' + (n.requirements.length ? datedList(n.requirements, 'reqs')
+      : '<p class="empty-note">No requirements recorded. Threads copy the owner\'s requests, word for word, into the <code>## Requirements</code> block.</p>') + '</section>';
+    h += '<section><h2>Decisions</h2>' + (n.decisions.length ? datedList(n.decisions, '')
       : '<p class="empty-note">No decisions.</p>') + '</section>';
   });
 
