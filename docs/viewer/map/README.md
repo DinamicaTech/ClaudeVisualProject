@@ -3,7 +3,7 @@ title: Mapa
 depends_on: [model]
 ---
 ## Summary
-Muestra el árbol del proyecto como un mapa de cajas, de izquierda a derecha (cada columna es un nivel). Como en el árbol, cada dependencia se repite como caja de referencia bajo el nodo que depende; no hay flechas cruzadas.
+Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas.
 Es la vista por defecto; el árbol sigue disponible con un selector "Map / Tree". Comparte con el árbol la selección, la ficha y el doble clic.
 
 ## Decisions
@@ -15,3 +15,8 @@ Es la vista por defecto; el árbol sigue disponible con un selector "Map / Tree"
 - 2026-10-02 10:33 · Orientación horizontal, de izquierda a derecha, porque en vertical no caben las etiquetas. El padre queda centrado respecto a sus hijos.
 - 2026-10-02 10:33 · Las cajas de referencia van con borde verde discontinuo y ↗; clic salta a la caja real y doble clic copia el paquete de contexto del nodo real. Al seleccionar un nodo se resaltan también sus copias de referencia.
 - 2026-10-02 10:33 · Cada caja con hijos o referencias tiene un botón −/+ para plegar o desplegar su rama.
+- 2026-10-02 10:45 · Se convierte en carpeta para alojar el subnodo `viewer/map/mejora-visual`; su ruta de nodo no cambia.
+- 2026-10-02 11:40 · Ronald elige la propuesta A de `viewer/map/mejora-visual`. Las cajas pasan a ser tarjetas con título, ruta de nodo, número de decisiones (◆) y avisos; en los dos primeros niveles muestran además la primera línea del Summary.
+- 2026-10-02 11:40 · Cada área de primer nivel tiene su color, que llevan la franja de sus tarjetas y sus líneas (curvas). La raíz va en el color del texto.
+- 2026-10-02 11:40 · Sustituye a la decisión de las cajas de referencia en el mapa: las dependencias son etiquetas "↗ título" dentro de la tarjeta. Clic salta al nodo real y doble clic copia su paquete de contexto. El árbol sigue usando entradas de referencia.
+- 2026-10-02 11:40 · Al seleccionar un nodo se marca en verde de qué depende y en ámbar quién lo usa; el resto se atenúa salvo su camino desde la raíz, cuyas líneas se resaltan.

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Map Proposal C: Floor Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: containment. Every node is a room that holds its children, like a floor plan read from above.
+     Top-level areas are tinted wings; bigger subtrees take more space. No lines at all: nesting is the hierarchy. */
+  :root {
+    --bg: #eef0ec; --grid: #e2e5df; --panel: #fbfbf8; --fg: #1c2024; --muted: #656c74; --line: #c9cec6;
+    --dep: #23866a; --dependent: #c06a1c;
+    --b0: #3f5fd0; --b1: #9150c2; --b2: #cc4a3a; --b3: #2b8c76; --b4: #bb8a16; --b5: #2e8fbb; --b6: #be437f; --b7: #6d822a;
+    --display: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #13161a; --grid: #1a1e23; --panel: #1b1f24; --fg: #e6e7e3; --muted: #9aa1a9; --line: #343a42;
+    --dep: #6fd0ab; --dependent: #f0a663;
+    --b0: #8aa5ff; --b1: #c79cf2; --b2: #f2907e; --b3: #6fcdb1; --b4: #ebc25e; --b5: #7cc8ea; --b6: #ef92c1; --b7: #b9ca6e;
+    color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #13161a; --grid: #1a1e23; --panel: #1b1f24; --fg: #e6e7e3; --muted: #9aa1a9; --line: #343a42;
+    --dep: #6fd0ab; --dependent: #f0a663;
+    --b0: #8aa5ff; --b1: #c79cf2; --b2: #f2907e; --b3: #6fcdb1; --b4: #ebc25e; --b5: #7cc8ea; --b6: #ef92c1; --b7: #b9ca6e;
+    color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--display); display: flex; flex-direction: column; }
+  button, select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  header nav { display: flex; gap: 4px; font-size: 13px; }
+  header nav a { color: var(--muted); text-decoration: none; padding: 3px 8px; border-radius: 5px; }
+  header nav a[aria-current] { background: var(--fg); color: var(--panel); }
+  header .sp { flex: 1; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #plan { flex: 1; overflow: auto; min-width: 0; padding: 20px;
+    background-color: var(--bg);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px; }
+
+  .titleblock { display: grid; grid-template-columns: 1fr auto; gap: 4px 24px; align-items: end; border: 2px solid var(--fg); background: var(--panel); padding: 12px 16px; margin-bottom: 16px; cursor: pointer; }
+  .titleblock h2 { font-size: 26px; line-height: 1.1; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  .titleblock .s { color: var(--muted); max-width: 70ch; }
+  .titleblock dl { display: grid; grid-template-columns: auto auto; gap: 0 12px; margin: 0; font: 11px var(--mono); color: var(--muted); grid-row: 1 / span 2; grid-column: 2; }
+  .titleblock dd { margin: 0; color: var(--fg); text-align: right; font-variant-numeric: tabular-nums; }
+  .titleblock.sel { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+  .wings { display: grid; align-items: start; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); grid-auto-flow: dense; gap: 14px; }
+  .wing.w2 { grid-column: span 2; }
+  @media (max-width: 620px) { .wing.w2 { grid-column: auto; } }
+
+  .room { position: relative; border: 1.5px solid color-mix(in srgb, var(--c) 55%, var(--line)); border-radius: 3px;
+    background: color-mix(in srgb, var(--c) 9%, var(--panel)); padding: 10px 11px 11px; cursor: pointer; min-width: 0;
+    transition: box-shadow .15s, opacity .15s; }
+  .wing { border-width: 2px; padding: 12px 13px 14px; }
+  .room > .hd { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .room .t { font-weight: 600; font-size: 14px; min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+  .wing > .hd .t { font-size: 18px; font-weight: 700; }
+  .room .code { font: 10.5px var(--mono); color: color-mix(in srgb, var(--c) 75%, var(--fg)); white-space: nowrap; }
+  .room .n { margin-left: auto; font: 11px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .room .s { font-size: 12.5px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .room .bar { height: 3px; margin-top: 7px; background: color-mix(in srgb, var(--c) 18%, transparent); border-radius: 2px; overflow: hidden; }
+  .room .bar i { display: block; height: 100%; background: var(--c); }
+  .rooms { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .rooms > .room { flex: 1 1 150px; background: var(--panel); }
+  .rooms .rooms > .room { flex-basis: 120px; background: color-mix(in srgb, var(--c) 6%, var(--panel)); border-style: solid; border-width: 1px; }
+  .doors { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .door { font: 10.5px/18px var(--mono); padding: 0 6px; border: 1px dashed var(--dep); color: var(--dep); border-radius: 2px; background: var(--panel); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .door:hover { border-style: solid; }
+  .room.draft { border-style: dashed; }
+  .tag { font: 9.5px/15px var(--mono); letter-spacing: .06em; text-transform: uppercase; border: 1px dashed currentColor; border-radius: 2px; padding: 0 4px; color: var(--muted); }
+  .room.obsolete { opacity: .45; filter: grayscale(1); }
+  .room.obsolete .t { text-decoration: line-through; }
+  .room.sel { box-shadow: 0 0 0 3px var(--fg); }
+  .room.isdep { box-shadow: 0 0 0 3px var(--dep); }
+  .room.isdependent { box-shadow: 0 0 0 3px var(--dependent); }
+  body.focus .room:not(.sel):not(.isdep):not(.isdependent):not(.anc):not(.inside) > :not(.rooms) { opacity: .4; }
+  body.focus .room:not(.sel):not(.isdep):not(.isdependent):not(.anc):not(.inside) { border-color: var(--line); }
+
+  aside { width: 320px; flex: none; border-left: 1px solid var(--line); background: var(--panel); padding: 18px 20px; overflow: auto; }
+  aside h2 { font-size: 20px; margin: 0 0 2px; text-wrap: balance; }
+  aside .p { font: 12px var(--mono); color: var(--muted); }
+  aside h3 { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 18px 0 6px; }
+  aside ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  aside li button { border: 0; padding: 0; background: none; text-align: left; }
+  aside li button:hover { text-decoration: underline; }
+  .k-dep { color: var(--dep); } .k-dependent { color: var(--dependent); }
+  @media (max-width: 760px) { main { flex-direction: column; } aside { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 40vh; } #plan { padding: 16px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>C · Floor plan <span>— nested rooms</span></h1>
+  <nav aria-label="Proposals"><a href="index.html">All</a><a href="a-branches.html">A</a><a href="b-orbits.html">B</a><a href="c-floorplan.html" aria-current="page">C</a></nav>
+  <span class="sp"></span>
+  <label for="ds">Data</label><select id="ds"></select>
+</header>
+<main>
+  <div id="plan"></div>
+  <aside id="card"></aside>
+</main>
+<script src="data.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let T, sel, maxDec;
+const color = n => `var(--b${n.branch % 8})`;
+const count = n => 1 + n.children.reduce((s, c) => s + count(c), 0);
+
+for (const [k, v] of Object.entries(MAP_DATA)) $('ds').add(new Option(v.label, k));
+$('ds').onchange = () => load($('ds').value);
+function load(key) { T = buildTree(MAP_DATA[key].nodes); sel = T.root; maxDec = Math.max(...T.all.map(n => n.decisions)); render(); }
+
+function room(n, ctx) {
+  const cls = ['room', n.depth === 1 && 'wing', n.depth === 1 && count(n) >= 5 && 'w2', n === sel && 'sel', ctx.anc.has(n) && 'anc', ctx.inside(n) && 'inside',
+    ctx.dep.has(n) && 'isdep', ctx.dependent.has(n) && 'isdependent', n.status === 'draft' && 'draft', n.inObsolete && 'obsolete'].filter(Boolean).join(' ');
+  const showSummary = n.depth === 1 || (!n.children.length && n.depth === 2);
+  return `<div class="${cls}" data-p="${esc(n.path)}" tabindex="0" style="--c:${color(n)}" title="${esc(n.summary)}">
+    <div class="hd"><span class="t">${esc(n.title)}</span>${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}<span class="n" title="Decisions">${n.decisions} dec.</span></div>
+    <div class="code">${esc(n.path)}</div>
+    ${showSummary ? `<div class="s">${esc(n.summary)}</div>` : ''}
+    <div class="bar" title="${n.decisions} decisions"><i style="width:${Math.round(100 * n.decisions / maxDec)}%"></i></div>
+    ${n.depNodes.length ? `<div class="doors">${n.depNodes.map(d => `<span class="door" data-p="${esc(d.path)}" title="Depends on ${esc(d.title)}: click to jump">→ ${esc(d.title)}</span>`).join('')}</div>` : ''}
+    ${n.children.length ? `<div class="rooms">${n.children.map(c => room(c, ctx)).join('')}</div>` : ''}
+  </div>`;
+}
+
+function render() {
+  const anc = new Set(); for (let p = sel.parent; p; p = p.parent) anc.add(p);
+  const ctx = { anc, dep: new Set(sel.depNodes), dependent: new Set(sel.dependents), inside: n => { for (let p = n.parent; p; p = p.parent) if (p === sel) return true; return false; } };
+  const r = T.root, total = T.all.reduce((s, n) => s + n.decisions, 0);
+  $('plan').innerHTML = `<div class="titleblock${sel === r ? ' sel' : ''}" data-p="" tabindex="0">
+      <h2>${esc(r.title)}</h2><div class="s">${esc(r.summary)}</div>
+      <dl><dt>nodes</dt><dd>${T.all.length}</dd><dt>areas</dt><dd>${r.children.length}</dd><dt>decisions</dt><dd>${total}</dd><dt>drafts</dt><dd>${T.all.filter(n => n.status === 'draft').length}</dd></dl>
+    </div>
+    <div class="wings">${r.children.map(c => room(c, ctx)).join('')}</div>`;
+  document.body.classList.toggle('focus', sel !== r);
+  renderCard();
+}
+
+function renderCard() {
+  const n = sel, list = (arr, k) => arr.length ? `<ul>${arr.map(d => `<li><button class="${k}" data-p="${esc(d.path)}">${esc(d.title)}</button></li>`).join('')}</ul>` : '<div class="p">None</div>';
+  $('card').innerHTML = `<h2>${esc(n.title)}</h2><div class="p">${esc(n.path || 'docs/')} · ${n.status} · ${n.decisions} decisions</div>
+    <h3>Summary</h3><div>${esc(n.summary)}</div>
+    <h3>Depends on</h3>${list(n.depNodes, 'k-dep')}
+    <h3>Used by</h3>${list(n.dependents, 'k-dependent')}
+    <h3>How to read it</h3><div style="font-size:13px;color:var(--muted)">Every node is a room holding its children. Each top-level area is a coloured wing; large wings take two columns. The bar shows how many decisions a node has. Dashed tags are dependencies: click one to jump. Selecting a room rings what it depends on in green and what uses it in amber.</div>`;
+}
+
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-p]'); if (!c) return;
+  e.stopPropagation(); sel = T.byPath.get(c.dataset.p); render();
+  const el = document.querySelector(`.room[data-p="${CSS.escape(sel.path)}"]`); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && 'p' in e.target.dataset) e.target.click(); });
+load('project');
+</script>
+</body>
+</html>

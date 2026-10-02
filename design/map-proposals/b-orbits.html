@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Map Proposal B: Orbits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: radial hierarchy. The project sits in the centre, each depth level is a ring, each top-level area
+     is a coloured sector. Dot size = number of decisions. Dependencies are drawn only for the selected node,
+     as curves bent through the centre, so the picture stays a hierarchy. */
+  :root {
+    --bg: #f5f4f0; --panel: #fffefb; --fg: #20232a; --muted: #6f737c; --line: #e2e0d9; --ring: #d6d3ca;
+    --dep: #23866a; --dependent: #c06a1c;
+    --b0: #3f5fd0; --b1: #9150c2; --b2: #cc4a3a; --b3: #2b8c76; --b4: #bb8a16; --b5: #2e8fbb; --b6: #be437f; --b7: #6d822a;
+    --sans: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #111318; --panel: #1a1d23; --fg: #e8e7e2; --muted: #9a9ea8; --line: #2c3038; --ring: #2e323b;
+    --dep: #6fd0ab; --dependent: #f0a663;
+    --b0: #8aa5ff; --b1: #c79cf2; --b2: #f2907e; --b3: #6fcdb1; --b4: #ebc25e; --b5: #7cc8ea; --b6: #ef92c1; --b7: #b9ca6e;
+    color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #111318; --panel: #1a1d23; --fg: #e8e7e2; --muted: #9a9ea8; --line: #2c3038; --ring: #2e323b;
+    --dep: #6fd0ab; --dependent: #f0a663;
+    --b0: #8aa5ff; --b1: #c79cf2; --b2: #f2907e; --b3: #6fcdb1; --b4: #ebc25e; --b5: #7cc8ea; --b6: #ef92c1; --b7: #b9ca6e;
+    color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--sans); display: flex; flex-direction: column; }
+  button, select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--b0); outline-offset: 2px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  header nav { display: flex; gap: 4px; font-size: 13px; }
+  header nav a { color: var(--muted); text-decoration: none; padding: 3px 8px; border-radius: 5px; }
+  header nav a[aria-current] { background: var(--fg); color: var(--panel); }
+  header .sp { flex: 1; }
+  header label { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; cursor: pointer; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  #svg.drag { cursor: grabbing; }
+  .ctl { position: absolute; top: 10px; left: 10px; display: flex; gap: 4px; }
+  .ctl button { padding: 2px 9px; }
+
+  .ring { fill: none; stroke: var(--ring); stroke-dasharray: 2 5; }
+  .ringlabel { font: 10px var(--mono); fill: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .sector { stroke: none; }
+  .link { fill: none; stroke-linecap: round; opacity: .5; }
+  .link.on { opacity: 1; stroke-width: 2.6; }
+  .node { cursor: pointer; }
+  .node circle { stroke: var(--bg); stroke-width: 2; }
+  .node.draft circle { fill: var(--bg) !important; stroke: var(--c); stroke-dasharray: 2 2; stroke-width: 1.6; }
+  .node.obsolete { opacity: .35; }
+  .node text { font-size: 13px; fill: var(--fg); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+  .node.d1 text { font-weight: 700; font-size: 14.5px; }
+  .node.d0 text { font-weight: 700; font-size: 17px; }
+  .node.sel circle { stroke: var(--fg); stroke-width: 3; }
+  .node.isdep text { fill: var(--dep); font-weight: 700; }
+  .node.isdependent text { fill: var(--dependent); font-weight: 700; }
+  svg.focus .node:not(.sel):not(.isdep):not(.isdependent):not(.anc) { opacity: .4; }
+  .dl { fill: none; stroke-width: 2; }
+  .dl.dep { stroke: var(--dep); } .dl.dependent { stroke: var(--dependent); stroke-dasharray: 5 4; }
+  .dl.all { stroke: var(--muted); opacity: .25; stroke-width: 1; }
+
+  aside { width: 320px; flex: none; border-left: 1px solid var(--line); background: var(--panel); padding: 18px 20px; overflow: auto; }
+  aside h2 { font-size: 19px; margin: 0 0 2px; text-wrap: balance; }
+  aside .p { font: 12px var(--mono); color: var(--muted); }
+  aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 6px; font-weight: 500; }
+  aside ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+  aside li button { border: 0; padding: 0; background: none; text-align: left; }
+  aside li button:hover { text-decoration: underline; }
+  .k-dep { color: var(--dep); } .k-dependent { color: var(--dependent); }
+  .key { display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); }
+  .key svg { vertical-align: middle; margin-right: 6px; }
+  @media (max-width: 760px) { main { flex-direction: column; } aside { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 40vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>B · Orbits <span>— radial hierarchy</span></h1>
+  <nav aria-label="Proposals"><a href="index.html">All</a><a href="a-branches.html">A</a><a href="b-orbits.html" aria-current="page">B</a><a href="c-floorplan.html">C</a></nav>
+  <span class="sp"></span>
+  <label><input type="checkbox" id="all"> All dependencies</label>
+  <label for="ds">Data</label><select id="ds"></select>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="ctl"><button id="zo" title="Zoom out">−</button><button id="zi" title="Zoom in">+</button><button id="zf" title="Fit the whole map">Fit</button></div>
+  </div>
+  <aside id="card"></aside>
+</main>
+<script src="data.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clip = (s, m) => s.length > m ? s.slice(0, m - 1) + '…' : s;
+let T, sel, view, size;
+const color = n => n.depth === 0 ? 'var(--fg)' : `var(--b${n.branch % 8})`;
+const pt = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
+
+for (const [k, v] of Object.entries(MAP_DATA)) $('ds').add(new Option(v.label, k));
+$('ds').onchange = () => load($('ds').value);
+$('all').onchange = render;
+
+function load(key) { T = buildTree(MAP_DATA[key].nodes); sel = T.root; layout(); view = null; render(); }
+
+function layout() {
+  const leaves = n => n._leaves = n.children.length ? n.children.reduce((s, c) => s + leaves(c), 0) : 1;
+  leaves(T.root);
+  const maxDepth = Math.max(...T.all.map(n => n.depth));
+  const R = T.all.length > 20 ? 135 : 165;
+  const place = (n, a0, a1) => {
+    n._a = (a0 + a1) / 2; n._r = n.depth * R;
+    let a = a0;
+    for (const c of n.children) { const span = (a1 - a0) * c._leaves / n._leaves; place(c, a, a + span); a += span; }
+    n._a0 = a0; n._a1 = a1;
+  };
+  place(T.root, -Math.PI / 2, Math.PI * 1.5);
+  T._R = R; T._max = maxDepth; size = maxDepth * R + 120;
+}
+
+function sectorPath(a0, a1, r0, r1) {
+  const [x0, y0] = pt(a0, r1), [x1, y1] = pt(a1, r1), [x2, y2] = pt(a1, r0), [x3, y3] = pt(a0, r0), big = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${x0} ${y0}A${r1} ${r1} 0 ${big} 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 ${big} 0 ${x3} ${y3}Z`;
+}
+function radialLink(p, c) {
+  const rm = (p._r + c._r) / 2;
+  const [x1, y1] = pt(p._a, p._r), [c1x, c1y] = pt(p._a, rm), [c2x, c2y] = pt(c._a, rm), [x2, y2] = pt(c._a, c._r);
+  return p.depth === 0 ? `M0 0Q${c2x} ${c2y} ${x2} ${y2}` : `M${x1} ${y1}C${c1x} ${c1y} ${c2x} ${c2y} ${x2} ${y2}`;
+}
+function depCurve(a, b) {
+  const [x1, y1] = pt(a._a, a._r), [x2, y2] = pt(b._a, b._r);
+  return `M${x1} ${y1}Q${(x1 + x2) * .3} ${(y1 + y2) * .3} ${x2} ${y2}`;
+}
+const dotR = n => n.depth === 0 ? 11 : 3.5 + Math.sqrt(n.decisions) * 1.6;
+
+function render() {
+  const anc = new Set(); for (let p = sel; p; p = p.parent) anc.add(p);
+  const depSet = new Set(sel.depNodes), dependentSet = new Set(sel.dependents), R = T._R;
+  let s = '';
+  for (const a of T.root.children) s += `<path class="sector" fill="${color(a)}" fill-opacity="0.07" d="${sectorPath(a._a0 + .004, a._a1 - .004, R * .55, T._max * R + 26)}"/>`;
+  for (let d = 1; d <= T._max; d++) s += `<circle class="ring" r="${d * R}"/><text class="ringlabel" x="4" y="${-d * R - 5}">level ${d}</text>`;
+  for (const n of T.all) if (n.parent) s += `<path class="link${anc.has(n) ? ' on' : ''}" stroke="${color(n)}" stroke-width="${Math.max(1.2, 3 - n.depth * .5)}" d="${radialLink(n.parent, n)}"/>`;
+  if ($('all').checked) for (const n of T.all) for (const d of n.depNodes) s += `<path class="dl all" d="${depCurve(n, d)}"/>`;
+  for (const d of sel.depNodes) s += `<path class="dl dep" marker-end="url(#ad)" d="${depCurve(sel, d)}"/>`;
+  for (const d of sel.dependents) s += `<path class="dl dependent" marker-end="url(#ap)" d="${depCurve(d, sel)}"/>`;
+  for (const n of T.all) {
+    const [x, y] = pt(n._a, n._r), deg = n._a * 180 / Math.PI, left = Math.cos(n._a) < 0, r = dotR(n);
+    const cls = ['node', 'd' + Math.min(n.depth, 2), n === sel && 'sel', anc.has(n) && 'anc', depSet.has(n) && 'isdep', dependentSet.has(n) && 'isdependent',
+      n.status === 'draft' && 'draft', n.inObsolete && 'obsolete'].filter(Boolean).join(' ');
+    const label = esc(clip(n.title, 24)) + (n.status === 'draft' ? ' · draft' : '');
+    const text = n.depth === 0 || n.children.length ? `<text text-anchor="middle" y="${r + 16}">${label}</text>`
+      : `<text transform="rotate(${left ? deg + 180 : deg})" x="${left ? -(r + 6) : r + 6}" dy="4" text-anchor="${left ? 'end' : 'start'}">${label}</text>`;
+    s += `<g class="${cls}" data-p="${esc(n.path)}" tabindex="0" transform="translate(${x} ${y})" style="--c:${color(n)}"><title>${esc(n.title)} · ${n.decisions} decisions\n${esc(n.summary)}</title>
+      <circle r="${r}" fill="${color(n)}"/>${text}</g>`;
+  }
+  const defs = `<defs>${['ad', 'ap'].map((id, i) => `<marker id="${id}" viewBox="0 0 10 10" refX="14" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(${i ? '--dependent' : '--dep'})"/></marker>`).join('')}</defs>`;
+  $('svg').innerHTML = defs + s;
+  $('svg').classList.toggle('focus', sel !== T.root);
+  if (!view) fit(); else applyView();
+  renderCard();
+}
+
+function renderCard() {
+  const n = sel, list = (arr, k) => arr.length ? `<ul>${arr.map(d => `<li><button class="${k}" data-p="${esc(d.path)}">${esc(d.title)}</button></li>`).join('')}</ul>` : '<div class="p">None</div>';
+  $('card').innerHTML = `<h2>${esc(n.title)}</h2><div class="p">${esc(n.path || 'docs/')} · ${n.status} · ${n.decisions} decisions</div>
+    <h3>Summary</h3><div>${esc(n.summary)}</div>
+    <h3>Depends on</h3>${list(n.depNodes, 'k-dep')}
+    <h3>Used by</h3>${list(n.dependents, 'k-dependent')}
+    <h3>How to read it</h3><div class="key">
+      <div><svg width="22" height="14"><circle cx="5" cy="7" r="3" fill="var(--muted)"/><circle cx="16" cy="7" r="6" fill="var(--muted)"/></svg>Dot size: number of decisions</div>
+      <div><svg width="22" height="14"><path d="M1 7H20" stroke="var(--dep)" stroke-width="2"/></svg>What the selected node depends on</div>
+      <div><svg width="22" height="14"><path d="M1 7H20" stroke="var(--dependent)" stroke-width="2" stroke-dasharray="5 4"/></svg>What uses the selected node</div>
+      <div>Each coloured sector is one top-level area; each ring is one level deeper.</div></div>`;
+}
+
+function applyView() {
+  const r = $('svg').getBoundingClientRect(); if (!r.width) return;
+  $('svg').setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.w * r.height / r.width}`);
+}
+function fit() {
+  const r = $('svg').getBoundingClientRect(), asp = r.width / r.height || 1, s = 2 * size;
+  const w = asp >= 1 ? s * asp : s, h = w / asp;
+  view = { x: -w / 2, y: -h / 2, w }; applyView();
+}
+function zoomBy(f, fx = .5, fy = .5) {
+  const r = $('svg').getBoundingClientRect(), h = view.w * r.height / r.width, w = Math.min(Math.max(view.w * f, 200), 8000);
+  view.x += (view.w - w) * fx; view.y += (h - w * r.height / r.width) * fy; view.w = w; applyView();
+}
+$('zi').onclick = () => zoomBy(1 / 1.25); $('zo').onclick = () => zoomBy(1.25); $('zf').onclick = fit;
+$('svg').addEventListener('wheel', e => { e.preventDefault(); const r = $('svg').getBoundingClientRect(); zoomBy(Math.exp(e.deltaY * .0015), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); }, { passive: false });
+let drag = null;
+$('svg').addEventListener('pointerdown', e => { if (e.target.closest('.node')) return; drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; $('svg').classList.add('drag'); $('svg').setPointerCapture(e.pointerId); });
+$('svg').addEventListener('pointermove', e => { if (!drag) return; const k = view.w / $('svg').getBoundingClientRect().width; view.x = drag.vx - (e.clientX - drag.x) * k; view.y = drag.vy - (e.clientY - drag.y) * k; applyView(); });
+$('svg').addEventListener('pointerup', () => { drag = null; $('svg').classList.remove('drag'); });
+addEventListener('resize', () => view && applyView());
+document.addEventListener('click', e => { const c = e.target.closest('[data-p]'); if (c) { sel = T.byPath.get(c.dataset.p); render(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest && e.target.closest('.node')) { sel = T.byPath.get(e.target.closest('.node').dataset.p); render(); } });
+load('project');
+</script>
+</body>
+</html>
