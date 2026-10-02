@@ -20,6 +20,7 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-02 09:00 · El paquete de contexto son solo rutas: el hilo nuevo lee los ficheros por sí mismo; no se pega contenido.
 - 2026-10-02 09:00 · Idioma: el producto publicado (código, comentarios, UI, documentación pública) en inglés; los documentos de desarrollo de este proyecto en español.
 - 2026-10-02 09:46 · La v1 está construida: `index.html` en la raíz del repositorio.
+- 2026-10-02 10:52 · Única excepción a "sin editar": renombrar un nodo desde la página (`viewer/rename`).
 - 2026-10-02 10:26 · Se añade a la v1 una vista de mapa (`viewer/map`): la jerarquía dibujada con cajas, de izquierda a derecha, por defecto; el árbol sigue disponible.
 
 ## Antecedentes
