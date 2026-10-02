@@ -21,7 +21,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 09:00 · Regla de lectura de un hilo que trabaja sobre un nodo: leer entero el md del nodo; leer Summary y Decisions de sus ascendientes y dependencias; abrirlos enteros solo si hace falta.
 - 2026-10-02 10:38 · Campo opcional de cabecera `threads`: lista de los chats que han trabajado el nodo, una línea por chat con el formato `- Título | enlace`. El enlace suele ser una URL; si el chat no tiene URL (p. ej. una sesión local), cualquier texto que lo reabra, como `claude --resume <id>`. Decidido por Ronald.
 - 2026-10-02 10:38 · El hilo que trabaja sobre un nodo añade su propio enlace a `threads` si lo conoce.
-- 2026-10-02 11:50 · Bloque opcional `## Requirements`, después de Decisions: los requisitos que ha pedido el propietario para ese nodo, con sus palabras literales y solo las frases que piden algo, una línea por requisito con fecha y hora (mismo formato que Decisions). Lo rellena el hilo en el momento, porque después no es fiable separarlos del resto de la conversación. Pendiente de confirmación de Ronald.
+- 2026-10-02 11:50 · Bloque opcional `## Requirements`, después de Decisions: los requisitos que ha pedido el propietario para ese nodo, con sus palabras literales y solo las frases que piden algo, una línea por requisito con fecha y hora (mismo formato que Decisions). Lo rellena el hilo en el momento, porque después no es fiable separarlos del resto de la conversación. Decidido por Ronald (11:47).
 
 ## Ejemplo
 ```markdown
