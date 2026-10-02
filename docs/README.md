@@ -4,7 +4,7 @@ depends_on: []
 ---
 ## Summary
 Herramienta que convierte una carpeta de documentos md de un repositorio git en un mapa visual y navegable de un proyecto desarrollado con IA.
-La persona recorre un árbol de nodos, ve el resumen funcional y las decisiones de diseño de cada nodo, y arranca un hilo nuevo sobre cualquier nodo con el contexto adecuado.
+La persona recorre un mapa (o un árbol) de nodos, ve el resumen funcional y las decisiones de diseño de cada nodo, y arranca un hilo nuevo sobre cualquier nodo con el contexto adecuado.
 No depende de ningún asistente: solo lee ficheros md. La herramienta gestionará su propio desarrollo en cuanto sea posible.
 
 ## Decisions
@@ -17,6 +17,7 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-02 09:00 · El paquete de contexto son solo rutas: el hilo nuevo lee los ficheros por sí mismo; no se pega contenido.
 - 2026-10-02 09:00 · Idioma: el producto publicado (código, comentarios, UI, documentación pública) en inglés; los documentos de desarrollo de este proyecto en español.
 - 2026-10-02 09:46 · La v1 está construida: `index.html` en la raíz del repositorio.
+- 2026-10-02 10:26 · Se añade a la v1 una vista de mapa con cajas y flechas (`viewer/map`), por defecto; el árbol sigue disponible.
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
