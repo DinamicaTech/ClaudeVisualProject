@@ -1,0 +1,12 @@
+name: Node index
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docs/.index.md matches the docs
+        run: node tools/build-index.mjs docs --check

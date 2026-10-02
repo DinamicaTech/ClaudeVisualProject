@@ -14,6 +14,16 @@ Visual, navigable map of AI-developed projects. Reads the Markdown docs in your 
 
 Your docs are read from disk and never copied or uploaded; the page only writes to them when you rename a node. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
 
+### Node index (optional)
+
+Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html` and `tools/build-index.mjs` into your repository and run
+
+```
+node tools/build-index.mjs docs
+```
+
+It writes `docs/.index.md` with every node's title, dependencies, children and Summary (Node 18 or later, no packages). The prompts ask threads to run it again after changing a node; add `node tools/build-index.mjs docs --check` to your CI to catch a stale index, as [this repository does](.github/workflows/node-index.yml).
+
 ## Status
 
 v1. The design lives in [`docs/`](docs/README.md), written in the format the tool reads, so the project is its own first test case. Working docs are currently in Spanish.
