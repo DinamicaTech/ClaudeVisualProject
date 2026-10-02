@@ -1,6 +1,9 @@
 ---
 title: AI Visual Project Management (nombre provisional)
 depends_on: []
+threads:
+  - Diseño y arquitectura | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLJTJVZTomXFc5QL5nedhLKa
+  - Desarrollo de producto v1 | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLWVKdXpCWWjVopDpDNCtGxN
 ---
 ## Summary
 Herramienta que convierte una carpeta de documentos md de un repositorio git en un mapa visual y navegable de un proyecto desarrollado con IA.

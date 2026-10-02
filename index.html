@@ -125,6 +125,7 @@
   .decisions .when.none { color: var(--warn); }
   .links { list-style: none; padding: 0; margin: 0; }
   .links li { padding: 2px 0; }
+  .links a { color: var(--accent); }
   .links .via, .links .p { color: var(--muted); font-size: 12px; margin-left: 6px; }
   .links .p { font-family: var(--mono); }
   .links .missing { color: var(--error); }
@@ -142,6 +143,7 @@
   dialog .dhead .t { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   dialog .dbody { padding: 6px 22px 20px; }
   dialog textarea { width: 100%; height: 320px; font-family: var(--mono); font-size: 12.5px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  #subTitle { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
   .md table { border-collapse: collapse; }
   .md th, .md td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
   .md blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
@@ -204,6 +206,15 @@
     <p class="empty-note">The clipboard is not available. Copy the text below and paste it in a new thread.</p>
     <textarea id="packText" readonly></textarea>
   </div>
+</dialog>
+
+<dialog id="subDialog">
+  <div class="dhead"><span class="t">New sub-task under <span id="subParent"></span></span><button data-close>Close</button></div>
+  <form class="dbody" id="subForm">
+    <p class="empty-note">The prompt asks a new thread to create a child node with this title and then work on it.</p>
+    <input id="subTitle" placeholder="Sub-task title" autocomplete="off">
+    <p><button class="primary" type="submit">Copy prompt</button></p>
+  </form>
 </dialog>
 
 <dialog id="warnDialog">
@@ -393,6 +404,16 @@ function parseFrontMatter(lines) {
   return fm;
 }
 
+// `threads` entries: "Title | link". The link is a URL or any text that reopens the chat
+// (e.g. `claude --resume <id>`). An entry without " | " is taken as a bare link.
+function parseThreads(v) {
+  if (typeof v === 'string') v = v ? [v] : [];
+  return (v || []).map(e => {
+    const i = e.lastIndexOf(' | ');
+    return i < 0 ? { title: '', link: e.trim() } : { title: e.slice(0, i).trim(), link: e.slice(i + 3).trim() };
+  }).filter(t => t.link);
+}
+
 function normalizeNodePath(p) {
   return String(p).trim().replace(/\\/g, '/').replace(/^\.?\//, '').replace(/\.md$/i, '')
     .replace(/(^|\/)README$/i, '').replace(/\/+$/, '');
@@ -461,6 +482,7 @@ function parseDoc(text) {
     title: typeof fm.title === 'string' ? fm.title : '',
     deps, status,
     replacedBy: typeof fm.replaced_by === 'string' && fm.replaced_by ? normalizeNodePath(fm.replaced_by) : null,
+    threads: parseThreads(fm.threads),
     summary, decisions, warnings,
   };
 }
@@ -484,7 +506,7 @@ function makeNode(path, file, text) {
   const n = {
     path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
     placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null,
-    summary: '', decisions: [], title: '',
+    summary: '', decisions: [], title: '', threads: [],
   };
   if (file) Object.assign(n, parseDoc(text));
   return n;
@@ -608,16 +630,14 @@ function repoPath(n) {
   return (state.rootName ? state.rootName + '/' : '') + n.file;
 }
 
-function contextPack(n) {
-  const lines = [];
-  if (n.obsoleteBy) {
-    const r = replacementOf(n, state.nodes);
-    const why = n.obsoleteBy === n ? 'This node is obsolete' : `This node is obsolete because its ancestor "${n.obsoleteBy.title}" is obsolete`;
-    lines.push(`WARNING: ${why}.` + (r ? ` It has been replaced by "${r.title}" (${r.file ? repoPath(r) : r.path}).` : ''), '');
-  }
-  lines.push(`Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '');
-  lines.push('Files, with paths relative to the repository root:');
-  lines.push(n.file ? `- Node: ${repoPath(n)}` : `- Node: ${state.rootName}/${n.path}/ (folder without README.md)`);
+const THREAD_RULE =
+  'If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
+  'as a line `  - <short title> | <link>`.';
+
+// Files a thread working on node n must know: the node, its ancestors and its dependencies.
+function packFiles(n, nodeLabel) {
+  const lines = ['Files, with paths relative to the repository root:'];
+  lines.push(n.file ? `- ${nodeLabel}: ${repoPath(n)}` : `- ${nodeLabel}: ${state.rootName}/${n.path}/ (folder without README.md)`);
   const ancestors = ancestorsOf(n).filter(a => a.file);
   if (ancestors.length) {
     lines.push('- Ancestors, from the root:');
@@ -631,21 +651,69 @@ function contextPack(n) {
     lines.push('- Dependencies, including those inherited from ancestors:');
     for (const d of deps) lines.push(`  - ${repoPath(d)}`);
   }
-  lines.push('', READ_RULE, UPDATE_RULE, '', 'Task: ');
-  return lines.join('\n');
+  return lines;
 }
 
-async function copyPack(n) {
-  const text = contextPack(n);
+function obsoleteWarning(n) {
+  if (!n.obsoleteBy) return [];
+  const r = replacementOf(n, state.nodes);
+  const why = n.obsoleteBy === n ? 'This node is obsolete' : `This node is obsolete because its ancestor "${n.obsoleteBy.title}" is obsolete`;
+  return [`WARNING: ${why}.` + (r ? ` It has been replaced by "${r.title}" (${r.file ? repoPath(r) : r.path}).` : ''), ''];
+}
+
+function contextPack(n) {
+  return [
+    ...obsoleteWarning(n),
+    `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
+    ...packFiles(n, 'Node'),
+    '', READ_RULE, UPDATE_RULE, THREAD_RULE, '', 'Task: ',
+  ].join('\n');
+}
+
+function slugify(t) {
+  return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'new-node';
+}
+
+// Prompt for a new thread that first creates a child node of n, then works on it.
+function subTaskPack(n, title) {
+  const slug = slugify(title);
+  const childPath = n.path ? `${n.path}/${slug}` : slug;
+  const prefix = state.rootName ? state.rootName + '/' : '';
+  const isLeafFile = n.file && !isReadme(n.file);
+  const folder = prefix + (n.path ? n.path + '/' : '');
+  const steps = [];
+  if (isLeafFile) steps.push(`Move ${repoPath(n)} to ${folder}README.md, so the parent becomes a folder. Its node path (${n.path}) does not change.`);
+  if (state.nodes.has(childPath)) steps.push(`Note: a node ${childPath} already exists; pick a different file name.`);
+  steps.push(`Create ${folder}${slug}.md with this content, then fill in its Summary:`);
+  return [
+    ...obsoleteWarning(n),
+    `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
+    `The sub-task is a new node, ${childPath}, child of that node.`, '',
+    ...packFiles(n, 'Parent node'), '',
+    'First:',
+    ...steps.map((t, i) => `${i + 1}. ${t}`), '',
+    '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
+    '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
+    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '```', '',
+    'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
+    'Then work on the sub-task in that node.', '',
+    READ_RULE, UPDATE_RULE, '', 'Task: ',
+  ].join('\n');
+}
+
+async function copyText(text, what) {
   try {
     await navigator.clipboard.writeText(text);
-    toast(`Context pack for "${n.title}" copied. Paste it in a new thread.`);
+    toast(`${what} copied. Paste it in a new thread.`);
   } catch (e) {
     $('packText').value = text;
     $('packDialog').showModal();
     $('packText').select();
   }
 }
+
+function copyPack(n) { return copyText(contextPack(n), `Context pack for "${n.title}"`); }
 
 // ---------------------------------------------------------------------------
 // Markdown rendering (small subset, enough for project docs)
@@ -1033,6 +1101,7 @@ function renderCard() {
   h += `<div class="path">${esc(n.file ? repoPath(n) : (state.rootName + '/' + n.path + '/'))}</div>`;
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
+    '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
   if (n.obsoleteBy) {
@@ -1042,6 +1111,12 @@ function renderCard() {
       (r ? ` Replaced by ${nodeLink(r)}.` : '') + '</div>';
   }
   if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
+
+  h += '<section><h2>Threads</h2>' + (n.threads.length
+    ? '<ul class="links">' + n.threads.map(t => /^https?:\/\//i.test(t.link)
+        ? `<li><a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.title || t.link)}</a></li>`
+        : `<li>${t.title ? esc(t.title) + ': ' : ''}<code>${esc(t.link)}</code></li>`).join('') + '</ul>'
+    : '<p class="empty-note">No threads linked. Threads add themselves to the <code>threads</code> field when they start.</p>') + '</section>';
 
   withBase(n, () => {
     h += '<section><h2>Summary</h2>' +
@@ -1070,7 +1145,22 @@ function renderCard() {
   card.innerHTML = h;
   card.scrollTop = 0;
   $('copyPackBtn').onclick = () => copyPack(n);
+  $('subTaskBtn').onclick = () => openSubTask(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
+}
+
+function openSubTask(n) {
+  $('subParent').textContent = n.title;
+  $('subTitle').value = '';
+  $('subDialog').showModal();
+  $('subTitle').focus();
+  $('subForm').onsubmit = e => {
+    e.preventDefault();
+    const title = $('subTitle').value.trim();
+    if (!title) return;
+    $('subDialog').close();
+    copyText(subTaskPack(n, title), `Sub-task prompt for "${title}"`);
+  };
 }
 
 function openDoc(n) {
