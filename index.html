@@ -71,7 +71,6 @@
   .node text { fill: var(--text); font-size: 13px; }
   .node:hover rect { stroke: var(--accent); }
   .node.selected rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
-  .node.related rect { stroke: var(--ref); stroke-width: 2; }
   .node.draft rect { stroke-dasharray: 5 3; stroke: var(--draft); }
   .node.placeholder rect { stroke-dasharray: 3 3; }
   .node.placeholder text { font-style: italic; fill: var(--muted); }
@@ -79,12 +78,15 @@
   .node.obsolete text.t { text-decoration: line-through; }
   .node text.wb { fill: var(--warn); font-size: 12px; }
   .node text.db { fill: var(--draft); font-size: 11px; }
-  path.h { fill: none; stroke: var(--line); stroke-width: 1.5; }
-  path.d { fill: none; stroke: var(--ref); stroke-width: 1.3; stroke-dasharray: 5 4; opacity: .8; }
-  path.d.dim { opacity: .12; }
-  path.d.out { opacity: 1; stroke-width: 2.2; stroke-dasharray: none; }
-  path.d.in { opacity: 1; stroke-width: 2.2; stroke-dasharray: none; stroke: var(--accent); }
-  marker path { fill: var(--ref); } marker#arrIn path { fill: var(--accent); }
+  .node.ref rect { stroke: var(--ref); stroke-dasharray: 4 3; fill: var(--bg); }
+  .node.ref text { fill: var(--ref); font-style: italic; }
+  .node.ref.missing rect { stroke: var(--error); } .node.ref.missing text { fill: var(--error); }
+  .node.ref.same rect { stroke-width: 2.5; stroke-dasharray: none; fill: var(--accent-soft); }
+  .tog circle { fill: var(--panel); stroke: var(--muted); }
+  .tog text { fill: var(--muted); font-size: 13px; font-weight: 600; }
+  .tog:hover circle { stroke: var(--accent); }
+  path.h { fill: none; stroke: var(--muted); stroke-width: 1.3; opacity: .6; }
+  path.r { fill: none; stroke: var(--ref); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: .7; }
 
   .row {
     display: flex; align-items: center; gap: 4px; padding: 2px 10px 2px 0; cursor: pointer;
@@ -163,7 +165,7 @@
   <span class="spacer"></span>
   <button id="warnBtn" hidden></button>
   <div class="seg" id="viewSeg" hidden><button data-view="map">Map</button><button data-view="tree">Tree</button></div>
-  <label id="refsToggleLabel" hidden title="Show dependencies: arrows in the map, reference entries in the tree">
+  <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
   </label>
   <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
@@ -175,7 +177,7 @@
   <div id="map" hidden>
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
-    <div class="legend"><span class="lh">── contains</span> &nbsp; <span class="ld">╌╌▶ depends on</span> · wheel to zoom, drag to move</div>
+    <div class="legend"><span class="lh">── contains</span> &nbsp; <span class="ld">╌ ↗ depends on (repeated box, click to jump)</span> · wheel to zoom, drag to move</div>
   </div>
   <div id="card"></div>
 </main>
@@ -852,78 +854,83 @@ $('tree').addEventListener('dblclick', e => {
 
 
 // ---------------------------------------------------------------------------
-// Map: boxes laid out by hierarchy (left to right), dependencies as arrows
+// Map: the tree drawn left to right as boxes. Like the tree, a node lives once at
+// its path and is repeated as a reference box under each node that depends on it.
 // ---------------------------------------------------------------------------
 
-const MAP = { colW: 250, boxW: 200, boxH: 36, rowH: 50, pad: 30 };
+const MAP = { colW: 260, boxW: 210, boxH: 36, rowH: 48, pad: 30 };
 let mapView = null;   // visible area in map coordinates: { x, y, w }; height follows the panel's aspect
-let mapPos = null;    // node path -> { x, y } (top-left corner of its box)
+let mapPos = null;    // node path -> { x, y } of its real box (top-left corner)
 let mapBounds = null;
+const mapCollapsed = new Set();
 
+// Items: { node, ref, path, depth, kids, x, y }. References are leaves.
 function layoutMap() {
-  const pos = new Map();
   let row = 0, maxDepth = 0;
-  const place = (n, depth) => {
-    maxDepth = Math.max(maxDepth, depth);
-    if (!n.children.length) { pos.set(n.path, { x: depth * MAP.colW, y: row++ * MAP.rowH }); return; }
-    n.children.forEach(c => place(c, depth + 1));
-    const ys = n.children.map(c => pos.get(c.path).y);
-    pos.set(n.path, { x: depth * MAP.colW, y: (ys[0] + ys[ys.length - 1]) / 2 });
+  const build = (n, depth) => {
+    const it = { node: n, ref: false, path: n.path, depth, kids: [] };
+    if (!mapCollapsed.has(n.path)) {
+      if (state.showRefs) for (const l of n.depLinks) it.kids.push({ node: l.node, ref: true, path: l.path, depth: depth + 1, kids: [] });
+      for (const c of n.children) it.kids.push(build(c, depth + 1));
+    }
+    return it;
   };
-  place(state.nodes.get(''), 0);
-  mapPos = pos;
-  mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 60, h: (row - 1) * MAP.rowH + MAP.boxH + 2 * MAP.pad };
-}
-
-// Curve from the dependent node (a) to the node it depends on (b).
-function depPath(a, b) {
-  const W = MAP.boxW, H = MAP.boxH, ay = a.y + H / 2, by = b.y + H / 2;
-  if (Math.abs(a.x - b.x) < 1) {
-    const x = a.x + W, bulge = 40 + Math.abs(by - ay) * 0.25;
-    return `M${x} ${ay}C${x + bulge} ${ay} ${x + bulge} ${by} ${x} ${by}`;
-  }
-  const right = b.x > a.x;
-  const x1 = right ? a.x + W : a.x, x2 = right ? b.x : b.x + W;
-  const dx = Math.max(40, Math.abs(x2 - x1) / 2) * (right ? 1 : -1);
-  return `M${x1} ${ay}C${x1 + dx} ${ay} ${x2 - dx} ${by} ${x2} ${by}`;
+  const place = it => {
+    maxDepth = Math.max(maxDepth, it.depth);
+    it.x = it.depth * MAP.colW;
+    if (!it.kids.length) { it.y = row++ * MAP.rowH; return; }
+    it.kids.forEach(place);
+    it.y = (it.kids[0].y + it.kids[it.kids.length - 1].y) / 2;
+  };
+  const root = build(state.nodes.get(''), 0);
+  place(root);
+  mapPos = new Map();
+  const all = [];
+  const walk = it => { all.push(it); if (!it.ref) mapPos.set(it.path, it); it.kids.forEach(walk); };
+  walk(root);
+  mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 14, h: (row - 1) * MAP.rowH + MAP.boxH + 2 * MAP.pad };
+  return all;
 }
 
 function clip(s, max) { return s.length > max ? s.slice(0, max - 1) + '…' : s; }
 
 function renderMap() {
   const svg = $('mapSvg');
-  layoutMap();
+  const items = layoutMap();
   const sel = state.nodes.get(state.selected);
-  const related = new Set(sel ? [...sel.depLinks.map(l => l.node), ...sel.dependents].filter(Boolean) : []);
   const W = MAP.boxW, H = MAP.boxH;
-  let hier = '', deps = '', boxes = '';
-  for (const n of state.nodes.values()) {
-    const p = mapPos.get(n.path);
-    for (const c of n.children) {
-      const q = mapPos.get(c.path), x1 = p.x + W, y1 = p.y + H / 2, x2 = q.x, y2 = q.y + H / 2, mx = x1 + (x2 - x1) / 2;
-      hier += `<path class="h" d="M${x1} ${y1}H${mx}V${y2}H${x2}"/>`;
+  let lines = '', boxes = '';
+  for (const it of items) {
+    for (const k of it.kids) {
+      const x1 = it.x + W, y1 = it.y + H / 2, x2 = k.x, y2 = k.y + H / 2, mx = x1 + (x2 - x1) / 2;
+      lines += `<path class="${k.ref ? 'r' : 'h'}" d="M${x1} ${y1}H${mx}V${y2}H${x2}"/>`;
     }
-    if (state.showRefs) for (const l of n.depLinks) {
-      if (!l.node || l.node === n) continue;
-      const kind = sel === n ? ' out' : sel === l.node ? ' in' : sel ? ' dim' : '';
-      deps += `<path class="d${kind}" d="${depPath(p, mapPos.get(l.path))}" marker-end="url(#${kind === ' in' ? 'arrIn' : 'arr'})">` +
-        `<title>${esc(n.title)} depends on ${esc(l.node.title)}</title></path>`;
+    const n = it.node;
+    if (it.ref) {
+      const cls = ['node', 'ref', !n && 'missing', n && n === sel && 'same'].filter(Boolean).join(' ');
+      boxes += `<g class="${cls}" ${n ? `data-ref="${esc(n.path)}"` : ''} transform="translate(${it.x} ${it.y})">` +
+        `<title>${n ? `Dependency: ${esc(n.title)}\nClick to jump to the real node` : `Missing dependency: ${esc(it.path)}`}</title>` +
+        `<rect width="${W}" height="${H}" rx="6"/>` +
+        `<text class="t" x="10" y="${H / 2 + 4.5}">↗ ${esc(clip(n ? n.title : it.path + ' (missing)', 26))}</text></g>`;
+      continue;
     }
-    const cls = ['node',
-      n === sel && 'selected', related.has(n) && 'related', n.placeholder && 'placeholder',
+    const cls = ['node', n === sel && 'selected', n.placeholder && 'placeholder',
       n.status === 'draft' && 'draft', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
     ].filter(Boolean).join(' ');
     const extra = (n.warnings.length ? 4 : 0) + (n.status === 'draft' ? 5 : 0);
-    boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${p.x} ${p.y})">` +
+    const hasKids = n.children.length > 0 || (state.showRefs && n.depLinks.length > 0);
+    const collapsed = mapCollapsed.has(n.path);
+    boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
       `<rect width="${W}" height="${H}" rx="6"/>` +
-      `<text class="t" x="10" y="${H / 2 + 4.5}">${esc(clip(n.title, 25 - extra))}</text>` +
-      (n.status === 'draft' ? `<text class="db" x="${W - (n.warnings.length ? 36 : 8)}" y="${H / 2 + 4}" text-anchor="end">draft</text>` : '') +
-      (n.warnings.length ? `<text class="wb" x="${W - 8}" y="${H / 2 + 4}" text-anchor="end">⚠${n.warnings.length}</text>` : '') +
+      `<text class="t" x="10" y="${H / 2 + 4.5}">${esc(clip(n.title, 26 - extra))}</text>` +
+      (n.status === 'draft' ? `<text class="db" x="${W - (n.warnings.length ? 42 : 14)}" y="${H / 2 + 4}" text-anchor="end">draft</text>` : '') +
+      (n.warnings.length ? `<text class="wb" x="${W - 14}" y="${H / 2 + 4}" text-anchor="end">⚠${n.warnings.length}</text>` : '') +
+      (hasKids ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${H / 2})"><title>${collapsed ? 'Expand' : 'Collapse'}</title>` +
+        `<circle r="8"/><text y="4" text-anchor="middle">${collapsed ? '+' : '−'}</text></g>` : '') +
       `</g>`;
   }
-  const marker = id => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L10 5L0 10z"/></marker>`;
-  svg.innerHTML = `<defs>${marker('arr')}${marker('arrIn')}</defs>${hier}${deps}${boxes}`;
+  svg.innerHTML = `${lines}${boxes}`;
   if (!mapView) fitMap(); else applyMapView();
 }
 
@@ -940,7 +947,7 @@ function fitMap() {
   const b = mapBounds, aspect = r.width / r.height;
   let w = Math.max(b.w, b.h * aspect);
   w = Math.max(w, r.width / 1.3);            // do not blow up small projects
-  mapView = { x: b.x, y: b.y - Math.max(0, (w / aspect - b.h) / 2), w };
+  mapView = { x: b.x, y: b.y, w };
   if (w > b.w) mapView.x = b.x - (w - b.w) / 2;
   applyMapView();
 }
@@ -987,12 +994,22 @@ function centerMapOn(path) {
   window.addEventListener('pointerup', () => { drag = null; svg.classList.remove('dragging'); });
   svg.addEventListener('click', e => {
     if (moved) { moved = false; return; }
+    const t = e.target.closest('.tog');
+    if (t) {
+      const p = t.dataset.toggle;
+      if (mapCollapsed.has(p)) mapCollapsed.delete(p); else mapCollapsed.add(p);
+      return renderMap();
+    }
     const g = e.target.closest('.node');
-    if (g && g.dataset.path !== state.selected) select(g.dataset.path, false);
+    if (!g) return;
+    if (g.dataset.ref !== undefined) return select(g.dataset.ref, true);
+    if (g.dataset.path !== undefined && g.dataset.path !== state.selected) select(g.dataset.path, false);
   });
   svg.addEventListener('dblclick', e => {
+    if (e.target.closest('.tog')) return;
     const g = e.target.closest('.node');
-    if (g && state.nodes.has(g.dataset.path)) copyPack(state.nodes.get(g.dataset.path));
+    const path = g && (g.dataset.ref ?? g.dataset.path);
+    if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
   });
   $('fitBtn').onclick = () => fitMap();
   window.addEventListener('resize', applyMapView);

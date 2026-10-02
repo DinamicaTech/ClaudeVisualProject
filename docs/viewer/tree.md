@@ -20,4 +20,4 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-02 09:46 · Al abrir por primera vez se despliegan la raíz y el primer nivel. El triángulo despliega o pliega; el clic en el nombre solo selecciona.
 - 2026-10-02 09:46 · Doble clic sobre una entrada de referencia copia el paquete de contexto del nodo real.
 - 2026-10-02 09:46 · Las carpetas sin `README.md` se muestran en cursiva; los nodos `draft` llevan una etiqueta.
-- 2026-10-02 10:26 · La vista de grafo ya no queda fuera: el mapa (`viewer/map`) se añade a la v1 y el árbol pasa a ser la vista alternativa.
+- 2026-10-02 10:26 · Se añade a la v1 el mapa (`viewer/map`): el mismo árbol dibujado con cajas, vista por defecto; el árbol pasa a ser la vista alternativa. Sigue sin haber vista de grafo.
