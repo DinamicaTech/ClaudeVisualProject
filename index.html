@@ -8,14 +8,16 @@
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #6b7078; --line: #e3e3df;
     --accent: #3a5ccc; --accent-soft: #e8edfb; --warn: #b26a00; --warn-soft: #fff4e0;
-    --error: #c0392b; --obsolete: #a0a4aa; --draft: #7a5ab5; --ref: #4f7a6a;
+    --error: #c0392b; --obsolete: #a0a4aa; --draft: #7a5ab5; --ref: #2f7d62; --dependent: #b4661d;
+    --b0: #3d63c9; --b1: #8a4fbf; --b2: #c2513f; --b3: #2f8a73; --b4: #b8861b; --b5: #3a8bb0; --b6: #b1477d; --b7: #6b7d2a;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #17181a; --panel: #1f2023; --text: #e6e6e3; --muted: #9a9ea5; --line: #2f3135;
       --accent: #8aa4ff; --accent-soft: #263055; --warn: #f0b252; --warn-soft: #3a2e17;
-      --error: #ff7b6e; --obsolete: #6d7178; --draft: #b9a0ea; --ref: #86c2ab;
+      --error: #ff7b6e; --obsolete: #6d7178; --draft: #b9a0ea; --ref: #6cc7a3; --dependent: #e9a35e;
+      --b0: #86a3ff; --b1: #c39af0; --b2: #f08f7c; --b3: #6cc7aa; --b4: #e6bd5c; --b5: #79c3e4; --b6: #ec8fbd; --b7: #b4c46a;
     }
   }
   * { box-sizing: border-box; }
@@ -64,30 +66,42 @@
   #map { position: relative; flex: 0 0 62%; min-width: 300px; border-right: 1px solid var(--line); background: var(--panel); overflow: hidden; }
   #mapSvg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #mapSvg.dragging { cursor: grabbing; }
+  #zoomBtn { border-color: var(--accent); color: var(--accent); }
   #map .mapctl { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
   #map .legend { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted); background: var(--panel); padding: 2px 6px; border-radius: 4px; }
-  #map .legend .lh { color: var(--muted); } #map .legend .ld { color: var(--ref); }
+  #map .legend .ld { color: var(--ref); } #map .legend .lp { color: var(--dependent); }
+  #mapSvg { background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 18px 18px; }
   .node { cursor: pointer; }
-  .node rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
-  .node text { fill: var(--text); font-size: 13px; }
-  .node:hover rect { stroke: var(--accent); }
-  .node.selected rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
-  .node.draft rect { stroke-dasharray: 5 3; stroke: var(--draft); }
-  .node.placeholder rect { stroke-dasharray: 3 3; }
-  .node.placeholder text { font-style: italic; fill: var(--muted); }
-  .node.obsolete text, .node.obsolete-inherited text { fill: var(--obsolete); }
-  .node.obsolete text.t { text-decoration: line-through; }
-  .node text.wb { fill: var(--warn); font-size: 12px; }
-  .node text.db { fill: var(--draft); font-size: 11px; }
-  .node.ref rect { stroke: var(--ref); stroke-dasharray: 4 3; fill: var(--bg); }
-  .node.ref text { fill: var(--ref); font-style: italic; }
-  .node.ref.missing rect { stroke: var(--error); } .node.ref.missing text { fill: var(--error); }
-  .node.ref.same rect { stroke-width: 2.5; stroke-dasharray: none; fill: var(--accent-soft); }
+  .node .card { position: relative; height: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px 8px 15px; overflow: hidden; font-size: 13px; line-height: 1.4; transition: opacity .15s; }
+  .node .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+  .node:hover .card { border-color: var(--muted); }
+  .node .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 34px; }
+  .node.d0 .t { font-size: 16px; }
+  .node .p { font: 11px/1.3 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node .s { font-size: 12px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .node .meta { position: absolute; top: 8px; right: 12px; font: 11px var(--mono); color: var(--muted); display: flex; gap: 6px; }
+  .node .meta .wb { color: var(--warn); }
+  .node .tag { font: 10px/16px var(--mono); text-transform: uppercase; letter-spacing: .05em; border: 1px dashed currentColor; border-radius: 4px; padding: 0 5px; margin-left: 6px; color: var(--draft); vertical-align: 1px; }
+  .node .chips { display: flex; gap: 4px; margin-top: 6px; overflow: hidden; }
+  .node .chip { font-size: 11px; white-space: nowrap; border-radius: 99px; padding: 0 8px; line-height: 19px; border: 1px solid var(--line); color: var(--muted); background: var(--bg); }
+  .node .chip b { color: var(--ref); font-weight: 500; }
+  .node .chip:hover { border-color: var(--ref); color: var(--text); }
+  .node .chip.missing, .node .chip.missing b { color: var(--error); border-color: var(--error); }
+  .node.draft .card { border-style: dashed; border-color: var(--draft); }
+  .node.placeholder .card { border-style: dashed; }
+  .node.placeholder .t { font-style: italic; color: var(--muted); }
+  .node.obsolete .card, .node.obsolete-inherited .card { opacity: .5; filter: grayscale(1); }
+  .node.obsolete .t { text-decoration: line-through; }
+  .node.selected .card { border-color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
+  .node.isdep .card { border-color: var(--ref); box-shadow: inset 0 0 0 1.5px var(--ref); }
+  .node.isdependent .card { border-color: var(--dependent); box-shadow: inset 0 0 0 1.5px var(--dependent); }
+  #mapSvg.focus .node:not(.selected):not(.isdep):not(.isdependent):not(.anc) .card { opacity: .55; }
   .tog circle { fill: var(--panel); stroke: var(--muted); }
   .tog text { fill: var(--muted); font-size: 13px; font-weight: 600; }
   .tog:hover circle { stroke: var(--accent); }
-  path.h { fill: none; stroke: var(--muted); stroke-width: 1.3; opacity: .6; }
-  path.r { fill: none; stroke: var(--ref); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: .7; }
+  path.h { fill: none; stroke-linecap: round; opacity: .55; }
+  path.h.on { opacity: 1; }
 
   .row {
     display: flex; align-items: center; gap: 4px; padding: 2px 10px 2px 0; cursor: pointer;
@@ -124,6 +138,7 @@
   .decisions li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
   .decisions .when { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; padding-top: 1px; }
   .decisions .when.none { color: var(--warn); }
+  .decisions.reqs li > span:last-child { border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic; }
   .links { list-style: none; padding: 0; margin: 0; }
   .links li { padding: 2px 0; }
   .links a { color: var(--accent); }
@@ -171,9 +186,10 @@
 <header>
   <span class="app">Claude Visual Project</span>
   <span class="folder" id="folderName"></span>
+  <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
   <button id="warnBtn" hidden></button>
-  <div class="seg" id="viewSeg" hidden><button data-view="map">Map</button><button data-view="tree">Tree</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button></div>
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
   </label>
@@ -186,7 +202,7 @@
   <div id="map" hidden>
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
-    <div class="legend"><span class="lh">── contains</span> &nbsp; <span class="ld">╌ ↗ depends on (repeated box, click to jump)</span> · wheel to zoom, drag to move</div>
+    <div class="legend">◆ decisions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="card"></div>
 </main>
@@ -260,6 +276,7 @@ const state = {
   expanded: new Set(),
   showRefs: true,
   view: 'map',        // 'map' or 'tree'
+  zoom: '',           // node path shown as the root of both views (Z); '' = whole project
 };
 
 const $ = id => document.getElementById(id);
@@ -268,7 +285,23 @@ const READ_RULE =
   'Summary and Decisions blocks; open them in full only if needed.';
 const UPDATE_RULE =
   'Before finishing, update the Summary and Decisions of every node you changed. ' +
-  'Each decision line starts with "YYYY-MM-DD HH:MM · ".';
+  'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
+  'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
+  'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
+  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ".';
+// Before any change the thread proposes which node carries out each part of the task, and waits for the owner.
+// Changes across nodes are atomic: all in one branch, and only when no affected node has open work elsewhere.
+const breakdownRule = () => {
+  const docs = (state.rootName || 'docs') + '/';
+  return [
+    'Before changing any file, reply with a breakdown of the task and wait for the owner\'s confirmation:',
+    `1. Read the title and Summary of every node in the project (every md under ${docs}), not only the files listed above, and decide which node owns each part of the task.`,
+    '2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner\'s words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.',
+    '3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.',
+    '4. End by asking the owner to confirm, or to complete the request or change the breakdown.',
+    'Once confirmed, the change is atomic: do all of it in this thread and one branch, across every affected node, and push the branch as soon as you start. Add to depends_on of the node you work on any affected node that is not already a declared or inherited dependency.',
+  ].join('\n');
+};
 
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
@@ -344,6 +377,7 @@ async function reload() {
     return;
   }
   if (!state.nodes.has(state.selected)) state.selected = '';
+  if (!state.nodes.has(state.zoom)) state.zoom = '';
   if (state.expanded.size === 0) {
     state.expanded.add('');
     for (const c of state.nodes.get('').children) state.expanded.add(c.path);
@@ -368,7 +402,7 @@ function viewKey() { return 'cvp:view:' + state.rootName; }
 function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
-      selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view,
+      selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -377,6 +411,7 @@ function restoreViewState() {
   state.expanded = new Set();
   state.showRefs = true;
   state.view = 'map';
+  state.zoom = '';
   mapView = null;
   try {
     const v = JSON.parse(localStorage.getItem(viewKey()) || 'null');
@@ -385,6 +420,7 @@ function restoreViewState() {
       state.expanded = new Set(v.expanded || []);
       state.showRefs = v.showRefs !== false;
       state.view = v.view === 'tree' ? 'tree' : 'map';
+      state.zoom = v.zoom || '';
     }
   } catch (e) { /* ignore */ }
   $('refsToggle').checked = state.showRefs;
@@ -476,19 +512,24 @@ function parseDoc(text) {
   const summary = iS >= 0 ? sectionText(iS) : '';
   if (summary.split('\n').filter(l => l.trim()).length > 5) warnings.push('Summary is longer than 5 lines.');
 
-  const decisions = [];
-  let undated = 0;
-  if (iD >= 0) {
-    for (const l of sectionText(iD).split('\n')) {
+  // Dated list blocks: one item per "- " line, starting with "YYYY-MM-DD HH:MM · ". Continuation lines join the item.
+  const dated = (idx, what) => {
+    const items = [];
+    let undated = 0;
+    if (idx < 0) return items;
+    for (const l of sectionText(idx).split('\n')) {
       if (!l.trim()) continue;
       const it = l.match(/^[-*+]\s+(.*)$/);
-      if (!it) { if (decisions.length) decisions[decisions.length - 1].text += '\n' + l.trim(); continue; }
+      if (!it) { if (items.length) items[items.length - 1].text += '\n' + l.trim(); continue; }
       const d = it[1].match(/^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s*·\s*(.*)$/);
-      if (d) decisions.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
-      else { decisions.push({ when: '', text: it[1] }); undated++; }
+      if (d) items.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
+      else { items.push({ when: '', text: it[1] }); undated++; }
     }
-  }
-  if (undated) warnings.push(`${undated} decision line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
+    if (undated) warnings.push(`${undated} ${what} line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
+    return items;
+  };
+  const decisions = dated(iD, 'decision');
+  const requirements = dated(sections.findIndex(s => /^requirements$/i.test(s.name)), 'requirement');
 
   let status = 'stable';
   if (typeof fm.status === 'string' && fm.status) {
@@ -504,7 +545,7 @@ function parseDoc(text) {
     deps, status,
     replacedBy: typeof fm.replaced_by === 'string' && fm.replaced_by ? normalizeNodePath(fm.replaced_by) : null,
     threads: parseThreads(fm.threads),
-    summary, decisions, warnings,
+    summary, decisions, requirements, warnings,
   };
 }
 
@@ -527,7 +568,7 @@ function makeNode(path, file, text) {
   const n = {
     path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
     placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null,
-    summary: '', decisions: [], title: '', threads: [],
+    summary: '', decisions: [], requirements: [], title: '', threads: [],
   };
   if (file) Object.assign(n, parseDoc(text));
   return n;
@@ -687,7 +728,7 @@ function contextPack(n) {
     ...obsoleteWarning(n),
     `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
     ...packFiles(n, 'Node'),
-    '', READ_RULE, UPDATE_RULE, THREAD_RULE, '', 'Task: ',
+    '', READ_RULE, '', breakdownRule(), '', UPDATE_RULE, THREAD_RULE, '', 'Task: ',
   ].join('\n');
 }
 
@@ -712,14 +753,15 @@ function subTaskPack(n, title) {
     `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
     `The sub-task is a new node, ${childPath}, child of that node.`, '',
     ...packFiles(n, 'Parent node'), '',
-    'First:',
+    READ_RULE, '', breakdownRule(), '',
+    'After the confirmation:',
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
     '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
     '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
-    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '```', '',
+    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
     'Then work on the sub-task in that node.', '',
-    READ_RULE, UPDATE_RULE, '', 'Task: ',
+    UPDATE_RULE, '', 'Task: ',
   ].join('\n');
 }
 
@@ -857,6 +899,9 @@ function renderAll() {
   $('map').hidden = state.view !== 'map';
   for (const b of document.querySelectorAll('#viewSeg button')) b.classList.toggle('on', b.dataset.view === state.view);
   if (state.view === 'tree') renderTree(); else renderMap();
+  const z = state.zoom && state.nodes.get(state.zoom);
+  $('zoomBtn').hidden = !z;
+  if (z) $('zoomBtn').textContent = `Zoom: ${z.title} ✕`;
   renderCard();
   renderWarningCount();
   saveViewState();
@@ -866,7 +911,7 @@ function renderTree() {
   const tree = $('tree');
   const scroll = tree.scrollTop;
   tree.textContent = '';
-  const root = state.nodes.get('');
+  const root = zoomRoot();
   if (root) addRow(tree, root, 0);
   tree.scrollTop = scroll;
 }
@@ -911,6 +956,7 @@ function addRow(container, n, depth) {
 
 function select(path, reveal) {
   if (!state.nodes.has(path)) return;
+  if (state.zoom && !inZoom(state.nodes.get(path))) setZoom('', false);
   state.selected = path;
   if (reveal) for (let a = state.nodes.get(path).parent; a; a = a.parent) state.expanded.add(a.path);
   renderAll();
@@ -919,6 +965,31 @@ function select(path, reveal) {
   const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
   if (row) row.scrollIntoView({ block: 'nearest' });
 }
+
+// Zoom (Z): both views show only one node and its descendants.
+const zoomRoot = () => state.nodes.get(state.zoom) || state.nodes.get('');
+function inZoom(n) {
+  for (let a = n; a; a = a.parent) if (a.path === state.zoom) return true;
+  return false;
+}
+function setZoom(path, render = true) {
+  if (!state.nodes.has(path)) path = '';
+  if (path === state.zoom) return;
+  state.zoom = path;
+  if (path) state.expanded.add(path);
+  mapView = null;   // fit the new map
+  if (render) renderAll();
+}
+document.addEventListener('keydown', e => {
+  if ($('app').hidden || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'Escape' && state.zoom) return setZoom('');
+  if (e.key !== 'z' && e.key !== 'Z') return;
+  e.preventDefault();
+  // Z on the zoomed node (or with nothing selected) goes back to the whole project.
+  setZoom(state.selected && state.selected !== state.zoom ? state.selected : '');
+});
+$('zoomBtn').onclick = () => setZoom('');
 
 function toggle(path) {
   if (state.expanded.has(path)) state.expanded.delete(path); else state.expanded.add(path);
@@ -943,83 +1014,84 @@ $('tree').addEventListener('dblclick', e => {
 
 
 // ---------------------------------------------------------------------------
-// Map: the tree drawn left to right as boxes. Like the tree, a node lives once at
-// its path and is repeated as a reference box under each node that depends on it.
+// Map: the tree drawn left to right as cards. Each top-level area has its own colour,
+// carried by its connectors. Dependencies are chips inside the card (click to jump).
 // ---------------------------------------------------------------------------
 
-const MAP = { colW: 260, boxW: 210, boxH: 36, rowH: 48, pad: 30 };
+const MAP = { colW: 300, boxW: 236, gap: 12, pad: 30 };
 let mapView = null;   // visible area in map coordinates: { x, y, w }; height follows the panel's aspect
-let mapPos = null;    // node path -> { x, y } of its real box (top-left corner)
+let mapPos = null;    // node path -> its item { x, y, h }
 let mapBounds = null;
 const mapCollapsed = new Set();
 
-// Items: { node, ref, path, depth, kids, x, y }. References are leaves.
+const mapColor = n => n.parent ? `var(--b${mapBranch(n) % 8})` : 'var(--text)';
+function mapBranch(n) {
+  while (n.parent && n.parent.parent) n = n.parent;
+  return n.parent ? n.parent.children.indexOf(n) : 0;
+}
+const plain = s => s.replace(/`|\*\*|__|\[([^\]]*)\]\([^)]*\)/g, (m, t) => t ?? '').replace(/\s+/g, ' ').trim();
+
+// Items: { node, depth, kids, x, y, h }. Each subtree takes a block tall enough for itself and its children.
 function layoutMap() {
-  let row = 0, maxDepth = 0;
+  const items = [];
   const build = (n, depth) => {
-    const it = { node: n, ref: false, path: n.path, depth, kids: [] };
-    if (!mapCollapsed.has(n.path)) {
-      if (state.showRefs) for (const l of n.depLinks) it.kids.push({ node: l.node, ref: true, path: l.path, depth: depth + 1, kids: [] });
-      for (const c of n.children) it.kids.push(build(c, depth + 1));
-    }
+    const it = { node: n, depth, kids: [] };
+    it.h = (depth === 0 ? 92 : depth === 1 && n.summary ? 82 : 52) + (state.showRefs && n.depLinks.length ? 26 : 0);
+    if (!mapCollapsed.has(n.path)) it.kids = n.children.map(c => build(c, depth + 1));
+    it.kh = it.kids.reduce((s, k) => s + k.block, 0) + Math.max(0, it.kids.length - 1) * MAP.gap;
+    it.block = Math.max(it.h, it.kh);
     return it;
   };
-  const place = it => {
+  let maxDepth = 0;
+  const place = (it, top) => {
     maxDepth = Math.max(maxDepth, it.depth);
-    it.x = it.depth * MAP.colW;
-    if (!it.kids.length) { it.y = row++ * MAP.rowH; return; }
-    it.kids.forEach(place);
-    it.y = (it.kids[0].y + it.kids[it.kids.length - 1].y) / 2;
+    it.x = it.depth * MAP.colW; it.y = top + (it.block - it.h) / 2; items.push(it);
+    let y = top + (it.block - it.kh) / 2;
+    for (const k of it.kids) { place(k, y); y += k.block + MAP.gap; }
   };
-  const root = build(state.nodes.get(''), 0);
-  place(root);
-  mapPos = new Map();
-  const all = [];
-  const walk = it => { all.push(it); if (!it.ref) mapPos.set(it.path, it); it.kids.forEach(walk); };
-  walk(root);
-  mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 14, h: (row - 1) * MAP.rowH + MAP.boxH + 2 * MAP.pad };
-  return all;
+  const root = build(zoomRoot(), 0);
+  place(root, 0);
+  mapPos = new Map(items.map(it => [it.node.path, it]));
+  mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 14, h: root.block + 2 * MAP.pad };
+  return items;
 }
-
-function clip(s, max) { return s.length > max ? s.slice(0, max - 1) + '…' : s; }
 
 function renderMap() {
   const svg = $('mapSvg');
   const items = layoutMap();
   const sel = state.nodes.get(state.selected);
-  const W = MAP.boxW, H = MAP.boxH;
+  const anc = new Set(); for (let a = sel; a; a = a.parent) anc.add(a);
+  const deps = new Set(sel ? sel.depLinks.map(l => l.node).filter(Boolean) : []);
+  const users = new Set(sel ? sel.dependents : []);
+  const W = MAP.boxW;
   let lines = '', boxes = '';
   for (const it of items) {
     for (const k of it.kids) {
-      const x1 = it.x + W, y1 = it.y + H / 2, x2 = k.x, y2 = k.y + H / 2, mx = x1 + (x2 - x1) / 2;
-      lines += `<path class="${k.ref ? 'r' : 'h'}" d="M${x1} ${y1}H${mx}V${y2}H${x2}"/>`;
+      const x1 = it.x + W, y1 = it.y + it.h / 2, x2 = k.x, y2 = k.y + k.h / 2, m = (x2 - x1) * .55, on = anc.has(k.node);
+      lines += `<path class="h${on ? ' on' : ''}" stroke="${mapColor(k.node)}" stroke-width="${on ? 3.5 : Math.max(1.5, 3.2 - k.depth * .5)}" d="M${x1} ${y1}C${x1 + m} ${y1} ${x2 - m} ${y2} ${x2} ${y2}"/>`;
     }
     const n = it.node;
-    if (it.ref) {
-      const cls = ['node', 'ref', !n && 'missing', n && n === sel && 'same'].filter(Boolean).join(' ');
-      boxes += `<g class="${cls}" ${n ? `data-ref="${esc(n.path)}"` : ''} transform="translate(${it.x} ${it.y})">` +
-        `<title>${n ? `Dependency: ${esc(n.title)}\nClick to jump to the real node` : `Missing dependency: ${esc(it.path)}`}</title>` +
-        `<rect width="${W}" height="${H}" rx="6"/>` +
-        `<text class="t" x="10" y="${H / 2 + 4.5}">↗ ${esc(clip(n ? n.title : it.path + ' (missing)', 26))}</text></g>`;
-      continue;
-    }
-    const cls = ['node', n === sel && 'selected', n.placeholder && 'placeholder',
-      n.status === 'draft' && 'draft', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
+    const cls = ['node', 'd' + Math.min(it.depth, 2), n === sel && 'selected', anc.has(n) && 'anc', deps.has(n) && 'isdep', users.has(n) && 'isdependent',
+      n.placeholder && 'placeholder', n.status === 'draft' && 'draft', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
     ].filter(Boolean).join(' ');
-    const extra = (n.warnings.length ? 4 : 0) + (n.status === 'draft' ? 5 : 0);
-    const hasKids = n.children.length > 0 || (state.showRefs && n.depLinks.length > 0);
-    const collapsed = mapCollapsed.has(n.path);
+    const summary = it.depth <= 1 && n.summary ? plain(n.summary.split('\n')[0]) : '';
+    const chips = state.showRefs && n.depLinks.length ? `<div class="chips">${n.depLinks.map(l => l.node
+      ? `<span class="chip" data-ref="${esc(l.node.path)}" title="Depends on ${esc(l.node.title)}. Click to jump, double-click to copy its context"><b>↗</b> ${esc(l.node.title)}</span>`
+      : `<span class="chip missing" title="Missing dependency: ${esc(l.path)}"><b>↗</b> ${esc(l.path)} (missing)</span>`).join('')}</div>` : '';
     boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
-      `<rect width="${W}" height="${H}" rx="6"/>` +
-      `<text class="t" x="10" y="${H / 2 + 4.5}">${esc(clip(n.title, 26 - extra))}</text>` +
-      (n.status === 'draft' ? `<text class="db" x="${W - (n.warnings.length ? 42 : 14)}" y="${H / 2 + 4}" text-anchor="end">draft</text>` : '') +
-      (n.warnings.length ? `<text class="wb" x="${W - 14}" y="${H / 2 + 4}" text-anchor="end">⚠${n.warnings.length}</text>` : '') +
-      (hasKids ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${H / 2})"><title>${collapsed ? 'Expand' : 'Collapse'}</title>` +
-        `<circle r="8"/><text y="4" text-anchor="middle">${collapsed ? '+' : '−'}</text></g>` : '') +
+      `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
+      `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}</div>` +
+      `<div class="p">${esc(n.path || state.rootName + '/')}</div>` +
+      (summary ? `<div class="s">${esc(summary)}</div>` : '') +
+      `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions">${n.decisions.length}◆</span>` : ''}</div>` +
+      chips + `</div></foreignObject>` +
+      (n.children.length ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${it.h / 2})"><title>${mapCollapsed.has(n.path) ? 'Expand' : 'Collapse'}</title>` +
+        `<circle r="9"/><text y="4.5" text-anchor="middle">${mapCollapsed.has(n.path) ? '+' : '−'}</text></g>` : '') +
       `</g>`;
   }
   svg.innerHTML = `${lines}${boxes}`;
+  svg.classList.toggle('focus', !!sel && sel.path !== state.zoom);
   if (!mapView) fitMap(); else applyMapView();
 }
 
@@ -1044,7 +1116,7 @@ function fitMap() {
 function centerMapOn(path) {
   const p = mapPos && mapPos.get(path), r = $('mapSvg').getBoundingClientRect();
   if (!p || !mapView || !r.width) return;
-  const h = mapView.w * r.height / r.width, cx = p.x + MAP.boxW / 2, cy = p.y + MAP.boxH / 2;
+  const h = mapView.w * r.height / r.width, cx = p.x + MAP.boxW / 2, cy = p.y + p.h / 2;
   if (cx > mapView.x && cx < mapView.x + mapView.w && cy > mapView.y && cy < mapView.y + h) return;
   mapView.x = cx - mapView.w / 2;
   mapView.y = cy - h / 2;
@@ -1089,14 +1161,15 @@ function centerMapOn(path) {
       if (mapCollapsed.has(p)) mapCollapsed.delete(p); else mapCollapsed.add(p);
       return renderMap();
     }
+    const chip = e.target.closest('[data-ref]');
+    if (chip) return select(chip.dataset.ref, true);
     const g = e.target.closest('.node');
     if (!g) return;
-    if (g.dataset.ref !== undefined) return select(g.dataset.ref, true);
     if (g.dataset.path !== undefined && g.dataset.path !== state.selected) select(g.dataset.path, false);
   });
   svg.addEventListener('dblclick', e => {
     if (e.target.closest('.tog')) return;
-    const g = e.target.closest('.node');
+    const g = e.target.closest('[data-ref]') || e.target.closest('.node');
     const path = g && (g.dataset.ref ?? g.dataset.path);
     if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
   });
@@ -1143,10 +1216,12 @@ function renderCard() {
   withBase(n, () => {
     h += '<section><h2>Summary</h2>' +
       (n.summary ? `<div class="summary md">${renderMarkdown(n.summary)}</div>` : '<p class="empty-note">No summary.</p>') + '</section>';
-    h += '<section><h2>Decisions</h2>' + (n.decisions.length
-      ? '<ul class="decisions md">' + n.decisions.map(d =>
-          `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
-          `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>'
+    const datedList = (items, cls) => `<ul class="decisions ${cls} md">` + items.map(d =>
+      `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
+      `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>';
+    h += '<section><h2>Requirements</h2>' + (n.requirements.length ? datedList(n.requirements, 'reqs')
+      : '<p class="empty-note">No requirements recorded. Threads copy the owner\'s requests, word for word, into the <code>## Requirements</code> block.</p>') + '</section>';
+    h += '<section><h2>Decisions</h2>' + (n.decisions.length ? datedList(n.decisions, '')
       : '<p class="empty-note">No decisions.</p>') + '</section>';
   });
 

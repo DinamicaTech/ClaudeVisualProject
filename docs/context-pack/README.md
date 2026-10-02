@@ -1,10 +1,13 @@
 ---
 title: Paquete de contexto
 depends_on: [model, format]
+threads:
+  - Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
 ---
 ## Summary
 Al hacer doble clic, copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo. Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
 El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas.
+Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
 
 ## Decisions
 - 2026-10-02 09:00 · Solo rutas: no se pega contenido de los md en el prompt.
@@ -21,3 +24,16 @@ El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas.
 - 2026-10-02 10:38 · Segundo prompt, "New sub-task" (decidido por Ronald): la persona escribe un título y se copia un prompt que pide al hilo nuevo crear un nodo hijo y trabajar en él. Incluye las rutas del nodo padre, sus ascendientes y dependencias, la plantilla del md nuevo (`status: draft`, `threads` con su enlace) y, si el padre es un fichero hoja, el paso de convertirlo en carpeta (`x.md` → `x/README.md`).
 - 2026-10-02 10:38 · El nombre del fichero del nodo hijo sale del título: minúsculas, sin acentos y con guiones (`Búsqueda de nodos` → `busqueda-de-nodos.md`).
 - 2026-10-02 10:38 · La página no crea hilos ni escribe ficheros: abrir el hilo es pegar el prompt; quien crea el nodo es el hilo.
+- 2026-10-02 11:50 · Los dos prompts piden además al hilo que copie al bloque `## Requirements` del nodo cada requisito que el propietario diga en ese hilo, literal y solo las frases que piden algo. La plantilla del nodo hijo incluye el bloque vacío.
+- 2026-10-02 18:55 · Los dos prompts piden, antes de cambiar ningún fichero, un desglose de la tarea y esperar la confirmación del propietario. El hilo lee el título y el Summary de todos los nodos (no solo los listados) y, para cada parte funcional, propone el nodo que la hará (existente o nuevo) y la línea de requisito que se escribirá en él. Se pide siempre, aunque solo afecte a un nodo, para detectar repartos equivocados (por ejemplo, un cambio de modelo de datos no asignado a `model`). Decidido por Ronald (18:42–18:49).
+- 2026-10-02 18:55 · Requisitos derivados: en los nodos afectados distintos del de la tarea se escribe "Derived from <ruta del nodo>: <lo que ese nodo debe aportar>". Las frases literales del propietario van al nodo al que pertenecen según el desglose.
+- 2026-10-02 18:55 · Cambio atómico: confirmado el desglose, el hilo cambia todos los nodos afectados en una sola rama y la sube en cuanto empieza. Si algún nodo afectado tiene una rama o PR abierto que cambia su md, no empieza: lo dice (título, fecha, enlace del hilo) y espera a que se cierre. No fusiona ni cierra trabajo ajeno sin que el propietario lo pida. Se descartó encolar cambios en nodos ocupados porque deja cambios a medias y puede bloquear nodos entre sí; también una marca `in_progress` en el md, que solo serviría subida a main y quedaría colgada si un hilo se abandona.
+- 2026-10-02 18:55 · Los nodos afectados que no son ya dependencia (declarada o heredada) se añaden a `depends_on` del nodo trabajado.
+- 2026-10-02 18:55 · La regla de cuestionar y consensuar antes de programar es solo del AGENTS.md de este repositorio, no de los prompts: cada usuario configura su forma de trabajar con su asistente.
+
+## Requirements
+- 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.
+- 2026-10-02 18:33 · La regla de cuestionar y consensuar antes de programar sí sería exclusivamente para mi AGENTS.md, no para todos los usuarios de ClaudeVisualProject, asumimos que cada usuario habrá configurado la interacción con Claude según sus preferencias personales, no podemos imponer las nuestras.
+- 2026-10-02 18:42 · Lo que sí podría ser muy útil es que al pedir un requerimiento, el prompt mostrase un desglose funcional de este requerimiento y el nodo que lo va a llevar a cabo con una solicitud de confirmación para continuar con el desarrollo o la opción de que el operador pueda acabar de definir el requerimiento o modificar la distribución/asignación de este desglose del requerimiento.
+- 2026-10-02 18:49 · Y sí, hay que indicar en el prompt que hay que acceder a todo el árbol para determinar el responsable de ejecutar cada desglose de los requerimientos.
+- 2026-10-02 18:49 · Como apunte adicional, si un nodo afectado está pendiente de commit, sería bueno ayudar al operador con un: 'Para completar esta solicitud, hay que derivar una tarea a Modelo de Datos, pero tiene pendiente cerrar el desarrollo XXXX del 17/9/2026. ¿Quieres que lo cierre? No podré ejecutar la petición hasta no tener disponible Modelo de Datos para ejecutar una nueva tarea'

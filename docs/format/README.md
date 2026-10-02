@@ -4,7 +4,7 @@ depends_on: []
 ---
 ## Summary
 La convención que permite leer una carpeta de md como un mapa del proyecto, tanto a personas como a asistentes.
-Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los dos bloques fijos y la regla de lectura de un hilo que trabaja sobre un nodo.
+Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los dos bloques fijos, el bloque opcional de requisitos y la regla de lectura de un hilo que trabaja sobre un nodo.
 
 ## Decisions
 - 2026-10-02 09:00 · Un md por nodo. Una carpeta es un nodo y su `README.md` es el documento del nodo. Cualquier otro md es un nodo hijo de su carpeta.
@@ -21,6 +21,8 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 09:00 · Regla de lectura de un hilo que trabaja sobre un nodo: leer entero el md del nodo; leer Summary y Decisions de sus ascendientes y dependencias; abrirlos enteros solo si hace falta.
 - 2026-10-02 10:38 · Campo opcional de cabecera `threads`: lista de los chats que han trabajado el nodo, una línea por chat con el formato `- Título | enlace`. El enlace suele ser una URL; si el chat no tiene URL (p. ej. una sesión local), cualquier texto que lo reabra, como `claude --resume <id>`. Decidido por Ronald.
 - 2026-10-02 10:38 · El hilo que trabaja sobre un nodo añade su propio enlace a `threads` si lo conoce.
+- 2026-10-02 11:50 · Bloque opcional `## Requirements`, después de Decisions: los requisitos que ha pedido el propietario para ese nodo, con sus palabras literales y solo las frases que piden algo, una línea por requisito con fecha y hora (mismo formato que Decisions). Lo rellena el hilo en el momento, porque después no es fiable separarlos del resto de la conversación. Decidido por Ronald (11:47).
+- 2026-10-02 18:55 · En `## Requirements` puede haber también requisitos derivados de otro nodo: "YYYY-MM-DD HH:MM · Derived from <ruta del nodo>: <lo que este nodo debe aportar>". Los escribe el hilo que trabaja en el nodo de origen, tras confirmar el desglose (ver `context-pack`).
 
 ## Ejemplo
 ```markdown
@@ -36,5 +38,8 @@ Pantalla de entrada. Autentica al usuario y abre la última empresa usada.
 ## Decisions
 - 2026-10-02 09:15 · Acceso con email y contraseña; sin login social en la v1.
 - 2026-10-02 09:15 · Bloqueo tras 5 intentos fallidos, delegado en el motor de seguridad.
+
+## Requirements
+- 2026-10-02 09:10 · Quiero entrar con mi email y no con un usuario aparte.
 ```
 
