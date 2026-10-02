@@ -12,3 +12,4 @@ Lo que viene después de la v1, apuntado aquí para que no se pierda ni se const
 - Avisos de desactualización: documentos que probablemente ya no reflejan la realidad (fechas, historial git, dependientes cambiados después que el documento).
 - Comando que genere un HTML autónomo con los md dentro, para publicarlo (p. ej. en GitHub Pages) o usarlo en otros navegadores.
 - Rol de director: ante un requerimiento, un hilo localiza los nodos implicados, reparte el trabajo en subagentes, verifica y actualiza los documentos.
+- Poder indicar dónde está la carpeta de docs dentro del repo cuando no está en la raíz (hoy el paquete de contexto supone que sí).

@@ -15,3 +15,9 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-02 09:13 · Clic selecciona el nodo y muestra su ficha; doble clic genera el paquete de contexto.
 - 2026-10-02 09:19 · Los nodos obsoletos y sus hijos se muestran en gris.
 - 2026-10-02 09:13 · Los nodos con avisos de formato aparecen marcados.
+- 2026-10-02 09:46 · Las entradas de referencia de un nodo son sus dependencias declaradas (no las heredadas) y van antes de sus hijos, en el orden de `depends_on`. Una dependencia a un nodo que no existe se muestra en rojo.
+- 2026-10-02 09:46 · Los hijos se ordenan alfabéticamente por el nombre de su fichero o carpeta.
+- 2026-10-02 09:46 · Al abrir por primera vez se despliegan la raíz y el primer nivel. El triángulo despliega o pliega; el clic en el nombre solo selecciona.
+- 2026-10-02 09:46 · Doble clic sobre una entrada de referencia copia el paquete de contexto del nodo real.
+- 2026-10-02 09:46 · Las carpetas sin `README.md` se muestran en cursiva; los nodos `draft` llevan una etiqueta.
+- 2026-10-02 10:26 · Se añade a la v1 el mapa (`viewer/map`): el mismo árbol dibujado con cajas, vista por defecto; el árbol pasa a ser la vista alternativa. Sigue sin haber vista de grafo.

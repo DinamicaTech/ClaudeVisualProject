@@ -1,10 +1,13 @@
 ---
 title: AI Visual Project Management (nombre provisional)
 depends_on: []
+threads:
+  - Diseño y arquitectura | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLJTJVZTomXFc5QL5nedhLKa
+  - Desarrollo de producto v1 | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLWVKdXpCWWjVopDpDNCtGxN
 ---
 ## Summary
 Herramienta que convierte una carpeta de documentos md de un repositorio git en un mapa visual y navegable de un proyecto desarrollado con IA.
-La persona recorre un árbol de nodos, ve el resumen funcional y las decisiones de diseño de cada nodo, y arranca un hilo nuevo sobre cualquier nodo con el contexto adecuado.
+La persona recorre un mapa (o un árbol) de nodos, ve el resumen funcional y las decisiones de diseño de cada nodo, y arranca un hilo nuevo sobre cualquier nodo con el contexto adecuado.
 No depende de ningún asistente: solo lee ficheros md. La herramienta gestionará su propio desarrollo en cuanto sea posible.
 
 ## Decisions
@@ -16,6 +19,8 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-02 09:13 · Se navega como árbol, la estructura más humana; un nodo del que dependen otros aparece también como referencia bajo cada uno de ellos. Sin vista de grafo en la v1.
 - 2026-10-02 09:00 · El paquete de contexto son solo rutas: el hilo nuevo lee los ficheros por sí mismo; no se pega contenido.
 - 2026-10-02 09:00 · Idioma: el producto publicado (código, comentarios, UI, documentación pública) en inglés; los documentos de desarrollo de este proyecto en español.
+- 2026-10-02 09:46 · La v1 está construida: `index.html` en la raíz del repositorio.
+- 2026-10-02 10:26 · Se añade a la v1 una vista de mapa (`viewer/map`): la jerarquía dibujada con cajas, de izquierda a derecha, por defecto; el árbol sigue disponible.
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:

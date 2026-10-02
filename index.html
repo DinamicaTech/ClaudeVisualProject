@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Visual Project</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #6b7078; --line: #e3e3df;
+    --accent: #3a5ccc; --accent-soft: #e8edfb; --warn: #b26a00; --warn-soft: #fff4e0;
+    --error: #c0392b; --obsolete: #a0a4aa; --draft: #7a5ab5; --ref: #4f7a6a;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --panel: #1f2023; --text: #e6e6e3; --muted: #9a9ea5; --line: #2f3135;
+      --accent: #8aa4ff; --accent-soft: #263055; --warn: #f0b252; --warn-soft: #3a2e17;
+      --error: #ff7b6e; --obsolete: #6d7178; --draft: #b9a0ea; --ref: #86c2ab;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  button {
+    font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.link { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; text-align: left; }
+  button.link:hover { text-decoration: underline; }
+  code, pre { font-family: var(--mono); font-size: 12.5px; }
+  code { background: var(--accent-soft); padding: 0 4px; border-radius: 4px; }
+  pre { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow: auto; }
+  pre code { background: none; padding: 0; }
+
+  header {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap;
+  }
+  header .app { font-weight: 600; }
+  header .folder { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
+  header .spacer { flex: 1; }
+  header label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+  #warnBtn { color: var(--warn); border-color: var(--warn); }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #tree { width: 380px; min-width: 260px; overflow: auto; border-right: 1px solid var(--line); padding: 8px 0; background: var(--panel); }
+  #card { flex: 1; overflow: auto; padding: 20px 28px; }
+  @media (max-width: 760px) {
+    main { flex-direction: column; }
+    #tree { width: auto; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 4px 12px; }
+  .seg button.on { background: var(--accent); color: #fff; }
+
+  #map { position: relative; flex: 0 0 62%; min-width: 300px; border-right: 1px solid var(--line); background: var(--panel); overflow: hidden; }
+  #mapSvg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  #mapSvg.dragging { cursor: grabbing; }
+  #map .mapctl { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  #map .legend { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted); background: var(--panel); padding: 2px 6px; border-radius: 4px; }
+  #map .legend .lh { color: var(--muted); } #map .legend .ld { color: var(--ref); }
+  .node { cursor: pointer; }
+  .node rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+  .node text { fill: var(--text); font-size: 13px; }
+  .node:hover rect { stroke: var(--accent); }
+  .node.selected rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
+  .node.draft rect { stroke-dasharray: 5 3; stroke: var(--draft); }
+  .node.placeholder rect { stroke-dasharray: 3 3; }
+  .node.placeholder text { font-style: italic; fill: var(--muted); }
+  .node.obsolete text, .node.obsolete-inherited text { fill: var(--obsolete); }
+  .node.obsolete text.t { text-decoration: line-through; }
+  .node text.wb { fill: var(--warn); font-size: 12px; }
+  .node text.db { fill: var(--draft); font-size: 11px; }
+  .node.ref rect { stroke: var(--ref); stroke-dasharray: 4 3; fill: var(--bg); }
+  .node.ref text { fill: var(--ref); font-style: italic; }
+  .node.ref.missing rect { stroke: var(--error); } .node.ref.missing text { fill: var(--error); }
+  .node.ref.same rect { stroke-width: 2.5; stroke-dasharray: none; fill: var(--accent-soft); }
+  .tog circle { fill: var(--panel); stroke: var(--muted); }
+  .tog text { fill: var(--muted); font-size: 13px; font-weight: 600; }
+  .tog:hover circle { stroke: var(--accent); }
+  path.h { fill: none; stroke: var(--muted); stroke-width: 1.3; opacity: .6; }
+  path.r { fill: none; stroke: var(--ref); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: .7; }
+
+  .row {
+    display: flex; align-items: center; gap: 4px; padding: 2px 10px 2px 0; cursor: pointer;
+    white-space: nowrap; user-select: none;
+  }
+  .row:hover { background: var(--accent-soft); }
+  .row.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .twisty { width: 16px; flex: none; text-align: center; color: var(--muted); font-size: 10px; }
+  .row .title { overflow: hidden; text-overflow: ellipsis; }
+  .row.placeholder .title { font-style: italic; color: var(--muted); }
+  .row.obsolete .title { color: var(--obsolete); text-decoration: line-through; }
+  .row.obsolete-inherited .title { color: var(--obsolete); }
+  .row.ref .title { color: var(--ref); font-style: italic; }
+  .row.ref .arrow { color: var(--ref); font-size: 12px; }
+  .row.ref.missing .title, .row.ref.missing .arrow { color: var(--error); }
+  .badge { font-size: 11px; border-radius: 10px; padding: 0 6px; flex: none; }
+  .badge.warn { color: var(--warn); background: var(--warn-soft); }
+  .badge.draft { color: var(--draft); border: 1px solid var(--draft); }
+
+  #card h1 { font-size: 22px; margin: 0 0 2px; }
+  #card .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  #card .actions { display: flex; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+  #card section { margin-top: 22px; }
+  #card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+  .status { display: inline-block; font-size: 12px; border-radius: 10px; padding: 0 8px; margin-left: 8px; vertical-align: middle; }
+  .status.draft { color: var(--draft); border: 1px solid var(--draft); }
+  .status.obsolete { color: var(--obsolete); border: 1px solid var(--obsolete); }
+  .banner { margin-top: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--obsolete); color: var(--muted); }
+  .warnings { margin: 14px 0 0; padding: 8px 12px 8px 30px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
+  .warnings li { margin: 2px 0; }
+  .summary { font-size: 15px; }
+  .summary p:first-child { margin-top: 0; }
+  .decisions { list-style: none; padding: 0; margin: 0; }
+  .decisions li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+  .decisions .when { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; padding-top: 1px; }
+  .decisions .when.none { color: var(--warn); }
+  .links { list-style: none; padding: 0; margin: 0; }
+  .links li { padding: 2px 0; }
+  .links a { color: var(--accent); }
+  .links .via, .links .p { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .links .p { font-family: var(--mono); }
+  .links .missing { color: var(--error); }
+  .empty-note { color: var(--muted); }
+
+  #welcome { max-width: 560px; margin: 12vh auto; padding: 0 20px; text-align: center; }
+  #welcome h1 { font-size: 24px; }
+  #welcome p { color: var(--muted); }
+  #welcome .buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  #welcome .error { color: var(--error); }
+
+  dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); padding: 0; width: min(860px, 92vw); max-height: 86vh; }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  dialog .dhead { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+  dialog .dhead .t { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  dialog .dbody { padding: 6px 22px 20px; }
+  dialog textarea { width: 100%; height: 320px; font-family: var(--mono); font-size: 12.5px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  #subTitle { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  .md table { border-collapse: collapse; }
+  .md th, .md td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+  .md blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
+  .md a { color: var(--accent); }
+  .wgroup { margin: 12px 0; }
+  .wgroup ul { margin: 4px 0; color: var(--warn); }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: 90vw;
+    background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 8px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  #toast.show { opacity: .95; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <span class="app">Claude Visual Project</span>
+  <span class="folder" id="folderName"></span>
+  <span class="spacer"></span>
+  <button id="warnBtn" hidden></button>
+  <div class="seg" id="viewSeg" hidden><button data-view="map">Map</button><button data-view="tree">Tree</button></div>
+  <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
+    <input type="checkbox" id="refsToggle" checked> References
+  </label>
+  <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
+  <button id="openBtn">Open folder</button>
+</header>
+
+<main id="app" hidden>
+  <nav id="tree" role="tree" aria-label="Project nodes"></nav>
+  <div id="map" hidden>
+    <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
+    <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
+    <div class="legend"><span class="lh">── contains</span> &nbsp; <span class="ld">╌ ↗ depends on (repeated box, click to jump)</span> · wheel to zoom, drag to move</div>
+  </div>
+  <div id="card"></div>
+</main>
+
+<div id="welcome">
+  <h1>Map of your project docs</h1>
+  <p>Open the <code>docs</code> folder of your repository. The page reads the Markdown files directly from your disk: nothing is copied or uploaded. Press F5 to see changes.</p>
+  <p id="unsupported" class="error" hidden>This browser cannot read a local folder. Please use Chrome or Edge.</p>
+  <p id="loadError" class="error" hidden></p>
+  <div class="buttons">
+    <button id="reopenBtn" class="primary" hidden></button>
+    <button id="welcomeOpenBtn">Open folder</button>
+  </div>
+</div>
+
+<dialog id="docDialog">
+  <div class="dhead"><span class="t" id="docTitle"></span><button data-close>Close</button></div>
+  <div class="dbody md" id="docBody"></div>
+</dialog>
+
+<dialog id="packDialog">
+  <div class="dhead"><span class="t">Context pack</span><button data-close>Close</button></div>
+  <div class="dbody">
+    <p class="empty-note">The clipboard is not available. Copy the text below and paste it in a new thread.</p>
+    <textarea id="packText" readonly></textarea>
+  </div>
+</dialog>
+
+<dialog id="subDialog">
+  <div class="dhead"><span class="t">New sub-task under <span id="subParent"></span></span><button data-close>Close</button></div>
+  <form class="dbody" id="subForm">
+    <p class="empty-note">The prompt asks a new thread to create a child node with this title and then work on it.</p>
+    <input id="subTitle" placeholder="Sub-task title" autocomplete="off">
+    <p><button class="primary" type="submit">Copy prompt</button></p>
+  </form>
+</dialog>
+
+<dialog id="warnDialog">
+  <div class="dhead"><span class="t">Format warnings</span><button data-close>Close</button></div>
+  <div class="dbody" id="warnBody"></div>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+const state = {
+  dir: null,          // FileSystemDirectoryHandle of the docs folder
+  rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
+  nodes: new Map(),   // node path -> node
+  selected: null,     // selected node path
+  expanded: new Set(),
+  showRefs: true,
+  view: 'map',        // 'map' or 'tree'
+};
+
+const $ = id => document.getElementById(id);
+const READ_RULE =
+  'Reading rule: read the node file in full. For its ancestors and dependencies, read only the ' +
+  'Summary and Decisions blocks; open them in full only if needed.';
+const UPDATE_RULE =
+  'Before finishing, update the Summary and Decisions of every node you changed. ' +
+  'Each decision line starts with "YYYY-MM-DD HH:MM · ".';
+
+// ---------------------------------------------------------------------------
+// Folder access (File System Access API) and handle persistence for F5
+// ---------------------------------------------------------------------------
+
+const DB_NAME = 'claude-visual-project';
+const STORE = 'handles';
+
+function idb(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(DB_NAME, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore(STORE);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const tx = open.result.transaction(STORE, mode);
+      const req = fn(tx.objectStore(STORE));
+      tx.oncomplete = () => { open.result.close(); resolve(req && req.result); };
+      tx.onerror = () => { open.result.close(); reject(tx.error); };
+    };
+  });
+}
+const saveHandle = h => idb('readwrite', s => s.put(h, 'docs')).catch(() => {});
+const loadHandle = () => idb('readonly', s => s.get('docs')).catch(() => null);
+
+async function pickFolder() {
+  let dir;
+  try {
+    dir = await window.showDirectoryPicker({ id: 'docs', mode: 'read' });
+  } catch (e) {
+    if (e.name !== 'AbortError') showLoadError(e);
+    return;
+  }
+  await saveHandle(dir);
+  await openDir(dir);
+}
+
+async function reopenStored(dir) {
+  try {
+    if (await dir.requestPermission({ mode: 'read' }) !== 'granted') return;
+    await openDir(dir);
+  } catch (e) {
+    showLoadError(e);
+  }
+}
+
+async function openDir(dir) {
+  const sameFolder = state.dir && state.rootName === dir.name;
+  state.dir = dir;
+  state.rootName = dir.name;
+  if (!sameFolder) restoreViewState();
+  await reload();
+}
+
+async function readFolder(dir) {
+  const files = [];
+  async function walk(handle, prefix) {
+    for await (const [name, entry] of handle.entries()) {
+      if (name.startsWith('.') || name === 'node_modules') continue;
+      if (entry.kind === 'directory') await walk(entry, prefix + name + '/');
+      else if (/\.md$/i.test(name)) files.push({ path: prefix + name, text: await (await entry.getFile()).text() });
+    }
+  }
+  await walk(dir, '');
+  return files;
+}
+
+async function reload() {
+  try {
+    const files = await readFolder(state.dir);
+    state.nodes = buildModel(files, state.rootName);
+  } catch (e) {
+    showLoadError(e);
+    return;
+  }
+  if (!state.nodes.has(state.selected)) state.selected = '';
+  if (state.expanded.size === 0) {
+    state.expanded.add('');
+    for (const c of state.nodes.get('').children) state.expanded.add(c.path);
+  }
+  $('welcome').hidden = true;
+  $('app').hidden = false;
+  for (const id of ['reloadBtn', 'refsToggleLabel', 'viewSeg']) $(id).hidden = false;
+  $('folderName').textContent = state.rootName + '/';
+  document.title = state.nodes.get('').title + ' · Claude Visual Project';
+  renderAll();
+}
+
+function showLoadError(e) {
+  $('app').hidden = true;
+  $('welcome').hidden = false;
+  $('loadError').hidden = false;
+  $('loadError').textContent = 'Could not read the folder: ' + (e && e.message || e);
+}
+
+// View state (selection, expanded nodes, reference switch) survives F5.
+function viewKey() { return 'cvp:view:' + state.rootName; }
+function saveViewState() {
+  try {
+    localStorage.setItem(viewKey(), JSON.stringify({
+      selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view,
+    }));
+  } catch (e) { /* storage unavailable: nothing to keep */ }
+}
+function restoreViewState() {
+  state.selected = '';
+  state.expanded = new Set();
+  state.showRefs = true;
+  state.view = 'map';
+  mapView = null;
+  try {
+    const v = JSON.parse(localStorage.getItem(viewKey()) || 'null');
+    if (v) {
+      state.selected = v.selected ?? '';
+      state.expanded = new Set(v.expanded || []);
+      state.showRefs = v.showRefs !== false;
+      state.view = v.view === 'tree' ? 'tree' : 'map';
+    }
+  } catch (e) { /* ignore */ }
+  $('refsToggle').checked = state.showRefs;
+}
+
+// ---------------------------------------------------------------------------
+// Parsing one md file
+// ---------------------------------------------------------------------------
+
+const STATUSES = ['draft', 'stable', 'obsolete'];
+
+function unquote(s) {
+  s = s.trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) return s.slice(1, -1);
+  return s;
+}
+
+// Minimal YAML subset: `key: value`, `key: [a, b]` and block lists (`- a`).
+function parseFrontMatter(lines) {
+  const fm = {};
+  let key = null;
+  for (const raw of lines) {
+    if (!raw.trim() || raw.trim().startsWith('#')) continue;
+    const item = raw.match(/^\s*-\s+(.*)$/);
+    if (item && key) {
+      if (!Array.isArray(fm[key])) fm[key] = [];
+      fm[key].push(unquote(item[1]));
+      continue;
+    }
+    const m = raw.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
+    if (!m) continue;
+    key = m[1];
+    const v = m[2].trim();
+    if (v.startsWith('[')) fm[key] = v.replace(/^\[|\]$/g, '').split(',').map(unquote).filter(Boolean);
+    else if (v === '') fm[key] = [];
+    else fm[key] = unquote(v);
+  }
+  return fm;
+}
+
+// `threads` entries: "Title | link". The link is a URL or any text that reopens the chat
+// (e.g. `claude --resume <id>`). An entry without " | " is taken as a bare link.
+function parseThreads(v) {
+  if (typeof v === 'string') v = v ? [v] : [];
+  return (v || []).map(e => {
+    const i = e.lastIndexOf(' | ');
+    return i < 0 ? { title: '', link: e.trim() } : { title: e.slice(0, i).trim(), link: e.slice(i + 3).trim() };
+  }).filter(t => t.link);
+}
+
+function normalizeNodePath(p) {
+  return String(p).trim().replace(/\\/g, '/').replace(/^\.?\//, '').replace(/\.md$/i, '')
+    .replace(/(^|\/)README$/i, '').replace(/\/+$/, '');
+}
+
+function parseDoc(text) {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  const warnings = [];
+  let fm = {}, bodyStart = 0;
+  if (lines[0] !== undefined && lines[0].trim() === '---') {
+    const end = lines.findIndex((l, k) => k > 0 && l.trim() === '---');
+    if (end > 0) { fm = parseFrontMatter(lines.slice(1, end)); bodyStart = end + 1; }
+  }
+  if (bodyStart === 0) warnings.push('Missing front matter: the file must start with a --- block holding title and depends_on.');
+  else if (!fm.title || Array.isArray(fm.title)) warnings.push('Missing title in the front matter.');
+
+  // Level-2 headings outside code fences.
+  const body = lines.slice(bodyStart);
+  const sections = [];
+  let fence = null;
+  body.forEach((l, k) => {
+    const f = l.match(/^\s*(```|~~~)/);
+    if (f) { if (!fence) fence = f[1]; else if (f[1] === fence) fence = null; return; }
+    if (fence) return;
+    const h = l.match(/^##\s+(.*?)\s*#*\s*$/);
+    if (h) sections.push({ name: h[1].trim(), line: k });
+  });
+  const sectionText = idx => {
+    const end = idx + 1 < sections.length ? sections[idx + 1].line : body.length;
+    return body.slice(sections[idx].line + 1, end).join('\n').trim();
+  };
+  const iS = sections.findIndex(s => /^summary$/i.test(s.name));
+  const iD = sections.findIndex(s => /^decisions$/i.test(s.name));
+  if (iS < 0) warnings.push('Missing the ## Summary block.');
+  if (iD < 0) warnings.push('Missing the ## Decisions block.');
+  if ((iS >= 0 && iS !== 0) || (iD >= 0 && iD !== (iS >= 0 ? 1 : 0)) || (iS >= 0 && iD >= 0 && iD < iS))
+    warnings.push('Fixed blocks out of order: ## Summary and ## Decisions must be the first two sections, in that order.');
+
+  const summary = iS >= 0 ? sectionText(iS) : '';
+  if (summary.split('\n').filter(l => l.trim()).length > 5) warnings.push('Summary is longer than 5 lines.');
+
+  const decisions = [];
+  let undated = 0;
+  if (iD >= 0) {
+    for (const l of sectionText(iD).split('\n')) {
+      if (!l.trim()) continue;
+      const it = l.match(/^[-*+]\s+(.*)$/);
+      if (!it) { if (decisions.length) decisions[decisions.length - 1].text += '\n' + l.trim(); continue; }
+      const d = it[1].match(/^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s*·\s*(.*)$/);
+      if (d) decisions.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
+      else { decisions.push({ when: '', text: it[1] }); undated++; }
+    }
+  }
+  if (undated) warnings.push(`${undated} decision line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
+
+  let status = 'stable';
+  if (typeof fm.status === 'string' && fm.status) {
+    if (STATUSES.includes(fm.status.toLowerCase())) status = fm.status.toLowerCase();
+    else warnings.push(`Unknown status "${fm.status}"; treated as stable. Use draft, stable or obsolete.`);
+  }
+  let deps = fm.depends_on;
+  if (typeof deps === 'string') deps = deps ? [deps] : [];
+  deps = [...new Set((deps || []).map(normalizeNodePath).filter(Boolean))];
+
+  return {
+    title: typeof fm.title === 'string' ? fm.title : '',
+    deps, status,
+    replacedBy: typeof fm.replaced_by === 'string' && fm.replaced_by ? normalizeNodePath(fm.replaced_by) : null,
+    threads: parseThreads(fm.threads),
+    summary, decisions, warnings,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Model: nodes, hierarchy, dependencies, warnings
+// ---------------------------------------------------------------------------
+
+const isReadme = f => /(^|\/)readme\.md$/i.test(f);
+const parentPathOf = p => p === '' ? null : p.split('/').slice(0, -1).join('/');
+const lastSegment = p => p.split('/').pop();
+
+function nodePathOf(filePath) {
+  const parts = filePath.split('/');
+  const name = parts.pop();
+  if (!/^readme\.md$/i.test(name)) parts.push(name.replace(/\.md$/i, ''));
+  return parts.join('/');
+}
+
+function makeNode(path, file, text) {
+  const n = {
+    path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
+    placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null,
+    summary: '', decisions: [], title: '', threads: [],
+  };
+  if (file) Object.assign(n, parseDoc(text));
+  return n;
+}
+
+function buildModel(files, rootName) {
+  const nodes = new Map();
+  files.sort((a, b) => a.path.localeCompare(b.path));
+  for (const f of files) {
+    const p = nodePathOf(f.path);
+    const prev = nodes.get(p);
+    if (!prev) { nodes.set(p, makeNode(p, f.path, f.text)); continue; }
+    const useNew = isReadme(f.path) && !isReadme(prev.file);
+    const kept = useNew ? f.path : prev.file, dropped = useNew ? prev.file : f.path;
+    const n = useNew ? makeNode(p, f.path, f.text) : prev;
+    if (useNew) { n.warnings.push(...prev.warnings.filter(w => w.startsWith('Two files'))); nodes.set(p, n); }
+    n.warnings.push(`Two files define this node: ${kept} and ${dropped}. Only ${kept} is used.`);
+  }
+
+  // Folders without README.md become placeholder nodes so the hierarchy stays complete.
+  if (!nodes.has('')) nodes.set('', makeNode('', null, ''));
+  for (const p of [...nodes.keys()]) {
+    for (let q = parentPathOf(p); q !== null && !nodes.has(q); q = parentPathOf(q)) nodes.set(q, makeNode(q, null, ''));
+  }
+  for (const n of nodes.values()) {
+    if (n.placeholder) n.warnings.push(n.path === '' && nodes.size === 1
+      ? 'No Markdown files found in this folder.'
+      : 'This folder has no README.md, so the node has no document.');
+    if (!n.title) n.title = n.path === '' ? rootName : lastSegment(n.path);
+  }
+
+  // Hierarchy.
+  for (const n of nodes.values()) {
+    const pp = parentPathOf(n.path);
+    if (pp !== null) { n.parent = nodes.get(pp); n.parent.children.push(n); }
+  }
+  for (const n of nodes.values()) n.children.sort((a, b) => lastSegment(a.path).localeCompare(lastSegment(b.path)));
+
+  // Obsolete status: a node is obsolete if it or any ancestor is.
+  for (const n of nodes.values()) {
+    n.obsoleteBy = null;
+    for (let a = n; a; a = a.parent) if (a.status === 'obsolete') { n.obsoleteBy = a; break; }
+    if (n.status === 'obsolete' && n.replacedBy && !nodes.has(n.replacedBy))
+      n.warnings.push(`replaced_by points to "${n.replacedBy}", which does not exist.`);
+  }
+
+  // Direct dependencies and dependents.
+  for (const n of nodes.values()) {
+    for (const d of n.deps) {
+      const t = nodes.get(d);
+      n.depLinks.push({ path: d, node: t || null });
+      if (!t) { n.warnings.push(`Depends on "${d}", which does not exist.`); continue; }
+      if (t !== n) t.dependents.push(n);
+      if (t.obsoleteBy) {
+        const r = replacementOf(t, nodes);
+        n.warnings.push(`Depends on an obsolete node: "${d}"` + (r ? `; replaced by "${r.path}".` : '.'));
+      }
+    }
+  }
+  for (const n of nodes.values()) n.dependents.sort((a, b) => a.path.localeCompare(b.path));
+
+  // Dependencies inherited from ancestors (root first).
+  for (const n of nodes.values()) {
+    const seen = new Set([n.path, ...n.deps]);
+    const ancestors = ancestorsOf(n);
+    for (const a of ancestors) seen.add(a.path);
+    for (const a of ancestors) for (const d of a.deps) {
+      if (seen.has(d) || !nodes.has(d)) continue;
+      seen.add(d);
+      n.inherited.push({ node: nodes.get(d), via: a });
+    }
+  }
+
+  markCycles(nodes);
+  return nodes;
+}
+
+function replacementOf(n, nodes) {
+  const src = n.obsoleteBy;
+  return src && src.replacedBy && nodes.has(src.replacedBy) ? nodes.get(src.replacedBy) : null;
+}
+
+function ancestorsOf(n) {
+  const out = [];
+  for (let a = n.parent; a; a = a.parent) out.unshift(a);
+  return out;
+}
+
+// Tarjan's strongly connected components over direct dependencies.
+function markCycles(nodes) {
+  let index = 0;
+  const idx = new Map(), low = new Map(), onStack = new Set(), stack = [];
+  const visit = v => {
+    idx.set(v, index); low.set(v, index); index++;
+    stack.push(v); onStack.add(v);
+    for (const l of v.depLinks) {
+      const w = l.node;
+      if (!w) continue;
+      if (!idx.has(w)) { visit(w); low.set(v, Math.min(low.get(v), low.get(w))); }
+      else if (onStack.has(w)) low.set(v, Math.min(low.get(v), idx.get(w)));
+    }
+    if (low.get(v) === idx.get(v)) {
+      const comp = [];
+      let w;
+      do { w = stack.pop(); onStack.delete(w); comp.push(w); } while (w !== v);
+      const selfLoop = comp.length === 1 && v.deps.includes(v.path);
+      if (comp.length > 1 || selfLoop) {
+        const names = comp.map(c => `"${c.path || '(root)'}"`).sort().join(', ');
+        for (const c of comp) c.warnings.push(selfLoop ? 'Depends on itself.' : `Dependency cycle between ${names}.`);
+      }
+    }
+  };
+  for (const n of nodes.values()) if (!idx.has(n)) visit(n);
+}
+
+// ---------------------------------------------------------------------------
+// Context pack
+// ---------------------------------------------------------------------------
+
+function repoPath(n) {
+  return (state.rootName ? state.rootName + '/' : '') + n.file;
+}
+
+const THREAD_RULE =
+  'If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
+  'as a line `  - <short title> | <link>`.';
+
+// Files a thread working on node n must know: the node, its ancestors and its dependencies.
+function packFiles(n, nodeLabel) {
+  const lines = ['Files, with paths relative to the repository root:'];
+  lines.push(n.file ? `- ${nodeLabel}: ${repoPath(n)}` : `- ${nodeLabel}: ${state.rootName}/${n.path}/ (folder without README.md)`);
+  const ancestors = ancestorsOf(n).filter(a => a.file);
+  if (ancestors.length) {
+    lines.push('- Ancestors, from the root:');
+    for (const a of ancestors) lines.push(`  - ${repoPath(a)}`);
+  }
+  const deps = [
+    ...n.depLinks.filter(l => l.node && l.node !== n && l.node.file && !ancestors.includes(l.node)).map(l => l.node),
+    ...n.inherited.filter(i => i.node.file).map(i => i.node),
+  ];
+  if (deps.length) {
+    lines.push('- Dependencies, including those inherited from ancestors:');
+    for (const d of deps) lines.push(`  - ${repoPath(d)}`);
+  }
+  return lines;
+}
+
+function obsoleteWarning(n) {
+  if (!n.obsoleteBy) return [];
+  const r = replacementOf(n, state.nodes);
+  const why = n.obsoleteBy === n ? 'This node is obsolete' : `This node is obsolete because its ancestor "${n.obsoleteBy.title}" is obsolete`;
+  return [`WARNING: ${why}.` + (r ? ` It has been replaced by "${r.title}" (${r.file ? repoPath(r) : r.path}).` : ''), ''];
+}
+
+function contextPack(n) {
+  return [
+    ...obsoleteWarning(n),
+    `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
+    ...packFiles(n, 'Node'),
+    '', READ_RULE, UPDATE_RULE, THREAD_RULE, '', 'Task: ',
+  ].join('\n');
+}
+
+function slugify(t) {
+  return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'new-node';
+}
+
+// Prompt for a new thread that first creates a child node of n, then works on it.
+function subTaskPack(n, title) {
+  const slug = slugify(title);
+  const childPath = n.path ? `${n.path}/${slug}` : slug;
+  const prefix = state.rootName ? state.rootName + '/' : '';
+  const isLeafFile = n.file && !isReadme(n.file);
+  const folder = prefix + (n.path ? n.path + '/' : '');
+  const steps = [];
+  if (isLeafFile) steps.push(`Move ${repoPath(n)} to ${folder}README.md, so the parent becomes a folder. Its node path (${n.path}) does not change.`);
+  if (state.nodes.has(childPath)) steps.push(`Note: a node ${childPath} already exists; pick a different file name.`);
+  steps.push(`Create ${folder}${slug}.md with this content, then fill in its Summary:`);
+  return [
+    ...obsoleteWarning(n),
+    `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
+    `The sub-task is a new node, ${childPath}, child of that node.`, '',
+    ...packFiles(n, 'Parent node'), '',
+    'First:',
+    ...steps.map((t, i) => `${i + 1}. ${t}`), '',
+    '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
+    '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
+    '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '```', '',
+    'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
+    'Then work on the sub-task in that node.', '',
+    READ_RULE, UPDATE_RULE, '', 'Task: ',
+  ].join('\n');
+}
+
+async function copyText(text, what) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`${what} copied. Paste it in a new thread.`);
+  } catch (e) {
+    $('packText').value = text;
+    $('packDialog').showModal();
+    $('packText').select();
+  }
+}
+
+function copyPack(n) { return copyText(contextPack(n), `Context pack for "${n.title}"`); }
+
+// ---------------------------------------------------------------------------
+// Markdown rendering (small subset, enough for project docs)
+// ---------------------------------------------------------------------------
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+let mdBaseDir = ''; // folder (relative to docs root) of the file being rendered, for relative links
+
+function resolveLink(href) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return null;
+  const parts = (mdBaseDir ? mdBaseDir.split('/') : []);
+  for (const seg of href.split('#')[0].split('/')) {
+    if (seg === '..') parts.pop(); else if (seg && seg !== '.') parts.push(seg);
+  }
+  const p = normalizeNodePath(parts.join('/'));
+  return state.nodes.has(p) ? p : null;
+}
+
+function inline(src) {
+  const codes = [];
+  let s = src.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  s = esc(s);
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, href) => {
+    const raw = href.replace(/&amp;/g, '&');
+    const node = resolveLink(raw);
+    if (node !== null) return `<a href="#" data-node="${esc(node)}">${t}</a>`;
+    if (/^(https?:|mailto:)/i.test(raw)) return `<a href="${href}" target="_blank" rel="noopener">${t}</a>`;
+    return t;
+  });
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\w)/g, '$1<em>$2</em>');
+  s = s.replace(/(^|[^\w])_([^_\s][^_]*?)_(?!\w)/g, '$1<em>$2</em>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[+i])}</code>`);
+}
+
+const LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+const BLOCK_START = /^\s*(#{1,6}\s|```|~~~|>|\|)|^(\s*)([-*+]|\d+[.)])\s+/;
+
+function renderList(items) {
+  let out = '';
+  const stack = [];
+  for (const it of items) {
+    while (stack.length > 1 && it.indent < stack[stack.length - 1].indent) out += `</li></${stack.pop().tag}>`;
+    const top = stack[stack.length - 1];
+    if (!top || it.indent > top.indent) {
+      const tag = it.ordered ? 'ol' : 'ul';
+      stack.push({ indent: it.indent, tag });
+      out += `<${tag}>`;
+    } else out += '</li>';
+    out += `<li>${it.text.split('\n').map(inline).join('<br>')}`;
+  }
+  while (stack.length) out += `</li></${stack.pop().tag}>`;
+  return out;
+}
+
+function renderMarkdown(md) {
+  const lines = md.replace(/\r\n?/g, '\n').split('\n');
+  let html = '', i = 0, m;
+  while (i < lines.length) {
+    const line = lines[i];
+    if ((m = line.match(/^\s*(```|~~~)/))) {
+      const buf = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith(m[1])) buf.push(lines[i++]);
+      i++;
+      html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`;
+    } else if (!line.trim()) {
+      i++;
+    } else if ((m = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/))) {
+      html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;
+      i++;
+    } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
+      html += '<hr>';
+      i++;
+    } else if (/^\s*>/.test(line)) {
+      const buf = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ''));
+      html += `<blockquote>${renderMarkdown(buf.join('\n'))}</blockquote>`;
+    } else if (/^\s*\|/.test(line)) {
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      const isSep = r => /^[\s|:-]+$/.test(r) && r.includes('-');
+      const hasHead = rows.length > 1 && isSep(rows[1]);
+      const cells = r => r.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+      html += '<table>' + rows.map((r, k) => {
+        if (hasHead && k === 1) return '';
+        const tag = hasHead && k === 0 ? 'th' : 'td';
+        return '<tr>' + cells(r).map(c => `<${tag}>${inline(c)}</${tag}>`).join('') + '</tr>';
+      }).join('') + '</table>';
+    } else if (LIST_RE.test(line)) {
+      const items = [];
+      while (i < lines.length) {
+        const l = lines[i];
+        const im = l.match(LIST_RE);
+        if (im) { items.push({ indent: im[1].replace(/\t/g, '  ').length, ordered: /\d/.test(im[2]), text: im[3] }); i++; }
+        else if (l.trim() && /^\s+/.test(l) && items.length) { items[items.length - 1].text += '\n' + l.trim(); i++; }
+        else break;
+      }
+      html += renderList(items);
+    } else {
+      const buf = [];
+      while (i < lines.length && lines[i].trim() && (buf.length === 0 || !BLOCK_START.test(lines[i]))) buf.push(lines[i++]);
+      html += `<p>${buf.map(inline).join('<br>')}</p>`;
+    }
+  }
+  return html;
+}
+
+function withBase(n, fn) {
+  mdBaseDir = n.file ? n.file.split('/').slice(0, -1).join('/') : n.path;
+  try { return fn(); } finally { mdBaseDir = ''; }
+}
+
+// ---------------------------------------------------------------------------
+// Tree
+// ---------------------------------------------------------------------------
+
+function renderAll() {
+  $('tree').hidden = state.view !== 'tree';
+  $('map').hidden = state.view !== 'map';
+  for (const b of document.querySelectorAll('#viewSeg button')) b.classList.toggle('on', b.dataset.view === state.view);
+  if (state.view === 'tree') renderTree(); else renderMap();
+  renderCard();
+  renderWarningCount();
+  saveViewState();
+}
+
+function renderTree() {
+  const tree = $('tree');
+  const scroll = tree.scrollTop;
+  tree.textContent = '';
+  const root = state.nodes.get('');
+  if (root) addRow(tree, root, 0);
+  tree.scrollTop = scroll;
+}
+
+function addRow(container, n, depth) {
+  const refs = state.showRefs ? n.depLinks : [];
+  const expandable = n.children.length > 0 || refs.length > 0;
+  const open = expandable && state.expanded.has(n.path);
+  const row = document.createElement('div');
+  row.className = 'row';
+  if (n.placeholder) row.classList.add('placeholder');
+  if (n.status === 'obsolete') row.classList.add('obsolete');
+  else if (n.obsoleteBy) row.classList.add('obsolete-inherited');
+  if (n.path === state.selected) row.classList.add('selected');
+  row.dataset.path = n.path;
+  row.title = n.file ? repoPath(n) : n.path;
+  row.setAttribute('role', 'treeitem');
+  if (expandable) row.setAttribute('aria-expanded', String(open));
+  row.style.paddingLeft = (8 + depth * 16) + 'px';
+  row.innerHTML =
+    `<span class="twisty">${expandable ? (open ? '▼' : '▶') : ''}</span>` +
+    `<span class="title">${esc(n.title)}</span>` +
+    (n.status === 'draft' ? '<span class="badge draft">draft</span>' : '') +
+    (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
+  container.appendChild(row);
+  if (!open) return;
+  for (const l of refs) {
+    const r = document.createElement('div');
+    r.className = 'row ref' + (l.node ? '' : ' missing');
+    r.style.paddingLeft = (8 + (depth + 1) * 16) + 'px';
+    r.setAttribute('role', 'treeitem');
+    if (l.node) {
+      r.dataset.ref = l.path;
+      r.title = `Dependency. Click to jump to ${l.node.file ? repoPath(l.node) : l.path}`;
+    } else r.title = 'Dependency to a node that does not exist';
+    r.innerHTML = `<span class="twisty"></span><span class="arrow">↗</span>` +
+      `<span class="title">${esc(l.node ? l.node.title : l.path)}${l.node ? '' : ' (missing)'}</span>`;
+    container.appendChild(r);
+  }
+  for (const c of n.children) addRow(container, c, depth + 1);
+}
+
+function select(path, reveal) {
+  if (!state.nodes.has(path)) return;
+  state.selected = path;
+  if (reveal) for (let a = state.nodes.get(path).parent; a; a = a.parent) state.expanded.add(a.path);
+  renderAll();
+  if (!reveal) return;
+  if (state.view === 'map') return centerMapOn(path);
+  const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
+  if (row) row.scrollIntoView({ block: 'nearest' });
+}
+
+function toggle(path) {
+  if (state.expanded.has(path)) state.expanded.delete(path); else state.expanded.add(path);
+  renderTree();
+  saveViewState();
+}
+
+$('tree').addEventListener('click', e => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  if (row.dataset.ref !== undefined) return select(row.dataset.ref, true);
+  if (row.dataset.path === undefined) return;
+  if (e.target.classList.contains('twisty')) return toggle(row.dataset.path);
+  if (row.dataset.path !== state.selected) select(row.dataset.path, false);
+});
+$('tree').addEventListener('dblclick', e => {
+  const row = e.target.closest('.row');
+  if (!row || e.target.classList.contains('twisty')) return;
+  const path = row.dataset.ref ?? row.dataset.path;
+  if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
+});
+
+
+// ---------------------------------------------------------------------------
+// Map: the tree drawn left to right as boxes. Like the tree, a node lives once at
+// its path and is repeated as a reference box under each node that depends on it.
+// ---------------------------------------------------------------------------
+
+const MAP = { colW: 260, boxW: 210, boxH: 36, rowH: 48, pad: 30 };
+let mapView = null;   // visible area in map coordinates: { x, y, w }; height follows the panel's aspect
+let mapPos = null;    // node path -> { x, y } of its real box (top-left corner)
+let mapBounds = null;
+const mapCollapsed = new Set();
+
+// Items: { node, ref, path, depth, kids, x, y }. References are leaves.
+function layoutMap() {
+  let row = 0, maxDepth = 0;
+  const build = (n, depth) => {
+    const it = { node: n, ref: false, path: n.path, depth, kids: [] };
+    if (!mapCollapsed.has(n.path)) {
+      if (state.showRefs) for (const l of n.depLinks) it.kids.push({ node: l.node, ref: true, path: l.path, depth: depth + 1, kids: [] });
+      for (const c of n.children) it.kids.push(build(c, depth + 1));
+    }
+    return it;
+  };
+  const place = it => {
+    maxDepth = Math.max(maxDepth, it.depth);
+    it.x = it.depth * MAP.colW;
+    if (!it.kids.length) { it.y = row++ * MAP.rowH; return; }
+    it.kids.forEach(place);
+    it.y = (it.kids[0].y + it.kids[it.kids.length - 1].y) / 2;
+  };
+  const root = build(state.nodes.get(''), 0);
+  place(root);
+  mapPos = new Map();
+  const all = [];
+  const walk = it => { all.push(it); if (!it.ref) mapPos.set(it.path, it); it.kids.forEach(walk); };
+  walk(root);
+  mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 14, h: (row - 1) * MAP.rowH + MAP.boxH + 2 * MAP.pad };
+  return all;
+}
+
+function clip(s, max) { return s.length > max ? s.slice(0, max - 1) + '…' : s; }
+
+function renderMap() {
+  const svg = $('mapSvg');
+  const items = layoutMap();
+  const sel = state.nodes.get(state.selected);
+  const W = MAP.boxW, H = MAP.boxH;
+  let lines = '', boxes = '';
+  for (const it of items) {
+    for (const k of it.kids) {
+      const x1 = it.x + W, y1 = it.y + H / 2, x2 = k.x, y2 = k.y + H / 2, mx = x1 + (x2 - x1) / 2;
+      lines += `<path class="${k.ref ? 'r' : 'h'}" d="M${x1} ${y1}H${mx}V${y2}H${x2}"/>`;
+    }
+    const n = it.node;
+    if (it.ref) {
+      const cls = ['node', 'ref', !n && 'missing', n && n === sel && 'same'].filter(Boolean).join(' ');
+      boxes += `<g class="${cls}" ${n ? `data-ref="${esc(n.path)}"` : ''} transform="translate(${it.x} ${it.y})">` +
+        `<title>${n ? `Dependency: ${esc(n.title)}\nClick to jump to the real node` : `Missing dependency: ${esc(it.path)}`}</title>` +
+        `<rect width="${W}" height="${H}" rx="6"/>` +
+        `<text class="t" x="10" y="${H / 2 + 4.5}">↗ ${esc(clip(n ? n.title : it.path + ' (missing)', 26))}</text></g>`;
+      continue;
+    }
+    const cls = ['node', n === sel && 'selected', n.placeholder && 'placeholder',
+      n.status === 'draft' && 'draft', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
+    ].filter(Boolean).join(' ');
+    const extra = (n.warnings.length ? 4 : 0) + (n.status === 'draft' ? 5 : 0);
+    const hasKids = n.children.length > 0 || (state.showRefs && n.depLinks.length > 0);
+    const collapsed = mapCollapsed.has(n.path);
+    boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
+      `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
+      `<rect width="${W}" height="${H}" rx="6"/>` +
+      `<text class="t" x="10" y="${H / 2 + 4.5}">${esc(clip(n.title, 26 - extra))}</text>` +
+      (n.status === 'draft' ? `<text class="db" x="${W - (n.warnings.length ? 42 : 14)}" y="${H / 2 + 4}" text-anchor="end">draft</text>` : '') +
+      (n.warnings.length ? `<text class="wb" x="${W - 14}" y="${H / 2 + 4}" text-anchor="end">⚠${n.warnings.length}</text>` : '') +
+      (hasKids ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${H / 2})"><title>${collapsed ? 'Expand' : 'Collapse'}</title>` +
+        `<circle r="8"/><text y="4" text-anchor="middle">${collapsed ? '+' : '−'}</text></g>` : '') +
+      `</g>`;
+  }
+  svg.innerHTML = `${lines}${boxes}`;
+  if (!mapView) fitMap(); else applyMapView();
+}
+
+function applyMapView() {
+  const svg = $('mapSvg'), r = svg.getBoundingClientRect();
+  if (!r.width || !mapView) return;
+  const h = mapView.w * r.height / r.width;
+  svg.setAttribute('viewBox', `${mapView.x} ${mapView.y} ${mapView.w} ${h}`);
+}
+
+function fitMap() {
+  const r = $('mapSvg').getBoundingClientRect();
+  if (!r.width || !mapBounds) return;
+  const b = mapBounds, aspect = r.width / r.height;
+  let w = Math.max(b.w, b.h * aspect);
+  w = Math.max(w, r.width / 1.3);            // do not blow up small projects
+  mapView = { x: b.x, y: b.y, w };
+  if (w > b.w) mapView.x = b.x - (w - b.w) / 2;
+  applyMapView();
+}
+
+function centerMapOn(path) {
+  const p = mapPos && mapPos.get(path), r = $('mapSvg').getBoundingClientRect();
+  if (!p || !mapView || !r.width) return;
+  const h = mapView.w * r.height / r.width, cx = p.x + MAP.boxW / 2, cy = p.y + MAP.boxH / 2;
+  if (cx > mapView.x && cx < mapView.x + mapView.w && cy > mapView.y && cy < mapView.y + h) return;
+  mapView.x = cx - mapView.w / 2;
+  mapView.y = cy - h / 2;
+  applyMapView();
+}
+
+(() => {
+  const svg = $('mapSvg');
+  let drag = null, moved = false;
+  svg.addEventListener('wheel', e => {
+    if (!mapView) return;
+    e.preventDefault();
+    const r = svg.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+    const h = mapView.w * r.height / r.width;
+    const w = Math.min(Math.max(mapView.w * Math.exp(e.deltaY * 0.0015), 200), 20000);
+    mapView.x += (mapView.w - w) * fx;
+    mapView.y += (h - w * r.height / r.width) * fy;
+    mapView.w = w;
+    applyMapView();
+  }, { passive: false });
+  svg.addEventListener('pointerdown', e => {
+    if (!mapView || e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, vx: mapView.x, vy: mapView.y };
+    moved = false;
+  });
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!moved && Math.hypot(dx, dy) < 4) return;
+    if (!moved) { moved = true; svg.classList.add('dragging'); svg.setPointerCapture?.(e.pointerId); }
+    const k = mapView.w / svg.getBoundingClientRect().width;
+    mapView.x = drag.vx - dx * k;
+    mapView.y = drag.vy - dy * k;
+    applyMapView();
+  });
+  window.addEventListener('pointerup', () => { drag = null; svg.classList.remove('dragging'); });
+  svg.addEventListener('click', e => {
+    if (moved) { moved = false; return; }
+    const t = e.target.closest('.tog');
+    if (t) {
+      const p = t.dataset.toggle;
+      if (mapCollapsed.has(p)) mapCollapsed.delete(p); else mapCollapsed.add(p);
+      return renderMap();
+    }
+    const g = e.target.closest('.node');
+    if (!g) return;
+    if (g.dataset.ref !== undefined) return select(g.dataset.ref, true);
+    if (g.dataset.path !== undefined && g.dataset.path !== state.selected) select(g.dataset.path, false);
+  });
+  svg.addEventListener('dblclick', e => {
+    if (e.target.closest('.tog')) return;
+    const g = e.target.closest('.node');
+    const path = g && (g.dataset.ref ?? g.dataset.path);
+    if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
+  });
+  $('fitBtn').onclick = () => fitMap();
+  window.addEventListener('resize', applyMapView);
+})();
+
+// ---------------------------------------------------------------------------
+// Node card
+// ---------------------------------------------------------------------------
+
+function nodeLink(n) {
+  return `<button class="link" data-node="${esc(n.path)}">${esc(n.title)}</button>` +
+    `<span class="p">${esc(n.path || '(root)')}</span>`;
+}
+
+function renderCard() {
+  const n = state.nodes.get(state.selected);
+  const card = $('card');
+  if (!n) { card.textContent = ''; return; }
+  let h = `<h1>${esc(n.title)}` +
+    (n.status !== 'stable' ? `<span class="status ${n.status}">${n.status}</span>` : '') + `</h1>`;
+  h += `<div class="path">${esc(n.file ? repoPath(n) : (state.rootName + '/' + n.path + '/'))}</div>`;
+  h += '<div class="actions">' +
+    '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
+    '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
+    (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
+
+  if (n.obsoleteBy) {
+    const r = replacementOf(n, state.nodes);
+    h += '<div class="banner">' +
+      (n.obsoleteBy === n ? 'This node is obsolete.' : `Obsolete because its ancestor ${nodeLink(n.obsoleteBy)} is obsolete.`) +
+      (r ? ` Replaced by ${nodeLink(r)}.` : '') + '</div>';
+  }
+  if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
+
+  h += '<section><h2>Threads</h2>' + (n.threads.length
+    ? '<ul class="links">' + n.threads.map(t => /^https?:\/\//i.test(t.link)
+        ? `<li><a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.title || t.link)}</a></li>`
+        : `<li>${t.title ? esc(t.title) + ': ' : ''}<code>${esc(t.link)}</code></li>`).join('') + '</ul>'
+    : '<p class="empty-note">No threads linked. Threads add themselves to the <code>threads</code> field when they start.</p>') + '</section>';
+
+  withBase(n, () => {
+    h += '<section><h2>Summary</h2>' +
+      (n.summary ? `<div class="summary md">${renderMarkdown(n.summary)}</div>` : '<p class="empty-note">No summary.</p>') + '</section>';
+    h += '<section><h2>Decisions</h2>' + (n.decisions.length
+      ? '<ul class="decisions md">' + n.decisions.map(d =>
+          `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
+          `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>'
+      : '<p class="empty-note">No decisions.</p>') + '</section>';
+  });
+
+  h += '<section><h2>Depends on</h2>';
+  if (n.depLinks.length || n.inherited.length) {
+    h += '<ul class="links">' + n.depLinks.map(l => l.node
+      ? `<li>${nodeLink(l.node)}</li>`
+      : `<li><span class="missing">${esc(l.path)} (does not exist)</span></li>`).join('');
+    h += n.inherited.map(i => `<li>${nodeLink(i.node)}<span class="via">inherited from ${esc(i.via.title)}</span></li>`).join('');
+    h += '</ul>';
+  } else h += '<p class="empty-note">No dependencies.</p>';
+  h += '</section>';
+
+  h += '<section><h2>Used by</h2>' + (n.dependents.length
+    ? '<ul class="links">' + n.dependents.map(d => `<li>${nodeLink(d)}</li>`).join('') + '</ul>'
+    : '<p class="empty-note">No node depends on this one.</p>') + '</section>';
+
+  card.innerHTML = h;
+  card.scrollTop = 0;
+  $('copyPackBtn').onclick = () => copyPack(n);
+  $('subTaskBtn').onclick = () => openSubTask(n);
+  if (n.file) $('openDocBtn').onclick = () => openDoc(n);
+}
+
+function openSubTask(n) {
+  $('subParent').textContent = n.title;
+  $('subTitle').value = '';
+  $('subDialog').showModal();
+  $('subTitle').focus();
+  $('subForm').onsubmit = e => {
+    e.preventDefault();
+    const title = $('subTitle').value.trim();
+    if (!title) return;
+    $('subDialog').close();
+    copyText(subTaskPack(n, title), `Sub-task prompt for "${title}"`);
+  };
+}
+
+function openDoc(n) {
+  $('docTitle').textContent = repoPath(n);
+  // Front matter is shown as-is in a code block; the rest is rendered.
+  const fm = n.text.replace(/\r\n?/g, '\n').match(/^---\n[\s\S]*?\n---(\n|$)/);
+  const head = fm ? `<pre><code>${esc(fm[0].trim())}</code></pre>` : '';
+  withBase(n, () => { $('docBody').innerHTML = head + renderMarkdown(fm ? n.text.replace(/\r\n?/g, '\n').slice(fm[0].length) : n.text); });
+  $('docDialog').showModal();
+  $('docBody').parentElement.scrollTop = 0;
+}
+
+// Any element with data-node jumps to that node (card links, doc links, warning list).
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-node]');
+  if (!el) return;
+  e.preventDefault();
+  el.closest('dialog')?.close();
+  select(el.dataset.node, true);
+});
+
+// ---------------------------------------------------------------------------
+// Warnings overview
+// ---------------------------------------------------------------------------
+
+function renderWarningCount() {
+  const withWarnings = [...state.nodes.values()].filter(n => n.warnings.length);
+  const total = withWarnings.reduce((s, n) => s + n.warnings.length, 0);
+  $('warnBtn').hidden = total === 0;
+  $('warnBtn').textContent = `⚠ ${total} warning${total === 1 ? '' : 's'}`;
+  $('warnBody').innerHTML = withWarnings.sort((a, b) => a.path.localeCompare(b.path)).map(n =>
+    `<div class="wgroup">${nodeLink(n)}<ul>${n.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Misc UI
+// ---------------------------------------------------------------------------
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+for (const b of document.querySelectorAll('dialog [data-close]')) b.onclick = () => b.closest('dialog').close();
+for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) d.close(); });
+$('warnBtn').onclick = () => $('warnDialog').showModal();
+$('reloadBtn').onclick = () => reload();
+$('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
+for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
+$('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
+
+async function init() {
+  if (!('showDirectoryPicker' in window)) {
+    $('unsupported').hidden = false;
+    $('openBtn').disabled = $('welcomeOpenBtn').disabled = true;
+    return;
+  }
+  const dir = await loadHandle();
+  if (!dir) return;
+  try {
+    if (await dir.queryPermission({ mode: 'read' }) === 'granted') return await openDir(dir);
+  } catch (e) { return; }
+  // The browser asks again after a reload unless the user chose "Allow on every visit".
+  const b = $('reopenBtn');
+  b.textContent = `Reopen ${dir.name}/`;
+  b.hidden = false;
+  b.onclick = () => reopenStored(dir);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -16,4 +16,9 @@ Todo lo que muestra el visor y lo que lista el paquete de contexto sale de este 
 - 2026-10-02 09:22 · Los ciclos de dependencias se permiten (a veces son inevitables) y se señalan con un aviso.
 - 2026-10-02 09:22 · La jerarquía no tiene límite de profundidad.
 - 2026-10-02 09:00 · Avisos de formato en la v1: dependencia a un nodo que no existe, cabecera o título ausente, bloques fijos ausentes o desordenados.
+- 2026-10-02 09:46 · Una carpeta sin `README.md` es un nodo sin documento (título = nombre de la carpeta) y recibe un aviso; así la jerarquía no tiene huecos.
+- 2026-10-02 09:46 · Avisos añadidos a los de formato: dos ficheros para el mismo nodo (`x.md` y `x/README.md`, se usa el README), Summary de más de 5 líneas, línea de decisión sin fecha y hora, `status` desconocido y `replaced_by` que apunta a un nodo inexistente.
+- 2026-10-02 09:46 · Sin `title` en la cabecera, el nodo toma el nombre de su fichero o carpeta.
+- 2026-10-02 09:46 · Las rutas de `depends_on` se toleran con `./`, `/` final o extensión `.md`, y se normalizan.
+- 2026-10-02 10:38 · Un nodo tiene además su lista de chats (`threads`), cada uno con título y enlace.
 
