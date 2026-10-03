@@ -7,7 +7,7 @@ threads:
 ## Summary
 Un fichero generado, `.index.md` en la carpeta de docs, con todos los nodos en orden de árbol: ruta, título, estado, dependencias, hijos y Summary completo.
 Sirve para que un hilo encuentre de una sola lectura qué nodo debe hacer cada parte de una tarea, en lugar de abrir todos los md.
-Lo genera `node tools/build-index.mjs docs`, y también la página al renombrar o mover un nodo. Una comprobación en GitHub marca en rojo los PR en que el índice no coincide con los md.
+Lo genera `node tools/build-index.mjs docs`, la página al renombrar o mover un nodo, y el botón "Add node index" / "⚠ Rebuild index" de la cabecera cuando falta o no coincide con los md. Una comprobación en GitHub marca en rojo los PR en que el índice no coincide con los md.
 
 ## Decisions
 - 2026-10-02 19:15 · Búsqueda de responsable para cada parte del desglose: primero el índice; si ninguna parte encaja, se pregunta al propietario si se hace desde el nodo actual o en un nodo nuevo, y se propone su posición. Decidido por Ronald (19:02–19:03). Se descartó la cascada índice → bajar por el árbol → recorrido completo: con el Summary completo en el índice, los dos últimos pasos leen lo mismo.
@@ -18,8 +18,11 @@ Lo genera `node tools/build-index.mjs docs`, y también la página al renombrar 
 - 2026-10-02 19:15 · El script `tools/build-index.mjs` (Node, sin paquetes) ejecuta la parte de lectura y modelo de `index.html`, así que el índice sigue exactamente las mismas reglas que la página. Esa parte de `index.html` no puede usar el DOM.
 - 2026-10-02 19:15 · `--check` falla si el índice falta o no coincide con los md; lo ejecuta el workflow de GitHub `Node index` en cada PR y en cada push a `main`.
 - 2026-10-02 19:15 · Los prompts piden regenerar el índice tras cambiar cualquier nodo, con el comando que indican sus primeras líneas. Para otros usuarios de CVP el índice es opcional: si no existe, el prompt pide leer el Summary de todos los md.
-- 2026-10-03 08:47 · La página regenera `.index.md` tras renombrar o mover un nodo, con la misma función que usa el script, si la carpeta ya lo tiene; no lo crea en proyectos que no lo usan. Así quien no tiene Node no deja el índice desactualizado.
+- 2026-10-03 08:47 · [replaced by 2026-10-03 16:25] La página regenera `.index.md` tras renombrar o mover un nodo, con la misma función que usa el script, si la carpeta ya lo tiene; no lo crea en proyectos que no lo usan. Así quien no tiene Node no deja el índice desactualizado.
 - 2026-10-03 14:40 · La carga del código de lectura y modelo de `index.html` en Node está en `tools/page-model.mjs`, compartida con la comprobación de formato (`model/comprobacion-de-formato`).
+- 2026-10-03 16:25 · La página compara al abrir la carpeta el `.index.md` con el que generaría ella. Si falta, la cabecera muestra "Add node index"; si no coincide, "⚠ Rebuild index". El botón lo escribe con la misma función que el script y recarga; es la cuarta escritura en la carpeta. No aparece en la instantánea. Así los proyectos sin las herramientas de este repositorio (y sin Node) pueden tener índice.
+- 2026-10-03 16:25 · Tras renombrar, mover o escribir las reglas, la página regenera `.index.md` si la carpeta ya lo tiene; si no, no lo crea (para eso está "Add node index").
+- 2026-10-03 16:25 · Las primeras líneas del índice dicen que se genera con "Rebuild index" en la página o con `node tools/build-index.mjs` en el repositorio de CVP, y las reglas (versión 3) piden al hilo que no pueda ejecutar el comando que avise al propietario para pulsar "Rebuild index".
 
 ## Requirements
 - 2026-10-02 18:55 · Respecto leer el Summary, no existe algún tipo de búsqueda indexada o caché de búsqueda ?
@@ -29,3 +32,4 @@ Lo genera `node tools/build-index.mjs docs`, y también la página al renombrar 
 - 2026-10-02 19:02 · Prompt al operador: 'Este requerimiento implica un desarrollo funcional XXX del cual no existe actualmente un nodo responsable. Podemos ejecutar este desarrollo desde el nodo actual o crear un nuevo nodo que, a partir de ahora, centralizará este tipo de desarrollos.
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: la página regenera .index.md al mover o renombrar.
 - 2026-10-03 14:40 · Derived from model/comprobacion-de-formato: el script del índice comparte con la comprobación de formato la carga del modelo de index.html.
+- 2026-10-03 16:25 · Derived from nuevo-proyecto: botón en la página para crear o regenerar el índice, con aviso en la cabecera cuando hace falta.

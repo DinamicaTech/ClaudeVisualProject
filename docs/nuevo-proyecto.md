@@ -1,13 +1,13 @@
 ---
 title: Nuevo proyecto
-depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos]
+depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos, context-pack/index, viewer, global-rules]
 status: draft
 threads:
   - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
 ---
 ## Summary
-Botón "New project" que copia un prompt para preparar un proyecto nuevo para CVP, sin hacerlo a mano: pide el nombre, dónde vive (repositorio, carpeta de docs y, opcional, ruta de GitHub), crea el esqueleto (raíz, `global-rules`, `creative-lab`, `AGENTS.md`, `CLAUDE.md`, índice) y lanza la carga de requisitos con el árbol vacío.
-Al final propone un nodo `architecture` como draft para debatirlo con el propietario. Pendiente: se construye después de `context-pack/carga-de-requisitos`.
+Botón "New project" (en la cabecera y en la pantalla inicial) que copia un prompt para preparar un proyecto nuevo para CVP, sin hacerlo a mano: pide el nombre y dónde vive (repositorio, carpeta de docs y, opcional, ruta de GitHub), crea el esqueleto (raíz, `global-rules`, `creative-lab`, `AGENTS.md`, `CLAUDE.md`) y lanza la carga de requisitos con el árbol vacío.
+Al final propone un nodo `architecture` como draft para debatirlo con el propietario. Los docs se escriben en el idioma del propietario; el índice de nodos lo crea luego la página ("Add node index").
 
 ## Decisions
 - 2026-10-03 08:16 · Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
@@ -15,6 +15,10 @@ Al final propone un nodo `architecture` como draft para debatirlo con el propiet
 - 2026-10-03 16:12 · Reglas personales del propietario: el hilo pregunta si copiarlas de otro proyecto a `AGENTS.md`, proponiendo por defecto el proyecto abierto en la página al pulsar "New project"; copia solo esas reglas, no el puntero. Si no alcanza ese repositorio, pregunta su ruta. No se puede elegir "el más reciente": la página solo lee la carpeta de docs abierta.
 - 2026-10-03 16:12 · Sin identificador de proyecto aparte del nombre. Quedan fuera las comprobaciones de GitHub ("Docs format", "Open work", índice al día) en el proyecto nuevo.
 - 2026-10-03 16:12 · Índice en proyectos sin las herramientas de este repositorio: botón en la página para regenerarlo, que aparece como aviso "⚠ Rebuild index" en la cabecera cuando `.index.md` falta o no coincide con los md (le corresponde a `context-pack/index`).
+- 2026-10-03 16:25 · Construido: botón "New project" en la cabecera (siempre, también en la instantánea) y en la pantalla inicial sin carpeta abierta. Copia un prompt en inglés con los pasos acordados el 16:12: nombre, ubicación, idioma, esqueleto, reglas personales, carga de requisitos con el árbol vacío y `architecture` como draft al final.
+- 2026-10-03 16:25 · El prompt lleva el fichero `global-rules` completo que escribiría "Add global rules" (versión de reglas de la página), para que el hilo lo copie tal cual (puede traducir su Summary y sus Decisions, nunca el bloque entre las marcas): el proyecto nace con las reglas al día. Lleva también las plantillas de la raíz, `creative-lab` y `AGENTS.md`; `CLAUDE.md` es la línea `@AGENTS.md`.
+- 2026-10-03 16:25 · Los docs del proyecto nuevo se escriben en el idioma en que escribe el propietario, sin preguntarlo, y el hilo lo deja como primera línea de las "Project rules" de `global-rules`. Los títulos de bloque (`## Summary`…) y las claves de cabecera no se traducen. Decidido por Ronald (16:15).
+- 2026-10-03 16:25 · El proyecto nuevo no tiene herramienta para el índice: al terminar, el hilo pide al propietario abrir la carpeta de docs en la página y pulsar "Add node index" (`context-pack/index`).
 
 ## Requirements
 - 2026-10-03 08:13 · La opción de arrancar un nuevo proyecto es perfecta, automatiza todo el trabajo de creación de un proyecto.
@@ -28,3 +32,4 @@ Al final propone un nodo `architecture` como draft para debatirlo con el propiet
 - 2026-10-03 16:02 · Si por identificador de proyecto entendemos el nombre del proyecto, mejor pedirlo como primer paso al crear un nuevo proyecto
 - 2026-10-03 16:02 · Entiendo que el AGENTS.md se puede heredar de alguno ya existente (el más reciente), no ?
 - 2026-10-03 16:04 · Ok a preguntar la copia de reglas personales, por defecto, seleccionar el proyecto desde el que se ha lanzando 'nuevo proyecto'
+- 2026-10-03 16:15 · Sí, los documentos con el idioma del usuario.

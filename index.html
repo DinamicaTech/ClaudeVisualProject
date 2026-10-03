@@ -49,7 +49,7 @@
   header .folder { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
   header .spacer { flex: 1; }
   header label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
-  #warnBtn, #rulesBtn.warn { color: var(--warn); border-color: var(--warn); }
+  #warnBtn, #rulesBtn.warn, #indexBtn.warn { color: var(--warn); border-color: var(--warn); }
 
   main { flex: 1; display: flex; min-height: 0; }
   #tree { width: 380px; min-width: 260px; overflow: auto; border-right: 1px solid var(--line); padding: 8px 0; background: var(--panel); }
@@ -240,6 +240,8 @@
   <span id="openWorkNote" hidden></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
+  <button id="newProjectBtn" title="Copy a prompt for a new thread that sets up a new project: its docs, global rules, lab, AGENTS.md and requirements">New project</button>
+  <button id="indexBtn" hidden></button>
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
@@ -275,6 +277,7 @@
   <div class="buttons">
     <button id="reopenBtn" class="primary" hidden></button>
     <button id="welcomeOpenBtn">Open folder</button>
+    <button id="welcomeNewBtn" title="Copy a prompt for a new thread that sets up a new project">New project</button>
   </div>
 </div>
 
@@ -364,6 +367,7 @@ const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
   snapshot: null,     // { name, generated, files, openWork? } when the md files are embedded in the page
+  indexText: null,    // text of the node index (.index.md) as read from the folder, or null if it has none
   openWork: null,     // parsed .open-work.md ({ updated, items }), or null when the folder has none
   rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
   nodes: new Map(),   // node path -> node
@@ -450,6 +454,7 @@ async function reload() {
     const files = state.snapshot ? state.snapshot.files : await readFolder(state.dir);
     state.nodes = buildModel(files, state.rootName);
     state.openWork = parseOpenWork(state.snapshot ? state.snapshot.openWork : await readOpenWork(state.dir));
+    state.indexText = state.snapshot ? null : await readTextFile(state.dir, INDEX_FILE);
   } catch (e) {
     showLoadError(e);
     return;
@@ -471,6 +476,7 @@ async function reload() {
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
   renderOpenWorkNote();
   renderRulesButton();
+  renderIndexButton();
   renderAll();
 }
 
@@ -522,6 +528,10 @@ function restoreViewState() {
 
 const OPEN_WORK_FILE = '.open-work.md';
 
+async function readTextFile(dir, name) {
+  try { return await (await (await dir.getFileHandle(name)).getFile()).text(); }
+  catch (e) { return null; }
+}
 async function readOpenWork(dir) {
   try { return await (await (await dir.getFileHandle(OPEN_WORK_FILE)).getFile()).text(); }
   catch (e) { return null; }
@@ -918,8 +928,8 @@ const INDEX_FILE = '.index.md';
 function nodeIndex(nodes) {
   const out = [
     '# Node index', '',
-    'Generated from the md files of this folder by `node tools/build-index.mjs <docs folder>` ' +
-    '(ClaudeVisualProject). Do not edit by hand: run it again after changing any node.', '',
+    'Generated from the md files of this folder by Claude Visual Project: "Rebuild index" in the page, or `node tools/build-index.mjs <docs folder>` ' +
+    'in its repository. Do not edit by hand: rebuild it after changing any node.', '',
   ];
   const add = n => {
     out.push(`## ${n.path || '(root)'} · ${n.title}`);
@@ -945,7 +955,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 2;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 3;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -979,7 +989,7 @@ const CVP_RULES = [
   'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
   'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
-  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node.',
+  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node; if you cannot run that command, tell the owner to press "Rebuild index" in the page.',
   '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). ' +
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
   'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
@@ -1223,6 +1233,48 @@ function loadRequirementsPack() {
     ...lines, '', ...rulesLines(), '',
     'Follow the "Requirements load" rule. The block comes after "Load requirements:".', '',
     'Task: Load requirements:', '',
+  ].join('\n');
+}
+
+// Prompt for a new thread that sets up a new project for CVP (nuevo-proyecto): name, location, skeleton
+// (root, global-rules with this page's rules, creative-lab, AGENTS.md, CLAUDE.md), requirements load and a first architecture.
+// The project open in the page, if any, is proposed as the source of the owner's personal rules.
+function newProjectPack() {
+  const open = state.nodes && state.nodes.get('');
+  const from = open ? `the project "${open.title}" (docs folder ${docsPrefix() || state.rootName + '/'}), the one open in the page when this prompt was copied` : null;
+  return [
+    'Set up a new project for Claude Visual Project (CVP): a folder of md docs, one per node, that the CVP page shows as a navigable map of the project.', '',
+    'Work in these steps, in order:',
+    '1. Ask the owner the name of the project and wait for it. It is the title of the root node.',
+    '2. Ask where the project lives and wait for the answer: the repository (a folder on disk, or an existing or new repository) and the docs folder inside it (default: `docs` at the repository root); ' +
+    'optionally, its GitHub repository, used only to create it or push to it and not written in the docs.',
+    '3. Write every doc in the language the owner writes in (headings such as "## Summary" and the front matter keys stay as they are).',
+    '4. Create the skeleton in one branch, with <docs> standing for the docs folder:',
+    '   - <docs>/README.md, the root node, from the template below. If the docs folder is not `docs` at the repository root, add `docs_path: <its path from the repository root, no trailing slash>` to its front matter.',
+    '   - <docs>/global-rules.md, the global rules file below, copied as it is (you may translate its Summary and Decisions, never the block between the cvp-rules markers); then add under its "## Project rules" the line "- Working docs are written in <language>."',
+    '   - <docs>/creative-lab.md, the lab where ideas are debated, from the template below.',
+    '   - AGENTS.md at the repository root, from the template below, and CLAUDE.md at the repository root with the single line `@AGENTS.md`.',
+    '   Ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
+    (from ? `Propose by default ${from}. ` : '') + 'If you cannot reach that repository, ask the owner where it is.',
+    '5. Ask the owner for the block of requirements and follow the "Requirements load" rule of the global rules, on an empty tree.',
+    '6. Then create the node `architecture`, child of the root, with `status: draft`: a first proposal of architecture derived from the requirements (language, database, kind of application, deployment…), ' +
+    'one decision per point with your reasons, and debate it with the owner.',
+    '7. The new repository has no tool to build the node index (.index.md): when you finish, tell the owner to open the docs folder in the CVP page and press "Add node index".', '',
+    'From step 4 on, follow the CVP rules of the global rules file below, as in any project.', '',
+    'Root node (<docs>/README.md):', '````markdown', '---', 'title: <project name>', 'depends_on: []', 'threads:',
+    '  - New project | <link to this thread, if you can tell it>', '---',
+    '## Summary', '<what the project is, functional, max 5 lines; complete it after the requirements load>', '',
+    '## Decisions', '- <YYYY-MM-DD HH:MM> · Project created with Claude Visual Project.', '', '## Requirements', '````', '',
+    `Global rules (<docs>/${RULES_NODE}.md):`, '````markdown', updatedRulesFile(null, '<YYYY-MM-DD HH:MM>').trimEnd(), '````', '',
+    `Creative lab (<docs>/${LAB}.md):`, '````markdown', '---', 'title: Creative lab', 'depends_on: []', '---',
+    '## Summary', 'The project\'s room for ideas: improvements and new developments are debated here before deciding whether to do them.',
+    'Each idea is a child node of the lab (`status: idea`), the step before a draft; while it is debated it is not routed to its functional node.',
+    'It leaves the lab when the owner decides: it becomes a draft or is executed, and moves to its functional place. A discarded idea stays in the lab with a decision that says so.', '',
+    '## Decisions', '- <YYYY-MM-DD HH:MM> · Created with the project.', '````', '',
+    'AGENTS.md:', '````markdown', '# Working rules for AI assistants', '',
+    '- The project\'s structure and decisions live in `<docs>/`, one md per node.',
+    `- Every rule for working on the docs is in \`<docs>/${RULES_NODE}.md\`: read it before any change and follow both its "CVP rules" and its "Project rules" sections.`,
+    '<the owner\'s personal rules, if any, one per line>', '````',
   ].join('\n');
 }
 
@@ -2451,6 +2503,33 @@ function renderRulesButton() {
   }[r.status] || '';
 }
 
+// Node index: "Add node index" when the folder has none, "⚠ Rebuild index" when it no longer matches the md files.
+// Projects without this repository's tools rebuild it here. Fourth write to the folder.
+function indexStatus() {
+  if (state.snapshot) return 'current';
+  if (state.indexText == null) return 'missing';
+  return state.indexText.replace(/\r\n?/g, '\n') === nodeIndex(state.nodes) ? 'current' : 'outdated';
+}
+function renderIndexButton() {
+  const st = indexStatus(), b = $('indexBtn');
+  b.hidden = st === 'current';
+  b.className = st === 'outdated' ? 'warn' : '';
+  b.textContent = st === 'missing' ? 'Add node index' : '⚠ Rebuild index';
+  b.title = st === 'missing'
+    ? `This docs folder has no node index (${INDEX_FILE}), which threads read to find the node that owns a task. Click to create it.`
+    : `The node index (${INDEX_FILE}) does not match the md files any more. Click to rebuild it.`;
+}
+async function doRebuildIndex() {
+  try {
+    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted') return toast('The browser did not grant permission to write to the folder.');
+    await writeFileAt(INDEX_FILE, nodeIndex(buildModel(await readFolder(state.dir), state.rootName)));
+    await reload();
+    toast(`Node index written to ${INDEX_FILE}. Commit it in git.`);
+  } catch (e) {
+    toast('Could not write the node index: ' + (e && e.message || e));
+  }
+}
+
 function openRules() {
   const r = rulesStatus(state.nodes);
   const where = r.node ? r.node.file : RULES_NODE + '.md';
@@ -2519,6 +2598,8 @@ $('warnBtn').onclick = () => $('warnDialog').showModal();
 $('rulesBtn').onclick = () => openRules();
 $('loadReqBtn').onclick = () => copyText(loadRequirementsPack(), 'Requirements load prompt', 'Paste it in a new thread and add your requirements at its end.');
 $('rulesSubmit').onclick = () => doUpdateRules();
+$('indexBtn').onclick = () => doRebuildIndex();
+$('newProjectBtn').onclick = $('welcomeNewBtn').onclick = () => copyText(newProjectPack(), 'New project prompt');
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
 $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };
