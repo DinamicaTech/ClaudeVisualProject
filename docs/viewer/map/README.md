@@ -6,7 +6,7 @@ threads:
 ---
 ## Summary
 Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas.
-Es la vista por defecto. En el selector "Tree / Project", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
+Es la vista por defecto. En el selector "Tree / Project / Drafts / Log", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
 La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes.
 
 ## Decisions
@@ -26,6 +26,7 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-02 12:40 · Tecla Z (zoom): el mapa y el árbol muestran solo el nodo seleccionado y sus descendientes, con ese nodo como raíz. Arriba aparece "Zoom: título ✕"; Z sobre el nodo del zoom, Esc o clic en ese botón vuelven al proyecto entero. Z sobre otro nodo hace zoom en él. Saltar a un nodo fuera del zoom (una dependencia, un enlace de la ficha) sale del zoom. El zoom se recuerda tras F5.
 - 2026-10-02 12:40 · El selector "Map / Tree" pasa a "Tree / Project". El mapa sigue siendo la vista por defecto.
 - 2026-10-02 18:10 · Ronald aclara el selector: "Tree" es el mapa de nodos (esta vista) y "Project" la vista en filas, el proyecto organizado tabularmente. Sustituye al reparto de nombres de las 12:40.
+- 2026-10-03 07:50 · El selector pasa a "Tree / Project / Drafts / Log" (`viewer/drafts`, `viewer/log`). El mapa sigue siendo la vista por defecto.
 
 ## Requirements
 - 2026-10-02 12:24 · Con la tecla Z (Zoom) mostrar solo el nodo seleccionado y descendientes (recursivamente).

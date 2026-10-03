@@ -2,12 +2,13 @@
 title: Paquete de contexto
 depends_on: [model, format]
 threads:
+  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
   - Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
 ---
 ## Summary
 Al hacer doble clic, copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo. Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
 El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas.
-Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte, buscándolo en el índice de nodos) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
+Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pack/routing`), propone un desglose (qué nodo hace cada parte, buscándolo en el índice de nodos) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
 
 ## Decisions
 - 2026-10-02 09:00 · Solo rutas: no se pega contenido de los md en el prompt.
@@ -32,6 +33,8 @@ Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte, b
 - 2026-10-02 18:55 · La regla de cuestionar y consensuar antes de programar es solo del AGENTS.md de este repositorio, no de los prompts: cada usuario configura su forma de trabajar con su asistente.
 - 2026-10-02 19:15 · Para el desglose, el hilo lee el índice de nodos (`context-pack/index`) en vez de todos los md; si no existe, lee el Summary de todos. Si una parte no tiene responsable, pregunta al propietario si hacerla desde el nodo actual o en un nodo nuevo, y propone dónde colocarlo.
 - 2026-10-02 19:15 · La regla de actualización pide además regenerar el índice tras cambiar cualquier nodo.
+- 2026-10-03 07:50 · Los dos prompts llevan, antes del desglose, el paso de encaminado al nodo responsable (`context-pack/routing`) y la regla de draft: un nodo `draft` sigue así hasta que el propietario valida el cambio y entonces pasa a `stable`.
+- 2026-10-03 07:50 · Sustituye en parte a la decisión de las 18:55 sobre requisitos: las frases literales del propietario van al nodo responsable elegido en el encaminado; los nodos que ejecutan partes reciben "Derived from".
 
 ## Requirements
 - 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.
@@ -39,3 +42,4 @@ Antes de cambiar nada, el hilo propone un desglose (qué nodo hace cada parte, b
 - 2026-10-02 18:42 · Lo que sí podría ser muy útil es que al pedir un requerimiento, el prompt mostrase un desglose funcional de este requerimiento y el nodo que lo va a llevar a cabo con una solicitud de confirmación para continuar con el desarrollo o la opción de que el operador pueda acabar de definir el requerimiento o modificar la distribución/asignación de este desglose del requerimiento.
 - 2026-10-02 18:49 · Y sí, hay que indicar en el prompt que hay que acceder a todo el árbol para determinar el responsable de ejecutar cada desglose de los requerimientos.
 - 2026-10-02 18:49 · Como apunte adicional, si un nodo afectado está pendiente de commit, sería bueno ayudar al operador con un: 'Para completar esta solicitud, hay que derivar una tarea a Modelo de Datos, pero tiene pendiente cerrar el desarrollo XXXX del 17/9/2026. ¿Quieres que lo cierre? No podré ejecutar la petición hasta no tener disponible Modelo de Datos para ejecutar una nueva tarea'
+- 2026-10-03 07:50 · Derived from context-pack/routing: los prompts del doble clic y de "New sub-task" piden encaminar la tarea a su nodo responsable antes del desglose, con las cuatro opciones.
