@@ -216,6 +216,7 @@
     <input type="checkbox" id="refsToggle" checked> References
   </label>
   <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
+  <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
   <button id="openBtn">Open folder</button>
 </header>
 
@@ -284,8 +285,13 @@
 
 <div id="toast" role="status"></div>
 
+<!-- Snapshot data: empty in index.html. "Export HTML" and tools/build-html.mjs fill it with the md files. -->
+<script type="application/json" id="cvpSnapshot"></script>
 <script>
 'use strict';
+
+// The page as loaded, before any rendering: "Export HTML" fills its snapshot data and saves it.
+const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 
 // ---------------------------------------------------------------------------
 // State
@@ -293,6 +299,7 @@
 
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
+  snapshot: null,     // { name, generated, files } when the md files are embedded in the page
   rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
   nodes: new Map(),   // node path -> node
   selected: null,     // selected node path
@@ -397,7 +404,7 @@ async function readFolder(dir) {
 
 async function reload() {
   try {
-    const files = await readFolder(state.dir);
+    const files = state.snapshot ? state.snapshot.files : await readFolder(state.dir);
     state.nodes = buildModel(files, state.rootName);
   } catch (e) {
     showLoadError(e);
@@ -411,8 +418,11 @@ async function reload() {
   }
   $('welcome').hidden = true;
   $('app').hidden = false;
-  for (const id of ['reloadBtn', 'viewSeg']) $(id).hidden = false;
-  $('folderName').textContent = state.rootName + '/';
+  $('viewSeg').hidden = false;
+  for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
+  $('openBtn').hidden = !!state.snapshot;
+  $('folderName').textContent = state.rootName + '/' +
+    (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
   renderAll();
 }
@@ -454,6 +464,52 @@ function restoreViewState() {
     }
   } catch (e) { /* ignore */ }
   $('refsToggle').checked = state.showRefs;
+}
+
+// ---------------------------------------------------------------------------
+// Standalone HTML (snapshot): the md files embedded in a copy of this page
+// ---------------------------------------------------------------------------
+// Same format as tools/build-html.mjs: { name, generated, files: [{ path, text }] } as JSON
+// in the #cvpSnapshot script, with "<" escaped so no md text can close the script.
+
+const snapshotJson = data => JSON.stringify(data).replace(/</g, '\\u003c');
+
+async function openSnapshot() {
+  const raw = $('cvpSnapshot').textContent.trim();
+  if (!raw) return false;
+  try {
+    state.snapshot = JSON.parse(raw);
+  } catch (e) {
+    showLoadError(e);
+    return true;
+  }
+  state.rootName = state.snapshot.name;
+  restoreViewState();
+  await reload();
+  return true;
+}
+
+function nowStamp() {
+  const d = new Date(), p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function exportHtml() {
+  let files;
+  try {
+    files = (await readFolder(state.dir)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  } catch (e) {
+    toast('Could not read the folder: ' + (e && e.message || e));
+    return;
+  }
+  const page = PAGE_TEMPLATE.cloneNode(true);
+  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files });
+  const blob = new Blob(['<!doctype html>\n' + page.outerHTML + '\n'], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slugify(state.nodes.get('').title) + '.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
 }
 
 // ---------------------------------------------------------------------------
@@ -1395,7 +1451,7 @@ function renderCard() {
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
     '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
-    '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>' +
+    (state.snapshot ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
   if (n.obsoleteBy) {
@@ -1442,7 +1498,7 @@ function renderCard() {
   card.scrollTop = 0;
   $('copyPackBtn').onclick = () => copyPack(n);
   $('subTaskBtn').onclick = () => openSubTask(n);
-  $('renameBtn').onclick = () => openRename(n);
+  if (!state.snapshot) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
 }
 
@@ -1747,7 +1803,7 @@ async function doRename(n) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key !== 'F2' || $('app').hidden || document.querySelector('dialog[open]')) return;
+  if (e.key !== 'F2' || state.snapshot || $('app').hidden || document.querySelector('dialog[open]')) return;
   const n = state.nodes.get(state.selected);
   if (n) { e.preventDefault(); openRename(n); }
 });
@@ -1785,8 +1841,10 @@ $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
 for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
 $('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
+$('exportBtn').onclick = () => exportHtml();
 
 async function init() {
+  if (await openSnapshot()) return;
   if (!('showDirectoryPicker' in window)) {
     $('unsupported').hidden = false;
     $('openBtn').disabled = $('welcomeOpenBtn').disabled = true;
