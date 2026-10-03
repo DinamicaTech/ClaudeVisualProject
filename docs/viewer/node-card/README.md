@@ -24,3 +24,4 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-02 11:46 · Me gustaría poder acceder a los requerimientos escritos por mí relacionados con un nodo.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: atenuar las decisiones sustituidas y enlazar a la que las sustituye.
 - 2026-10-03 08:47 · Derived from format/decisiones-sustituidas: ocultar por defecto las decisiones sustituidas, con un interruptor para verlas.
+- 2026-10-03 14:16 · Pasa de fichero a carpeta (`viewer/node-card/README.md`) para tener hijos; su ruta de nodo no cambia. Primer hijo: el draft `viewer/node-card/abrir-conversacion` (botón que abre la conversación del nodo).
