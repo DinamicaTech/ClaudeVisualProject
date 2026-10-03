@@ -1041,7 +1041,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 3;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 4;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1092,7 +1092,8 @@ const CVP_RULES = [
   'It is not routed as one task; instead:\n' +
   '1. Number each sentence of the block that asks for something as R1, R2…, word for word, and propose the node each one belongs to: an existing node, or a new one with its full path.\n' +
   '2. List every gap, ambiguity or contradiction, between sentences or with a decision in force in the docs, as a question Q1, Q2…: its kind, the R sentences it touches, the questions it depends on, 2 to 4 options with their consequence, and your recommendation. ' +
-  'A question is blocking if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node.\n' +
+  'A question is blocking only if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node. ' +
+  'A value, an amount, a timing or a detail of behaviour inside one node (for example, how often an enemy attacks) is never blocking, however much it matters: it is local. When in doubt, it is local.\n' +
   '3. Ask only the blocking questions, in rounds of at most 7: those with the most impact first, never one that depends on a question still open. The owner may answer each one in a word ("Q3 B") or accept your recommendation for the rest. ' +
   'After each round, close the questions it settles, add any new ones and go on with the next round until no blocking question is left.\n' +
   '4. Keep the state of the load in `.requirements-load.md` in the docs folder (R sentences, questions, answers, proposed tree): update it every round and push it to the branch, so that another thread can take over if this one stops.\n' +
@@ -1333,7 +1334,9 @@ function newProjectPack() {
     'Work in these steps, in order:',
     '1. Ask the owner the name of the project and wait for it. It is the title of the root node.',
     '2. Ask where the project lives and wait for the answer: the repository (a folder on disk, or an existing or new repository) and the docs folder inside it (default: `docs` at the repository root); ' +
-    'optionally, its GitHub repository, used only to create it or push to it and not written in the docs.',
+    'optionally, its GitHub repository, used only to create it or push to it and not written in the docs. ' +
+    'The owner opens the docs in the CVP page from a folder on their own disk, so the project must end up there: if you work on the owner\'s machine, ask for that folder; ' +
+    'if you work in a remote or cloud environment, the project needs a GitHub repository (create it if it is new, private unless the owner says otherwise), and the owner must clone it to their disk: tell them the command (`git clone <url> <folder>`) or, if you can run commands on their machine, ask for the folder and clone it there.',
     '3. Write every doc in the language the owner writes in (headings such as "## Summary" and the front matter keys stay as they are).',
     '4. Create the skeleton in one branch, with <docs> standing for the docs folder:',
     '   - <docs>/README.md, the root node, from the template below. If the docs folder is not `docs` at the repository root, add `docs_path: <its path from the repository root, no trailing slash>` to its front matter.',
@@ -1342,6 +1345,7 @@ function newProjectPack() {
     '   - AGENTS.md at the repository root, from the template below, and CLAUDE.md at the repository root with the single line `@AGENTS.md`.',
     '   Ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
     (from ? `Propose by default ${from}. ` : '') + 'If you cannot reach that repository, ask the owner where it is.',
+    '   When the skeleton is written, put it on the default branch (commit, push and merge if you used a branch) and make sure the owner has it on disk (step 2); tell them to open its docs folder in the CVP page, so they see the tree grow from now on.',
     '5. Ask the owner for the block of requirements and follow the "Requirements load" rule of the global rules, on an empty tree.',
     '6. Then create the node `architecture`, child of the root, with `status: draft`: a first proposal of architecture derived from the requirements (language, database, kind of application, deployment…), ' +
     'one decision per point with your reasons, and debate it with the owner.',
