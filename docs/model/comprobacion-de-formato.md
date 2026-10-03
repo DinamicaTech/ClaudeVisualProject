@@ -17,7 +17,7 @@ Lo ejecuta `node tools/check-format.mjs docs`, que usa el mismo código de lectu
 - 2026-10-03 14:40 · El script `tools/check-format.mjs` (Node, sin paquetes) toma los avisos del modelo de `index.html` con `tools/page-model.mjs`, el mismo cargador que usa `tools/build-index.mjs`. Un aviso nuevo en la página se comprueba solo, sin tocar el script.
 - 2026-10-03 14:40 · Consecuencia: un cambio que introduce algo que la página aún no conoce (p. ej. un `status` nuevo) tiene que enseñárselo al modelo en el mismo PR, o el PR sale en rojo.
 - 2026-10-03 14:38 · Validado por Ronald: deja de ser draft.
-- 2026-10-03 15:55 · Los avisos de revisión (`model/avisos-de-desactualizacion`) no son avisos de formato: la comprobación no los mira y nunca pone un PR en rojo por ellos.
+- 2026-10-03 15:55 · [replaced by model/avisos-de-desactualizacion 2026-10-03 17:31] Los avisos de revisión (`model/avisos-de-desactualizacion`) no son avisos de formato: la comprobación no los mira y nunca pone un PR en rojo por ellos.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Hacer que un PR salga en rojo en GitHub si deja un md con avisos de formato, reutilizando los avisos de la página como ya hace el índice de nodos.
