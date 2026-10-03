@@ -20,6 +20,7 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 08:30 · [replaced by 2026-10-03 08:47] Las decisiones sustituidas salen atenuadas y tachadas, con la etiqueta "replaced by …"; un clic en ella lleva a la decisión vigente (en el mismo nodo o en otro) y la resalta.
 - 2026-10-03 08:47 · Las decisiones sustituidas están ocultas por defecto. Bajo Decisions, "Show replaced (N)" las muestra (atenuadas y tachadas, con la etiqueta "replaced by …", que lleva a la decisión vigente y la resalta) y "Hide replaced" las vuelve a ocultar. Es el mismo interruptor que el del Log y se recuerda tras F5.
 - 2026-10-03 14:45 · El estado `idea` se muestra en la cabecera de la ficha con una etiqueta ámbar.
+- 2026-10-03 15:18 · Si una rama o un PR cambia el md del nodo, un recuadro "Open work" bajo los botones lista cada uno: el PR con su título (enlace a GitHub) o la rama si aún no tiene PR, desde cuándo y un enlace "Open thread" a su hilo (`viewer/map/nodos-ocupados`).
 
 ## Requirements
 - 2026-10-02 11:46 · Me gustaría poder acceder a los requerimientos escritos por mí relacionados con un nodo.
@@ -27,3 +28,4 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 08:47 · Derived from format/decisiones-sustituidas: ocultar por defecto las decisiones sustituidas, con un interruptor para verlas.
 - 2026-10-03 14:16 · Pasa de fichero a carpeta (`viewer/node-card/README.md`) para tener hijos; su ruta de nodo no cambia. Primer hijo: el draft `viewer/node-card/abrir-conversacion` (botón que abre la conversación del nodo).
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar el estado `idea`.
+- 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: mostrar el trabajo abierto del nodo con enlace a su PR y a su hilo.

@@ -21,7 +21,9 @@ Con Mover (`viewer/mover-nodo`) son las dos acciones de la página que escriben 
 - 2026-10-03 08:30 · En la instantánea (`build/html-autonomo`) no hay botón "Rename" y F2 no hace nada: no hay carpeta donde escribir.
 - 2026-10-03 08:47 · La reescritura de referencias pasa a ser común con Mover (`viewer/mover-nodo`). Un fichero que cambia de carpeta recalcula también sus enlaces relativos a ficheros que no se mueven.
 - 2026-10-03 08:47 · Tras renombrar, la página regenera `.index.md` si la carpeta lo tiene, para que la comprobación de GitHub no falle.
+- 2026-10-03 15:18 · Igual que Mover: si trabajo abierto (`viewer/map/nodos-ocupados`) cambia alguno de los md que el cambio escribiría, el diálogo lo lista y no deja renombrar hasta que se fusione o cierre; se ve al abrir el diálogo si el md del propio nodo está ocupado.
 
 ## Requirements
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: compartir con Mover la reescritura de referencias y el movimiento de ficheros, ahora también entre carpetas distintas.
 - 2026-10-03 08:30 · Derived from build/html-autonomo: en modo instantánea Renombrar se desactiva, porque no hay carpeta donde escribir.
+- 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: bloquear el renombrado cuando hay trabajo abierto en los ficheros que cambia, como en Mover.

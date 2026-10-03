@@ -5,7 +5,7 @@
 //
 //   node tools/build-html.mjs [docs folder] [--out file]   (defaults: docs, <project-title>.html)
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -32,7 +32,10 @@ const title = ctx.api.buildModel(files, name).get('').title;
 const d = new Date(), p = x => String(x).padStart(2, '0');
 const generated = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 // "<" is escaped so no md text can close the script element.
-const json = JSON.stringify({ name, generated, files }).replace(/</g, '\\u003c');
+// The open work list (.open-work.md), when the folder has one, goes in too.
+const workFile = join(docs, '.open-work.md');
+const openWork = existsSync(workFile) ? { openWork: readFileSync(workFile, 'utf8') } : {};
+const json = JSON.stringify({ name, generated, files, ...openWork }).replace(/</g, '\\u003c');
 const slug = title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
 const target = resolve(out || slug + '.html');
