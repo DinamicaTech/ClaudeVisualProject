@@ -16,7 +16,6 @@ Lo ejecuta `node tools/check-format.mjs docs`, que usa el mismo código de lectu
 - 2026-10-03 14:40 · Bloquea cualquier aviso de formato salvo los de ciclo de dependencias ("Dependency cycle between …" y "Depends on itself."), que el modelo permite; esos se listan marcados como `[allowed]`. Decidido por Ronald (14:35).
 - 2026-10-03 14:40 · El script `tools/check-format.mjs` (Node, sin paquetes) toma los avisos del modelo de `index.html` con `tools/page-model.mjs`, el mismo cargador que usa `tools/build-index.mjs`. Un aviso nuevo en la página se comprueba solo, sin tocar el script.
 - 2026-10-03 14:40 · Consecuencia: un cambio que introduce algo que la página aún no conoce (p. ej. un `status` nuevo) tiene que enseñárselo al modelo en el mismo PR, o el PR sale en rojo.
-
 - 2026-10-03 14:38 · Validado por Ronald: deja de ser draft.
 
 ## Requirements
