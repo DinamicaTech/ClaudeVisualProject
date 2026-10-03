@@ -49,7 +49,7 @@
   header .folder { color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
   header .spacer { flex: 1; }
   header label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
-  #warnBtn { color: var(--warn); border-color: var(--warn); }
+  #warnBtn, #rulesBtn.warn { color: var(--warn); border-color: var(--warn); }
 
   main { flex: 1; display: flex; min-height: 0; }
   #tree { width: 380px; min-width: 260px; overflow: auto; border-right: 1px solid var(--line); padding: 8px 0; background: var(--panel); }
@@ -201,7 +201,7 @@
   #renForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; }
   #renForm .namerow input { flex: 1; font-family: var(--mono); font-size: 12.5px; }
   #renPreview ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
-  #renError, #movError { color: var(--error); }
+  #renError, #movError, #rulesError { color: var(--error); }
   #movForm label.check { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; margin: 2px 0; }
   #movForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; margin-top: 4px; }
   #movForm .namerow input { flex: 1; font: 12.5px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
@@ -232,6 +232,7 @@
   <span class="folder" id="folderName"></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
+  <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
   <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
@@ -320,6 +321,17 @@
   </form>
 </dialog>
 
+<dialog id="rulesDialog">
+  <div class="dhead"><span class="t">Global rules</span><button data-close type="button">Close</button></div>
+  <div class="dbody">
+    <p id="rulesText"></p>
+    <p class="empty-note">The rules every thread follows live in the node <code>global-rules</code>. When it holds this page's rules, the prompts only point to it; otherwise they repeat the rules in full.
+    "Update rules" rewrites only its "CVP rules" section; its "Project rules" section is never changed.</p>
+    <p id="rulesError" hidden></p>
+    <p><button class="primary" type="button" id="rulesSubmit"></button></p>
+  </div>
+</dialog>
+
 <dialog id="warnDialog">
   <div class="dhead"><span class="t">Format warnings</span><button data-close>Close</button></div>
   <div class="dbody" id="warnBody"></div>
@@ -357,34 +369,6 @@ const state = {
 
 const $ = id => document.getElementById(id);
 const VIEWS = ['map', 'tree', 'drafts', 'log'];
-const READ_RULE =
-  'Reading rule: read the node file in full. For its ancestors and dependencies, read only the ' +
-  'Summary and Decisions blocks; open them in full only if needed. ' +
-  'Ignore every decision marked "[replaced by ...]": a later decision overrides it.';
-const UPDATE_RULE =
-  'Before finishing, update the Summary and Decisions of every node you changed. ' +
-  'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
-  'When a new decision overrides an earlier one, even in part, write the new one as the complete rule in force and mark the earlier one, ' +
-  'right after its date, with "[replaced by YYYY-MM-DD HH:MM] " (the new decision\'s date and time), adding the node path before the date ' +
-  'when the new decision is in another node: "[replaced by viewer/log YYYY-MM-DD HH:MM] ". ' +
-  'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
-  'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
-  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
-  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node.';
-// Before any change the thread proposes which node carries out each part of the task, and waits for the owner.
-// Changes across nodes are atomic: all in one branch, and only when no affected node has open work elsewhere.
-const breakdownRule = () => {
-  const docs = (state.rootName || 'docs') + '/';
-  return [
-    'Before changing any file, reply with a breakdown of the task and wait for the owner\'s confirmation:',
-    `1. Read the node index ${docs}${INDEX_FILE} (every node with its title, dependencies, children and Summary; if it is missing, read the Summary of every md under ${docs}), not only the files listed above, and decide which node owns each part of the task. If no node owns a part, say so and ask the owner whether to do it from this node or in a new node, proposing where the new node goes: under the closest node whose Summary covers that function, or at the top level.`,
-    '2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner\'s words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.',
-    '3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.',
-    '4. End by asking the owner to confirm, or to complete the request or change the breakdown.',
-    'Once confirmed, the change is atomic: do all of it in this thread and one branch, across every affected node, and push the branch as soon as you start. Add to depends_on of the node you work on any affected node that is not already a declared or inherited dependency.',
-  ].join('\n');
-};
-
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -472,6 +456,7 @@ async function reload() {
   $('folderName').textContent = state.rootName + '/' +
     (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
+  renderRulesButton();
   renderAll();
 }
 
@@ -863,6 +848,126 @@ function nodeIndex(nodes) {
 }
 
 // ---------------------------------------------------------------------------
+// Global rules (context-pack/reglas-del-proyecto)
+// ---------------------------------------------------------------------------
+// The rules every thread follows live in the node global-rules, a child of the root. Its "## CVP rules"
+// section sits between two markers that only the page writes ("Update rules"); its "## Project rules"
+// section belongs to the project and is never touched. When that node holds this page's rules, the
+// context pack only points to it; without it (a legacy project) or with older rules, the pack carries them in full.
+// Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
+
+const RULES_NODE = 'global-rules';
+const RULES_VERSION = 1;   // raise it whenever the text of CVP_RULES changes
+const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
+const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
+const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
+
+const CVP_RULES = [
+  'These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from ' +
+  '(for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.',
+  '**Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. ' +
+  'Ignore every decision marked "[replaced by ...]": a later decision overrides it.',
+  '**Routing.** First, using the node index `.index.md` at the root of the docs folder (or the Summary of every md if it is missing), find the node that is functionally responsible for the task: ' +
+  'the one whose function the task belongs to, not the one most affected by it; it may even carry out no part of the breakdown. ' +
+  'If it is the node the prompt names (or the new node it proposes), go on to the breakdown. Otherwise, ask the owner, one option per line, recommend one, and wait for the answer:\n' +
+  '- Start the task in the node the prompt names (or create the new node as proposed).\n' +
+  '- Create a new node <full path in the tree>, when no node fits and a node of its own makes functional sense.\n' +
+  '- Start in the node <path of the best candidate found>.\n' +
+  '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see Drafts), and nothing else; then stop.\n\n' +
+  'The chosen node is the node you work on: read it as Reading says, put the owner\'s words in its Requirements and this thread\'s link in its `threads`. ' +
+  'If the task started on a draft node and goes to another existing node, copy the draft\'s requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft\'s file. ' +
+  'Exception: a task that starts with "idea:" is not routed; it follows Ideas.',
+  '**Breakdown.** Before changing any file, reply with a breakdown of the task and wait for the owner\'s confirmation:\n' +
+  '1. Read the node index `.index.md` (every node with its title, dependencies, children and Summary; if it is missing, read the Summary of every md in the docs folder), not only the files the prompt lists, and decide which node owns each part of the task. If no node owns a part, say so and ask the owner whether to do it from the node you work on or in a new node, proposing where the new node goes: under the closest node whose Summary covers that function, or at the top level.\n' +
+  '2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner\'s words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.\n' +
+  '3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.\n' +
+  '4. End by asking the owner to confirm, or to complete the request or change the breakdown.\n\n' +
+  'Once confirmed, the change is atomic: do all of it in this thread and one branch, across every affected node, and push the branch as soon as you start. ' +
+  'Add to depends_on of the node you work on any affected node that is not already a declared or inherited dependency.',
+  '**Updating the docs.** Before finishing, update the Summary and Decisions of every node you changed. Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
+  'When a new decision overrides an earlier one, even in part, write the new one as the complete rule in force and mark the earlier one, ' +
+  'right after its date, with "[replaced by YYYY-MM-DD HH:MM] " (the new decision\'s date and time), adding the node path before the date ' +
+  'when the new decision is in another node: "[replaced by viewer/log YYYY-MM-DD HH:MM] ". ' +
+  'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
+  'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
+  'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
+  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node.',
+  '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). ' +
+  'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
+  'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
+  'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it. ' +
+  'When the prompt\'s task is taken from a draft\'s Requirements, it is already recorded there: do not copy it again.',
+  '**Ideas.** An owner\'s sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. ' +
+  `Ideas live in the lab, the root node \`${LAB}\` (create it if it is missing). Propose the idea's path, \`${LAB}/<idea>\`, and wait for the owner's OK; ` +
+  'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
+  'An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see Routing), ' +
+  'set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". ' +
+  'A discarded idea stays in the lab with a decision that says so.',
+  '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
+  'as a line `  - <short title> | <link>`.',
+];
+const cvpRulesText = () => CVP_RULES.join('\n\n');
+const normalizeText = t => t.replace(/\r\n?/g, '\n').trim();
+
+// Where the CVP rules block of the global-rules file starts and ends (offsets into text), or null.
+function rulesBlock(text) {
+  const t = text.replace(/\r\n?/g, '\n');
+  const b = RULES_BEGIN_RE.exec(t);
+  if (!b) return null;
+  const after = b.index + b[0].length;
+  const e = RULES_END_RE.exec(t.slice(after));
+  if (!e) return null;
+  return { version: +b[1], start: b.index, end: after + e.index + e[0].length, body: normalizeText(t.slice(after, after + e.index)) };
+}
+
+// State of the project's global rules against this page's: missing (legacy project), current, outdated or newer.
+function rulesStatus(nodes) {
+  const n = nodes.get(RULES_NODE);
+  if (!n || !n.file) return { status: 'missing', node: null };
+  const b = rulesBlock(n.text);
+  if (!b) return { status: 'outdated', node: n, version: 0 };
+  if (b.version > RULES_VERSION) return { status: 'newer', node: n, version: b.version };
+  return { status: b.version === RULES_VERSION && b.body === cvpRulesText() ? 'current' : 'outdated', node: n, version: b.version };
+}
+
+function rulesMarkedBlock() {
+  return [
+    `<!-- cvp-rules ${RULES_VERSION} begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->`,
+    cvpRulesText(),
+    '<!-- cvp-rules end -->',
+  ].join('\n');
+}
+
+// The global-rules file with this page's CVP rules: its markers' content replaced, or the block added
+// before "## Project rules" (or at the end) if it has none, or a new file for a project without one.
+function updatedRulesFile(text, stamp) {
+  if (text == null) {
+    return [
+      '---', 'title: Global rules', 'depends_on: []', '---',
+      '## Summary',
+      'The rules every thread follows when it works on a node of this project. The prompts the page copies point here instead of repeating them.',
+      '"CVP rules" are written by Claude Visual Project and replaced by "Update rules"; "Project rules" are this project\'s own and are never changed by the page.', '',
+      '## Decisions', `- ${stamp} · Created by Claude Visual Project with its rules version ${RULES_VERSION}.`, '',
+      '## CVP rules', rulesMarkedBlock(), '',
+      '## Project rules', '<!-- Rules of this project for every thread, added by its people or by threads with the owner\'s OK. -->', '',
+    ].join('\n');
+  }
+  const t = text.replace(/\r\n?/g, '\n');
+  const b = rulesBlock(t);
+  if (b) return t.slice(0, b.start) + rulesMarkedBlock() + t.slice(b.end);
+  // No markers: a "## CVP rules" section without them is replaced whole (up to the next section).
+  const h = /^##\s+CVP rules\s*$/m.exec(t);
+  if (h) {
+    const from = h.index + h[0].length, next = t.slice(from).search(/^##\s/m);
+    const to = next < 0 ? t.length : from + next;
+    return t.slice(0, from) + '\n' + rulesMarkedBlock() + '\n\n' + t.slice(to).replace(/^\n+/, '');
+  }
+  const p = t.search(/^##\s+Project rules\s*$/m);
+  const block = '## CVP rules\n' + rulesMarkedBlock() + '\n\n';
+  return p >= 0 ? t.slice(0, p) + block + t.slice(p) : t.replace(/\n*$/, '\n\n') + block + '## Project rules\n';
+}
+
+// ---------------------------------------------------------------------------
 // Context pack
 // ---------------------------------------------------------------------------
 
@@ -870,45 +975,23 @@ function repoPath(n) {
   return (state.rootName ? state.rootName + '/' : '') + n.file;
 }
 
-// Routing: before the breakdown, the thread finds the node functionally responsible for the task
-// (not the most affected one; it may even carry out no part of it). When it is not the selected node,
-// the owner chooses where the task goes. A task left for later is saved as a draft node in its functional place.
-function routingRule(n, proposed) {
-  const docs = (state.rootName || 'docs') + '/';
-  const here = proposed
-    ? `the new node ${proposed} proposed above`
-    : `the node above (${n.path || 'root'})`;
-  return [
-    `Routing: first, using the node index ${docs}${INDEX_FILE} (or the Summary of every md if it is missing), find the node that is functionally responsible for this task: the one whose function the task belongs to, not the one most affected by it; it may even carry out no part of the breakdown. ` +
-    `If it is ${here}, go on to the breakdown. Otherwise, ask the owner, one option per line, recommend one, and wait for the answer:`,
-    proposed
-      ? `- Create the node as proposed (${proposed}).`
-      : `- Start the task in the selected node (${n.path || 'root'}).`,
-    '- Create a new node <full path in the tree>, when no node fits and a node of its own makes functional sense.',
-    '- Start in the node <path of the best candidate found>.',
-    '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see the draft rule), and nothing else; then stop.',
-    'The chosen node is the node you work on: read it as the reading rule says, put the owner\'s words in its Requirements and this thread\'s link in its `threads`. ' +
-    'If the task started on a draft node and goes to another existing node, copy the draft\'s requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft\'s file.',
-    'Exception: a task that starts with "idea:" is not routed; it follows the idea rule.',
-  ].join('\n');
+// The rules part of a prompt: a pointer to the global-rules node when it holds this page's rules (or newer ones),
+// the rules in full otherwise (legacy project), with a request to update them when the node exists but is out of date.
+function rulesLines() {
+  const r = rulesStatus(state.nodes);
+  if (r.status === 'current' || r.status === 'newer') return [
+    `Rules: before anything else, read ${repoPath(r.node)} and follow both its "CVP rules" section (reading, routing, breakdown, updating the docs, drafts, ideas, thread link) ` +
+    'and its "Project rules" section, which wins on a conflict.',
+  ];
+  const head = r.node ? [
+    `Rules: the CVP rules in ${repoPath(r.node)} are out of date (${r.version ? 'version ' + r.version : 'no rules block'}; this page has version ${RULES_VERSION}). ` +
+    'Follow the rules below instead, together with the "Project rules" section of that file, which wins on a conflict. ' +
+    'Tell the owner once that the global rules need "Update rules" in the page.', '',
+  ] : [];
+  return [...head, cvpRulesText()];
 }
-const DRAFT_RULE =
-  'A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). ' +
-  'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
-  'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
-  'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it.';
 
-// Ideas (context-pack/ideas): an idea is the state before a draft. It lives in the lab, the root node
-// creative-lab, and is not routed to its functional node until the owner turns it into a draft or executes it.
-const LAB = 'creative-lab';
 const inLab = n => n.status === 'idea' || n.path === LAB || n.path.startsWith(LAB + '/');
-const IDEA_RULE =
-  'An owner\'s sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. ' +
-  `Ideas live in the lab, the root node \`${LAB}\` (create it if it is missing). Propose the idea's path, \`${LAB}/<idea>\`, and wait for the owner's OK; ` +
-  'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
-  'An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see the routing step), ' +
-  'set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". ' +
-  'A discarded idea stays in the lab with a decision that says so.';
 
 // For a draft node, the Task line starts filled in with its pending task: its "draft:" requirement
 // lines without the prefix or, if it has none, all its requirements.
@@ -940,10 +1023,6 @@ function taskLines(n) {
     t.length === 1 ? `Task: ${t[0]}` : 'Task:\n' + t.map(x => `- ${x}`).join('\n'),
   ];
 }
-
-const THREAD_RULE =
-  'If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
-  'as a line `  - <short title> | <link>`.';
 
 // Files a thread working on node n must know: the node, its ancestors and its dependencies.
 function packFiles(n, nodeLabel) {
@@ -977,7 +1056,7 @@ function contextPack(n) {
     ...obsoleteWarning(n),
     `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
     ...packFiles(n, 'Node'),
-    '', READ_RULE, '', routingRule(n), '', breakdownRule(), '', UPDATE_RULE, DRAFT_RULE, IDEA_RULE, THREAD_RULE, '', ...taskLines(n),
+    '', ...rulesLines(), '', ...taskLines(n),
   ].join('\n');
 }
 
@@ -1003,9 +1082,8 @@ function subTaskPack(n, title) {
     `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
     `The sub-task is a new node, ${childPath}, child of that node.`, '',
     ...packFiles(n, 'Parent node'), '',
-    READ_RULE, '',
-    ...(idea ? [`This sub-task is a new idea in the lab (\`${LAB}\`): it is not routed to its functional node and nothing is built for it; follow the idea rule.`]
-             : [routingRule(n, childPath), '', breakdownRule()]), '',
+    ...rulesLines(), '',
+    ...(idea ? [`This sub-task is a new idea in the lab (\`${LAB}\`): it is not routed to its functional node and nothing is built for it; follow the Ideas rule.`, ''] : []),
     'After the confirmation, if the sub-task stays as proposed:',
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
     '```markdown', '---', `title: ${title}`, 'depends_on: []', `status: ${idea ? 'idea' : 'draft'}`, 'threads:',
@@ -1013,7 +1091,7 @@ function subTaskPack(n, title) {
     '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
     idea ? 'Then debate the idea in that node.' : 'Then work on the sub-task in that node.', '',
-    UPDATE_RULE, DRAFT_RULE, IDEA_RULE, '', idea ? 'Task: idea: ' : 'Task: ',
+    idea ? 'Task: idea: ' : 'Task: ',
   ].join('\n');
 }
 
@@ -1095,7 +1173,7 @@ function renderMarkdown(md) {
       while (i < lines.length && !lines[i].trim().startsWith(m[1])) buf.push(lines[i++]);
       i++;
       html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`;
-    } else if (!line.trim()) {
+    } else if (!line.trim() || /^\s*<!--.*-->\s*$/.test(line)) {
       i++;
     } else if ((m = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/))) {
       html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;
@@ -2205,6 +2283,59 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------------------------------------------------------------------------
+// Global rules: header button and "Update rules" (see the Global rules section). Third write to the folder,
+// after Rename and Move: it rewrites only the CVP rules block of global-rules, or creates that node.
+// ---------------------------------------------------------------------------
+
+function renderRulesButton() {
+  const r = rulesStatus(state.nodes), b = $('rulesBtn');
+  b.hidden = !!state.snapshot || r.status === 'current';
+  b.className = r.status === 'missing' ? '' : 'warn';
+  b.textContent = { missing: 'Add global rules', outdated: '⚠ Update rules', newer: '⚠ Rules newer than page' }[r.status] || '';
+  b.title = {
+    missing: 'This project has no global-rules node: the prompts repeat every rule in full',
+    outdated: 'The global rules of this project are older than this page\'s: the prompts repeat them in full until they are updated',
+    newer: 'The global rules were written by a newer version of Claude Visual Project than this page',
+  }[r.status] || '';
+}
+
+function openRules() {
+  const r = rulesStatus(state.nodes);
+  const where = r.node ? r.node.file : RULES_NODE + '.md';
+  $('rulesText').textContent = {
+    missing: `This project has no global rules yet, so every prompt repeats them in full. "Add global rules" creates ${where} in the docs folder with this page's rules (version ${RULES_VERSION}).`,
+    outdated: `The CVP rules in ${where} are ${r.version ? 'version ' + r.version : 'missing or edited'}; this page has version ${RULES_VERSION}. Until they are updated, the prompts repeat this page's rules in full.`,
+    newer: `The CVP rules in ${where} are version ${r.version}, newer than this page (version ${RULES_VERSION}). The prompts point to them as they are. Get the latest index.html of Claude Visual Project.`,
+  }[r.status];
+  $('rulesSubmit').hidden = r.status === 'newer';
+  $('rulesSubmit').textContent = r.status === 'missing' ? 'Add global rules' : 'Update rules';
+  $('rulesError').hidden = true;
+  $('rulesDialog').showModal();
+}
+
+async function doUpdateRules() {
+  const fail = msg => { $('rulesError').hidden = false; $('rulesError').textContent = msg; };
+  try {
+    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+      return fail('The browser did not grant permission to write to the folder.');
+    $('rulesSubmit').disabled = true;
+    // Read it again from disk: someone may have added project rules since the page loaded.
+    const n = buildModel(await readFolder(state.dir), state.rootName).get(RULES_NODE);
+    const file = n && n.file ? n.file : RULES_NODE + '.md';
+    await writeFileAt(file, updatedRulesFile(n && n.file ? n.text : null, nowStamp()));
+    await refreshIndex();
+    $('rulesDialog').close();
+    await reload();
+    select(RULES_NODE, true);
+    toast(`Global rules written to ${file}. Commit it in git.`);
+  } catch (e) {
+    fail('Could not write the rules: ' + (e && e.message || e) + '. Press Reload and check the folder.');
+  } finally {
+    $('rulesSubmit').disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Warnings overview
 // ---------------------------------------------------------------------------
 
@@ -2233,6 +2364,8 @@ function toast(msg) {
 for (const b of document.querySelectorAll('dialog [data-close]')) b.onclick = () => b.closest('dialog').close();
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) d.close(); });
 $('warnBtn').onclick = () => $('warnDialog').showModal();
+$('rulesBtn').onclick = () => openRules();
+$('rulesSubmit').onclick = () => doUpdateRules();
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
 $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };

@@ -1,0 +1,53 @@
+---
+title: Global rules
+depends_on: []
+threads:
+  - Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
+---
+## Summary
+Las reglas que sigue todo hilo que trabaja sobre un nodo de este proyecto. Los prompts de la página apuntan aquí en vez de repetirlas.
+"CVP rules" las escribe Claude Visual Project y las reemplaza "Update rules"; "Project rules" son las propias del proyecto y la página nunca las toca.
+Las reglas personales del propietario sobre cómo trabajar con él no van aquí sino en `AGENTS.md`.
+
+## Decisions
+- 2026-10-03 14:58 · Nodo hijo de la raíz, visible en el mapa, para que el propietario u otro hilo puedan añadir reglas propias. Elegido por Ronald (14:44, 14:46) frente a un fichero oculto `.rules.md`.
+- 2026-10-03 14:58 · Dos secciones tras los bloques fijos: `## CVP rules`, entre las marcas `<!-- cvp-rules <versión> begin … -->` y `<!-- cvp-rules end -->`, que no se edita a mano; y `## Project rules`, del proyecto. En un conflicto mandan las Project rules.
+- 2026-10-03 14:58 · En este repositorio las CVP rules se escriben con `node tools/update-rules.mjs docs`, y una comprobación en GitHub marca en rojo el PR si no coinciden con las de `index.html`.
+
+## Requirements
+- 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
+
+## CVP rules
+<!-- cvp-rules 1 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
+
+**Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
+
+**Routing.** First, using the node index `.index.md` at the root of the docs folder (or the Summary of every md if it is missing), find the node that is functionally responsible for the task: the one whose function the task belongs to, not the one most affected by it; it may even carry out no part of the breakdown. If it is the node the prompt names (or the new node it proposes), go on to the breakdown. Otherwise, ask the owner, one option per line, recommend one, and wait for the answer:
+- Start the task in the node the prompt names (or create the new node as proposed).
+- Create a new node <full path in the tree>, when no node fits and a node of its own makes functional sense.
+- Start in the node <path of the best candidate found>.
+- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see Drafts), and nothing else; then stop.
+
+The chosen node is the node you work on: read it as Reading says, put the owner's words in its Requirements and this thread's link in its `threads`. If the task started on a draft node and goes to another existing node, copy the draft's requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft's file. Exception: a task that starts with "idea:" is not routed; it follows Ideas.
+
+**Breakdown.** Before changing any file, reply with a breakdown of the task and wait for the owner's confirmation:
+1. Read the node index `.index.md` (every node with its title, dependencies, children and Summary; if it is missing, read the Summary of every md in the docs folder), not only the files the prompt lists, and decide which node owns each part of the task. If no node owns a part, say so and ask the owner whether to do it from the node you work on or in a new node, proposing where the new node goes: under the closest node whose Summary covers that function, or at the top level.
+2. List each functional part, the node that will carry it out (an existing node, or a new one with its proposed path) and the requirement line that will be written in that node: the owner's words in the node they belong to, and "Derived from <node path>: <what that node must now provide>" in the others. Do this even if only one node is affected.
+3. For every affected node, check the remote for open branches or pull requests with unmerged changes to its md. If there are, say so: which node, the work in progress (title, date of its first commit, link from its `threads` list), and that you cannot start until that work is merged or closed. Do not merge or close it unless the owner explicitly says so.
+4. End by asking the owner to confirm, or to complete the request or change the breakdown.
+
+Once confirmed, the change is atomic: do all of it in this thread and one branch, across every affected node, and push the branch as soon as you start. Add to depends_on of the node you work on any affected node that is not already a declared or inherited dependency.
+
+**Updating the docs.** Before finishing, update the Summary and Decisions of every node you changed. Each decision line starts with "YYYY-MM-DD HH:MM · ". When a new decision overrides an earlier one, even in part, write the new one as the complete rule in force and mark the earlier one, right after its date, with "[replaced by YYYY-MM-DD HH:MM] " (the new decision's date and time), adding the node path before the date when the new decision is in another node: "[replaced by viewer/log YYYY-MM-DD HH:MM] ". Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node.
+
+**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). An owner's sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. Propose the draft node's path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner's OK. Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner's literal sentence on the line above it. When the prompt's task is taken from a draft's Requirements, it is already recorded there: do not copy it again.
+
+**Ideas.** An owner's sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. Ideas live in the lab, the root node `creative-lab` (create it if it is missing). Propose the idea's path, `creative-lab/<idea>`, and wait for the owner's OK; then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see Routing), set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". A discarded idea stays in the lab with a decision that says so.
+
+**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - <short title> | <link>`.
+<!-- cvp-rules end -->
+
+## Project rules
+- Working docs in `docs/` are in Spanish. Code, code comments, UI and public-facing docs (README) are in English.
+- After changing any node, run `node tools/build-index.mjs docs`; CI fails if `docs/.index.md` is out of date. If you change the CVP rules in `index.html`, raise `RULES_VERSION` and run `node tools/update-rules.mjs docs`; CI fails if `docs/global-rules.md` does not match.
