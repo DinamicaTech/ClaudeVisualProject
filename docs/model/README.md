@@ -9,7 +9,7 @@ Todo lo que muestra el visor y lo que lista el paquete de contexto sale de este 
 ## Decisions
 - 2026-10-02 09:00 · Un nodo tiene: ruta, título, padre, hijos, dependencias, resumen, decisiones y texto completo del md.
 - 2026-10-02 09:00 · La jerarquía sale solo de las rutas de fichero; las dependencias, solo de la cabecera.
-- 2026-10-02 09:19 · Un nodo tiene además estado (`draft`, `stable`, `obsolete`) y, si es obsoleto, opcionalmente su sustituto.
+- 2026-10-02 09:19 · [replaced by 2026-10-03 14:45] Un nodo tiene además estado (`draft`, `stable`, `obsolete`) y, si es obsoleto, opcionalmente su sustituto.
 - 2026-10-02 09:19 · Un nodo es obsoleto en la práctica si lo es él o cualquiera de sus ascendientes.
 - 2026-10-02 09:19 · Aviso de dependencia obsoleta: un nodo que depende de uno obsoleto recibe el aviso "depende de un nodo obsoleto", con el sustituto si está declarado.
 - 2026-10-02 09:22 · Herencia de dependencias: un nodo hereda las dependencias de todos sus ascendientes. Es la base del paquete de contexto.
@@ -22,7 +22,9 @@ Todo lo que muestra el visor y lo que lista el paquete de contexto sale de este 
 - 2026-10-02 09:46 · Las rutas de `depends_on` se toleran con `./`, `/` final o extensión `.md`, y se normalizan.
 - 2026-10-02 10:38 · Un nodo tiene además su lista de chats (`threads`), cada uno con título y enlace.
 - 2026-10-03 08:30 · Una decisión puede estar sustituida (marca `[replaced by …]`, ver `format/decisiones-sustituidas`): el modelo guarda a qué decisión apunta. Aviso si la marca apunta a un nodo o a una decisión (fecha y hora) que no existen.
+- 2026-10-03 14:45 · Un nodo tiene además estado (`idea`, `draft`, `stable`, `obsolete`) y, si es obsoleto, opcionalmente su sustituto. `idea` no da el aviso de estado desconocido.
 
 ## Requirements
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: reconocer la marca `[replaced by …]` en las decisiones y avisar si apunta a una decisión inexistente.
+- 2026-10-03 14:45 · Derived from context-pack/ideas: reconocer el estado `idea`.
 
