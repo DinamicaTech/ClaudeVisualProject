@@ -26,7 +26,9 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-03 07:50 · El selector suma "Drafts" y "Log" (`viewer/drafts`, `viewer/log`); el interruptor "References" solo se muestra en "Tree" y "Project".
 - 2026-10-03 14:45 · Los nodos `idea` llevan una etiqueta "idea" en ámbar, distinta de la de los drafts.
 - 2026-10-03 15:18 · Un nodo con trabajo abierto lleva una etiqueta "open" en azul (`viewer/map/nodos-ocupados`).
+- 2026-10-03 15:55 · En la vista Project, un nodo con aviso de revisión (`model/avisos-de-desactualizacion`) lleva la etiqueta "⏱ review"; su tooltip lista las dependencias que han cambiado.
 
 ## Requirements
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar las ideas con su propia etiqueta.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: marcar los nodos con trabajo abierto.
+- 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la fila la marca "⏱ review" con las dependencias que han cambiado en su tooltip.

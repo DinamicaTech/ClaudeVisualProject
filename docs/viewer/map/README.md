@@ -35,6 +35,7 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 14:15 · La tarjeta de un nodo draft tiene fondo gris claro #F0F0F0 (en modo oscuro, un gris apenas más claro que las tarjetas), simulando un nodo desactivado; es la opción D de la maqueta https://claude.ai/artifact/RRU64dTBrWaVS9xuUTrC1C con el gris aclarado a petición de Ronald. Se mantiene la etiqueta DRAFT y las líneas siguen continuas. Sustituye al borde morado discontinuo, que se distinguía poco al alejar el mapa y se confundía con el color del área Paquete de contexto.
 - 2026-10-03 14:45 · La tarjeta de un nodo `idea` es normal (no gris, que es de los drafts) con la etiqueta IDEA en ámbar sobre fondo amarillo claro.
 - 2026-10-03 15:18 · Un nodo con trabajo abierto (una rama o un PR que cambia su md) lleva la etiqueta "open" en azul junto al título, con el PR o la rama al pasar el ratón (`viewer/map/nodos-ocupados`).
+- 2026-10-03 15:55 · Un nodo con aviso de revisión (`model/avisos-de-desactualizacion`) lleva la etiqueta "⏱ review" en la tarjeta, y el tooltip del nodo lista las dependencias que han cambiado, con su fecha.
 
 ## Requirements
 - 2026-10-02 12:24 · Con la tecla Z (Zoom) mostrar solo el nodo seleccionado y descendientes (recursivamente).
@@ -49,3 +50,4 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 14:15 · Creo que falta 'aclarar' un poco más el gris para que no quede tan oscuro. Un #F0F0F0 creo que quedará mejor.
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar las ideas con su propia etiqueta, sin confundirlas con los drafts.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: marcar en la tarjeta los nodos con trabajo abierto.
+- 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la tarjeta la marca "⏱ review" y, en el tooltip del nodo, qué dependencias han cambiado.

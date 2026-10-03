@@ -114,6 +114,7 @@
   .node.draft .tag { border-style: solid; }
   .node.idea .tag { color: var(--idea); background: var(--idea-soft); border-style: solid; }   /* an idea under debate in the lab, not a pending task */
   .node .tag.busy { color: var(--accent); background: var(--accent-soft); border-style: solid; }   /* open work: a branch or pull request changes its md */
+  .node .tag.stale { color: var(--dependent); border-style: solid; }   /* a dependency decided something after this node's latest decision */
   .node.placeholder .card { border-style: dashed; }
   .node.placeholder .t { font-style: italic; color: var(--muted); }
   .node.obsolete .card, .node.obsolete-inherited .card { opacity: .5; filter: grayscale(1); }
@@ -147,6 +148,7 @@
   .badge.draft { color: var(--draft); border: 1px solid var(--draft); }
   .badge.idea { color: var(--idea); background: var(--idea-soft); border: 1px solid var(--idea); }
   .badge.busy { color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); }
+  .badge.stale { color: var(--dependent); border: 1px solid var(--dependent); }
 
   #card h1 { font-size: 22px; margin: 0 0 2px; }
   #card .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
@@ -163,6 +165,9 @@
   .openwork { margin: 14px 0 0; padding: 8px 12px; border-radius: 6px; background: var(--accent-soft); }
   .openwork ul { margin: 4px 0 0; padding-left: 18px; }
   .openwork .when { color: var(--muted); font-size: 12.5px; }
+  .review { margin: 14px 0 0; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--dependent); }
+  .review ul { margin: 4px 0 0; padding-left: 18px; }
+  .review .when { color: var(--muted); font-size: 12.5px; }
   header #openWorkNote { color: var(--muted); font-size: 12.5px; }
   .summary { font-size: 15px; }
   .summary p:first-child { margin-top: 0; }
@@ -781,7 +786,7 @@ function nodePathOf(filePath) {
 function makeNode(path, file, text) {
   const n = {
     path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
-    placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null, docsPath: '',
+    placeholder: !file, warnings: [], deps: [], stale: [], status: 'stable', replacedBy: null, docsPath: '',
     summary: '', decisions: [], requirements: [], title: '', threads: [],
   };
   if (file) Object.assign(n, parseDoc(text));
@@ -868,9 +873,30 @@ function buildModel(files, rootName) {
         (t === n ? '' : ` of "${t.path}"`) + ', which does not exist.');
   }
 
+  markStale(nodes);
   markCycles(nodes);
   return nodes;
 }
+
+// Review notice (not a format warning): a node is probably out of date when one of its own declared
+// dependencies has a decision dated after the node's latest decision. A new decision in the node clears it.
+// Inherited dependencies do not count, nor do draft, idea, obsolete or placeholder nodes, nor nodes with no dated decision.
+const latestDecision = n => n.decisions.reduce((m, d) => d.when > m ? d.when : m, '');
+function markStale(nodes) {
+  for (const n of nodes.values()) {
+    n.stale = [];
+    if (n.placeholder || n.status === 'draft' || n.status === 'idea' || n.obsoleteBy) continue;
+    const mine = latestDecision(n);
+    if (!mine) continue;
+    for (const l of n.depLinks) {
+      const t = l.node;
+      if (!t || t === n) continue;
+      const newer = t.decisions.filter(d => d.when > mine);
+      if (newer.length) n.stale.push({ node: t, when: latestDecision(t), count: newer.length });
+    }
+  }
+}
+const staleText = n => n.stale.map(s => `${s.node.title} decided ${s.count === 1 ? 'something' : s.count + ' things'} on ${s.when}`).join('\n');
 
 function replacementOf(n, nodes) {
   const src = n.obsoleteBy;
@@ -1371,6 +1397,7 @@ function addRow(container, n, depth) {
     `<span class="title">${esc(n.title)}</span>` +
     (n.status === 'draft' || n.status === 'idea' ? `<span class="badge ${n.status}">${n.status}</span>` : '') +
     (openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">open</span>` : '') +
+    (n.stale.length ? `<span class="badge stale" title="Review: dependencies changed after this node's latest decision\n${esc(staleText(n))}">⏱ review</span>` : '') +
     (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
   container.appendChild(row);
   if (!open) return;
@@ -1517,10 +1544,11 @@ function renderMap() {
       ? `<span class="chip" data-ref="${esc(l.node.path)}" title="Depends on ${esc(l.node.title)}. Click to jump, double-click to copy its context"><b>↗</b> ${esc(l.node.title)}</span>`
       : `<span class="chip missing" title="Missing dependency: ${esc(l.path)}"><b>↗</b> ${esc(l.path)} (missing)</span>`).join('')}</div>` : '';
     boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
-      `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
+      `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}${n.stale.length ? '\n⏱ Review: dependencies changed after its latest decision\n  ' + esc(staleText(n).split('\n').join('\n  ')) : ''}</title>` +
       `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
       `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}` +
-      `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
+      `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}` +
+      `${n.stale.length ? '<span class="tag stale">⏱ review</span>' : ''}</div>` +
       `<div class="p">${esc(n.path || docsPrefix())}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
       `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
@@ -1806,6 +1834,9 @@ function renderCard() {
       (r ? ` Replaced by ${nodeLink(r)}.` : '') + '</div>';
   }
   if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
+  if (n.stale.length) h += '<div class="review"><b>⏱ Review</b>: these dependencies decided something after this node\'s latest decision' +
+    ` <span class="when">(${esc(latestDecision(n))})</span>. A new decision in this node clears the notice.<ul>` +
+    n.stale.map(s => `<li>${nodeLink(s.node)} <span class="when">${s.count} decision${s.count === 1 ? '' : 's'}, latest ${esc(s.when)}</span></li>`).join('') + '</ul></div>';
   const busy = openWorkOf(n);
   if (busy.length) h += '<div class="openwork"><b>Open work</b> changes this node' +
     (state.openWork.updated ? ` <span class="when">(updated ${esc(state.openWork.updated)})</span>` : '') + ':' + openWorkList(busy) + '</div>';
