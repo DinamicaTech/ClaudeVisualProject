@@ -8,7 +8,7 @@ threads:
 ## Summary
 Cambia el nombre de un nodo desde la ficha (botón "Rename" o F2): su título y, si se marca la casilla, el nombre de su fichero o carpeta.
 Al cambiar el nombre cambia la ruta del nodo y la de todos sus descendientes, así que se reescriben todas las referencias a ellas dentro de docs.
-Es la única acción de la página que escribe en la carpeta; los cambios quedan en el clon local para hacer commit. No está en la instantánea de `build/html-autonomo`.
+Con Mover (`viewer/mover-nodo`) son las dos acciones de la página que escriben en la carpeta; los cambios quedan en el clon local para hacer commit y el índice de nodos se regenera solo. No está en la instantánea de `build/html-autonomo`.
 
 ## Decisions
 - 2026-10-02 10:52 · Se renombra desde la página, con permiso de escritura que el navegador pide la primera vez. Opción recomendada a Ronald, pendiente de su confirmación.
@@ -19,6 +19,9 @@ Es la única acción de la página que escribe en la carpeta; los cambios quedan
 - 2026-10-02 10:52 · No se actualizan rutas escritas fuera de docs (AGENTS.md, memoria de los asistentes, hilos ya abiertos). La raíz no cambia de ruta, solo de título; una carpeta sin README.md solo cambia de nombre.
 - 2026-10-03 07:50 · Validado por Ronald el 2026-10-02 21:15 y fusionado: pasa a stable. Confirma la opción de las 10:52 (renombrar desde la página).
 - 2026-10-03 08:30 · En la instantánea (`build/html-autonomo`) no hay botón "Rename" y F2 no hace nada: no hay carpeta donde escribir.
+- 2026-10-03 08:47 · La reescritura de referencias pasa a ser común con Mover (`viewer/mover-nodo`). Un fichero que cambia de carpeta recalcula también sus enlaces relativos a ficheros que no se mueven.
+- 2026-10-03 08:47 · Tras renombrar, la página regenera `.index.md` si la carpeta lo tiene, para que la comprobación de GitHub no falle.
 
 ## Requirements
+- 2026-10-03 08:47 · Derived from viewer/mover-nodo: compartir con Mover la reescritura de referencias y el movimiento de ficheros, ahora también entre carpetas distintas.
 - 2026-10-03 08:30 · Derived from build/html-autonomo: en modo instantánea Renombrar se desactiva, porque no hay carpeta donde escribir.
