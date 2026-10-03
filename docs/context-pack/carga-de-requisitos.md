@@ -27,6 +27,8 @@ El botón "Load requirements" de la cabecera copia el prompt; el procedimiento e
 - 2026-10-03 16:13 · Validado por Ronald a las 16:11: pasa a stable.
 - 2026-10-03 18:15 · El bloque puede ser texto pegado o ficheros adjuntos, que el hilo lee siempre como parte del bloque sin que se lo pidan. En un documento largo se numera cada párrafo o apartado en vez de cada frase.
 - 2026-10-03 18:15 · Modo híbrido para repartir requisitos, elegido por Ronald (18:06): los ficheros de requisitos se guardan sin cambios en `sources/` en la raíz del repositorio (fuera de la carpeta de docs, para que no se lean como nodos), con su nombre original. Un nodo recibe sus frases literales si son cortas (unas diez líneas en total); si son más largas, recibe por cada parte una línea fechada "From sources/<fichero> § <apartado o página>: <resumen>", y quien trabaje en el nodo lee esa parte de la fuente. CVP rules versión 5.
+- 2026-10-03 19:20 · Una pregunta contestada no se borra: su respuesta se copia a los Requirements del mismo nodo como línea fechada "answer: <pregunta en corto> → <respuesta>" y la línea de la pregunta se marca, justo tras su fecha, con "[answered <fecha hora>]"; deja de estar abierta (ni "?N" ni vista Questions). Si la respuesta cambia una decisión vigente, se escribe la nueva y se marca la antigua como sustituida. CVP rules versión 6.
+- 2026-10-03 19:20 · Si a un hilo le bloquea una pregunta abierta de otro nodo, no espera al hilo de ese nodo: se la hace al propietario en su propio hilo y apunta la respuesta en ese nodo de la misma forma. Pasaba en Killer Flies: un hilo se quedaba parado esperando la respuesta de una dependencia. CVP rules versión 6.
 
 ## Requirements
 - 2026-10-03 08:18 · Al crear un proyecto, poder indicar un conjunto de requerimientos y que eso genere todo el árbol de nodos funcionales de dicho proyecto (como drafts los que tengan tareas asociadas).
@@ -40,3 +42,6 @@ El botón "Load requirements" de la cabecera copia el prompt; el procedimiento e
 - 2026-10-03 17:50 · Pensaba que haría solo las preguntas críticas para poder definir la estructura del proyecto, crearía la estructura y luego repartiría las dudas no críticas en los nodos correspondientes.
 - 2026-10-03 18:03 · La duda es si se reparten también los requerimientos en los diferentes nodos. En este ejemplo, los requerimientos son bastante breves, pero si lanzo un proyecto serio, los requerimientos de un nodo pueden tener varias páginas.
 - 2026-10-03 18:06 · Sí, el modo Híbrido es una buena opción.
+- 2026-10-03 19:09 · Se te ocurre algún mecanismo para poder contestar directamente una, varias o todas las preguntas a la vez ?
+- 2026-10-03 19:09 · si activas un hilo que depende de otro que tiene una pregunta pendiente, se queda parado esperando respuesta.
+- 2026-10-03 19:12 · Los dos [contestar en bloque desde Questions y regla para que un hilo no se pare por una pregunta de otro nodo]
