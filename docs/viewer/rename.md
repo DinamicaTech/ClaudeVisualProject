@@ -13,7 +13,7 @@ Con Mover (`viewer/mover-nodo`) son las dos acciones de la página que escriben 
 ## Decisions
 - 2026-10-02 10:52 · Se renombra desde la página, con permiso de escritura que el navegador pide la primera vez. Opción recomendada a Ronald, pendiente de su confirmación.
 - 2026-10-02 10:52 · Un diálogo con el título y una casilla "también el fichero o carpeta", desmarcada por defecto. Al marcarla, el nombre propuesto es el título en minúsculas con guiones, editable.
-- 2026-10-02 10:52 · Al cambiar la ruta se actualizan `depends_on`, `replaced_by` y los enlaces relativos entre md de todos los ficheros de docs; los enlaces dentro de bloques de código no se tocan.
+- 2026-10-02 10:52 · [replaced by 2026-10-03 17:40] Al cambiar la ruta se actualizan `depends_on`, `replaced_by` y los enlaces relativos entre md de todos los ficheros de docs; los enlaces dentro de bloques de código no se tocan.
 - 2026-10-02 10:52 · Una carpeta se mueve entera, con los ficheros que no son md. Primero se copia y al final se borra lo viejo, para que un error a mitad no pierda nada.
 - 2026-10-02 10:52 · El diálogo muestra antes de confirmar qué ficheros se mueven y cuáles se editan, y no deja usar un nombre que ya existe, `README` ni un cambio solo de mayúsculas.
 - 2026-10-02 10:52 · No se actualizan rutas escritas fuera de docs (AGENTS.md, memoria de los asistentes, hilos ya abiertos). La raíz no cambia de ruta, solo de título; una carpeta sin README.md solo cambia de nombre.
@@ -22,8 +22,10 @@ Con Mover (`viewer/mover-nodo`) son las dos acciones de la página que escriben 
 - 2026-10-03 08:47 · La reescritura de referencias pasa a ser común con Mover (`viewer/mover-nodo`). Un fichero que cambia de carpeta recalcula también sus enlaces relativos a ficheros que no se mueven.
 - 2026-10-03 08:47 · Tras renombrar, la página regenera `.index.md` si la carpeta lo tiene, para que la comprobación de GitHub no falle.
 - 2026-10-03 15:18 · Igual que Mover: si trabajo abierto (`viewer/map/nodos-ocupados`) cambia alguno de los md que el cambio escribiría, el diálogo lo lista y no deja renombrar hasta que se fusione o cierre; se ve al abrir el diálogo si el md del propio nodo está ocupado.
+- 2026-10-03 17:40 · Al cambiar la ruta se actualizan `depends_on`, `replaced_by`, la ruta dentro de las marcas `[replaced by <ruta> <fecha hora>]` de las decisiones y los enlaces relativos entre md de todos los ficheros de docs; lo que está dentro de bloques de código no se toca. Vale igual para Mover (`viewer/mover-nodo`).
 
 ## Requirements
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: compartir con Mover la reescritura de referencias y el movimiento de ficheros, ahora también entre carpetas distintas.
 - 2026-10-03 08:30 · Derived from build/html-autonomo: en modo instantánea Renombrar se desactiva, porque no hay carpeta donde escribir.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: bloquear el renombrado cuando hay trabajo abierto en los ficheros que cambia, como en Mover.
+- 2026-10-03 17:40 · Derived from format/decisiones-sustituidas: reescribir también la ruta dentro de las marcas `[replaced by …]`.
