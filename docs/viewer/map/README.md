@@ -7,7 +7,7 @@ threads:
 ## Summary
 Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas.
 Es la vista por defecto. En el selector "Tree / Project / Drafts / Log", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
-La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes.
+La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes. Con "Tree edit mode" se mueve un nodo arrastrando su tarjeta (`viewer/mover-nodo`).
 
 ## Decisions
 - 2026-10-02 10:23 · Ronald pide una vista visual de la jerarquía además del árbol; se añade a la v1 como vista "Map", por defecto.
@@ -28,9 +28,11 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-02 18:10 · [replaced by 2026-10-03 07:50] Ronald aclara el selector: "Tree" es el mapa de nodos (esta vista) y "Project" la vista en filas, el proyecto organizado tabularmente. Sustituye al reparto de nombres de las 12:40.
 - 2026-10-03 07:50 · El selector de vista es "Tree / Project / Drafts / Log": "Tree" es el mapa de nodos (esta vista), "Project" la vista en filas, el proyecto organizado tabularmente (`viewer/tree`), y después `viewer/drafts` y `viewer/log`. El mapa sigue siendo la vista por defecto.
 - 2026-10-03 08:30 · El contador ◆ de las tarjetas cuenta solo las decisiones vigentes; las sustituidas se indican al pasar el ratón. Derived from format/decisiones-sustituidas.
+- 2026-10-03 08:47 · Interruptor "Tree edit mode" en la cabecera, visible solo en esta vista: con él encendido, arrastrar una tarjeta (salvo la raíz) la lleva sobre otra para moverla allí (`viewer/mover-nodo`); arrastrar el fondo sigue moviendo el mapa. La leyenda cambia para explicarlo.
 
 ## Requirements
 - 2026-10-02 12:24 · Con la tecla Z (Zoom) mostrar solo el nodo seleccionado y descendientes (recursivamente).
 - 2026-10-02 12:24 · En lugar del selector Map/Tree (que queda un poco confuso): Tree/Project
 - 2026-10-02 18:08 · Bueno, la idea es que 'Tree' es el árbol de nodos y 'Project' el proyecto organizado tabularmente.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: contar en ◆ solo las decisiones vigentes.
+- 2026-10-03 08:47 · Derived from viewer/mover-nodo: interruptor "Tree edit mode" y arrastrar una tarjeta sobre otra para moverla.

@@ -197,7 +197,19 @@
   #renForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; }
   #renForm .namerow input { flex: 1; font-family: var(--mono); font-size: 12.5px; }
   #renPreview ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
-  #renError { color: var(--error); }
+  #renError, #movError { color: var(--error); }
+  #movForm label.check { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; margin: 2px 0; }
+  #movForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; margin-top: 4px; }
+  #movForm .namerow input { flex: 1; font: 12.5px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  #movForm h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+  #movPreview ul, #movDeps ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
+  #movForm .notice { margin-top: 14px; padding: 8px 12px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
+  #editToggleLabel.on { color: var(--accent); font-weight: 600; }
+  #mapSvg.editing .node:not(.d0) { cursor: move; }
+  #mapSvg .node.lifted { pointer-events: none; opacity: .85; }
+  #mapSvg .node.lifted .card { box-shadow: 0 6px 18px rgba(0,0,0,.25); border-color: var(--accent); }
+  #mapSvg .node.dropok .card { border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--accent); }
+  #mapSvg .node.dropno .card { border-color: var(--error); }
   .wgroup { margin: 12px 0; }
   .wgroup ul { margin: 4px 0; color: var(--warn); }
 
@@ -221,7 +233,11 @@
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
   </label>
+  <label id="editToggleLabel" hidden title="Drag a card onto another one to move it (with its descendants) under that node">
+    <input type="checkbox" id="editToggle"> Tree edit mode
+  </label>
   <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
+  <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
   <button id="openBtn">Open folder</button>
 </header>
 
@@ -230,7 +246,8 @@
   <div id="map" hidden>
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
-    <div class="legend">◆ decisions in force · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
+    <div class="legend" id="editLegend" hidden>Tree edit mode: drag a card onto its new parent to move it there · drag the background to move the map</div>
+    <div class="legend" id="mapLegend">◆ decisions in force · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="list" hidden></div>
   <div id="card"></div>
@@ -283,6 +300,22 @@
   </form>
 </dialog>
 
+<dialog id="movDialog">
+  <div class="dhead"><span class="t">Move <span id="movWhat"></span> under <span id="movWhere"></span></span><button data-close type="button">Close</button></div>
+  <form class="dbody" id="movForm">
+    <h3>Name</h3>
+    <div class="namerow"><span id="movPrefix"></span><input id="movName" autocomplete="off" spellcheck="false"><span id="movSuffix"></span></div>
+    <p id="movNameNote" class="empty-note" hidden></p>
+    <div id="movDeps"></div>
+    <h3>Files</h3>
+    <div id="movPreview"></div>
+    <p id="movError" hidden></p>
+    <p class="notice">If another thread has an open branch or pull request that changes these files, moving them will conflict with that work. Check it before moving.</p>
+    <p><button class="primary" type="submit" id="movSubmit">Move</button></p>
+    <p class="empty-note">The page writes the changes to the folder on your disk, regenerates the node index (.index.md) if the folder has one, and reloads. Commit the changes in git as usual.</p>
+  </form>
+</dialog>
+
 <dialog id="warnDialog">
   <div class="dhead"><span class="t">Format warnings</span><button data-close>Close</button></div>
   <div class="dbody" id="warnBody"></div>
@@ -290,8 +323,13 @@
 
 <div id="toast" role="status"></div>
 
+<!-- Snapshot data: empty in index.html. "Export HTML" and tools/build-html.mjs fill it with the md files. -->
+<script type="application/json" id="cvpSnapshot"></script>
 <script>
 'use strict';
+
+// The page as loaded, before any rendering: "Export HTML" fills its snapshot data and saves it.
+const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 
 // ---------------------------------------------------------------------------
 // State
@@ -299,6 +337,7 @@
 
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
+  snapshot: null,     // { name, generated, files } when the md files are embedded in the page
   rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
   nodes: new Map(),   // node path -> node
   selected: null,     // selected node path
@@ -309,6 +348,7 @@ const state = {
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
+  editMode: false,    // Tree edit mode: cards can be dragged onto a new parent (not kept across F5)
 };
 
 const $ = id => document.getElementById(id);
@@ -408,7 +448,7 @@ async function readFolder(dir) {
 
 async function reload() {
   try {
-    const files = await readFolder(state.dir);
+    const files = state.snapshot ? state.snapshot.files : await readFolder(state.dir);
     state.nodes = buildModel(files, state.rootName);
   } catch (e) {
     showLoadError(e);
@@ -422,8 +462,11 @@ async function reload() {
   }
   $('welcome').hidden = true;
   $('app').hidden = false;
-  for (const id of ['reloadBtn', 'viewSeg']) $(id).hidden = false;
-  $('folderName').textContent = state.rootName + '/';
+  $('viewSeg').hidden = false;
+  for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
+  $('openBtn').hidden = !!state.snapshot;
+  $('folderName').textContent = state.rootName + '/' +
+    (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
   renderAll();
 }
@@ -466,6 +509,52 @@ function restoreViewState() {
     }
   } catch (e) { /* ignore */ }
   $('refsToggle').checked = state.showRefs;
+}
+
+// ---------------------------------------------------------------------------
+// Standalone HTML (snapshot): the md files embedded in a copy of this page
+// ---------------------------------------------------------------------------
+// Same format as tools/build-html.mjs: { name, generated, files: [{ path, text }] } as JSON
+// in the #cvpSnapshot script, with "<" escaped so no md text can close the script.
+
+const snapshotJson = data => JSON.stringify(data).replace(/</g, '\\u003c');
+
+async function openSnapshot() {
+  const raw = $('cvpSnapshot').textContent.trim();
+  if (!raw) return false;
+  try {
+    state.snapshot = JSON.parse(raw);
+  } catch (e) {
+    showLoadError(e);
+    return true;
+  }
+  state.rootName = state.snapshot.name;
+  restoreViewState();
+  await reload();
+  return true;
+}
+
+function nowStamp() {
+  const d = new Date(), p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function exportHtml() {
+  let files;
+  try {
+    files = (await readFolder(state.dir)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  } catch (e) {
+    toast('Could not read the folder: ' + (e && e.message || e));
+    return;
+  }
+  const page = PAGE_TEMPLATE.cloneNode(true);
+  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files });
+  const blob = new Blob(['<!doctype html>\n' + page.outerHTML + '\n'], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slugify(state.nodes.get('').title) + '.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
 }
 
 // ---------------------------------------------------------------------------
@@ -1027,6 +1116,12 @@ function renderAll() {
   $('map').hidden = state.view !== 'map';
   $('list').hidden = state.view !== 'drafts' && state.view !== 'log';
   $('refsToggleLabel').hidden = !$('list').hidden;
+  if (state.snapshot) state.editMode = false;
+  $('editToggleLabel').hidden = state.view !== 'map' || !!state.snapshot;
+  $('editToggleLabel').classList.toggle('on', state.editMode);
+  $('editToggle').checked = state.editMode;
+  $('editLegend').hidden = !state.editMode;
+  $('mapLegend').hidden = state.editMode;
   for (const b of document.querySelectorAll('#viewSeg button')) b.classList.toggle('on', b.dataset.view === state.view);
   if (state.view === 'tree') renderTree();
   else if (state.view === 'drafts') renderDrafts();
@@ -1226,6 +1321,7 @@ function renderMap() {
   }
   svg.innerHTML = `${lines}${boxes}`;
   svg.classList.toggle('focus', !!sel && sel.path !== state.zoom);
+  svg.classList.toggle('editing', state.editMode);
   if (!mapView) fitMap(); else applyMapView();
 }
 
@@ -1260,6 +1356,13 @@ function centerMapOn(path) {
 (() => {
   const svg = $('mapSvg');
   let drag = null, moved = false;
+  // Tree edit mode: a card dragged onto another card moves its node under that one.
+  let lift = null;   // { path, g, base: { x, y }, target }
+  const dropTarget = e => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const g = el && el.closest && el.closest('#mapSvg .node');
+    return g ? g.dataset.path : null;
+  };
   svg.addEventListener('wheel', e => {
     if (!mapView) return;
     e.preventDefault();
@@ -1275,18 +1378,50 @@ function centerMapOn(path) {
     if (!mapView || e.button !== 0) return;
     drag = { x: e.clientX, y: e.clientY, vx: mapView.x, vy: mapView.y };
     moved = false;
+    const g = state.editMode && !e.target.closest('.tog, [data-ref]') && e.target.closest('.node');
+    if (g && g.dataset.path) {
+      const p = mapPos.get(g.dataset.path);
+      lift = { path: g.dataset.path, g, base: { x: p.x, y: p.y }, target: null };
+    }
   });
   window.addEventListener('pointermove', e => {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!moved && Math.hypot(dx, dy) < 4) return;
+    if (lift) {
+      if (!moved) { moved = true; lift.g.classList.add('lifted'); svg.appendChild(lift.g); }
+      const k = mapView.w / svg.getBoundingClientRect().width;
+      lift.g.setAttribute('transform', `translate(${lift.base.x + dx * k} ${lift.base.y + dy * k})`);
+      const t = dropTarget(e);
+      if (t !== lift.target) {
+        for (const x of svg.querySelectorAll('.dropok, .dropno')) x.classList.remove('dropok', 'dropno');
+        lift.target = t;
+        if (t !== null) {
+          const ok = !moveTargetProblem(state.nodes.get(lift.path), state.nodes.get(t));
+          svg.querySelector(`.node[data-path="${CSS.escape(t)}"]`)?.classList.add(ok ? 'dropok' : 'dropno');
+        }
+      }
+      return;
+    }
     if (!moved) { moved = true; svg.classList.add('dragging'); svg.setPointerCapture?.(e.pointerId); }
     const k = mapView.w / svg.getBoundingClientRect().width;
     mapView.x = drag.vx - dx * k;
     mapView.y = drag.vy - dy * k;
     applyMapView();
   });
-  window.addEventListener('pointerup', () => { drag = null; svg.classList.remove('dragging'); });
+  window.addEventListener('pointerup', () => {
+    drag = null;
+    svg.classList.remove('dragging');
+    if (!lift) return;
+    const l = lift;
+    lift = null;
+    if (!moved) return;
+    renderMap();   // puts the card back; the dialog decides
+    const n = state.nodes.get(l.path), t = l.target !== null && state.nodes.get(l.target);
+    if (!t) return;
+    const problem = moveTargetProblem(n, t);
+    if (problem) toast(problem); else openMove(n, t);
+  });
   svg.addEventListener('click', e => {
     if (moved) { moved = false; return; }
     const t = e.target.closest('.tog');
@@ -1450,7 +1585,7 @@ function renderCard() {
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
     '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
-    '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>' +
+    (state.snapshot ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
   if (n.obsoleteBy) {
@@ -1501,7 +1636,7 @@ function renderCard() {
   card.scrollTop = 0;
   $('copyPackBtn').onclick = () => copyPack(n);
   $('subTaskBtn').onclick = () => openSubTask(n);
-  $('renameBtn').onclick = () => openRename(n);
+  if (!state.snapshot) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
 }
 
@@ -1612,7 +1747,8 @@ function relativePath(dir, target) {
 }
 
 // Rewrites relative links (outside code) of a file that lived in `oldDir` and now lives in `newDir`.
-function rewriteLinks(lines, start, oldDir, newDir, from, to) {
+// `mapFile` gives the new place of a docs-relative path, or null when it does not move.
+function rewriteLinks(lines, start, oldDir, newDir, mapFile) {
   let fence = null;
   for (let k = start; k < lines.length; k++) {
     const f = lines[k].match(/^\s*(```|~~~)/);
@@ -1628,40 +1764,66 @@ function rewriteLinks(lines, start, oldDir, newDir, from, to) {
         else if (seg && seg !== '.') parts.push(seg);
       }
       const target = parts.join('/');
-      const moved = target && moveFile(target, from, to);
-      if (!moved) return all;
-      return open + relativePath(newDir, moved) + (p.endsWith('/') ? '/' : '') + hash;
+      if (!target) return all;
+      const moved = mapFile(target);
+      if (!moved && oldDir === newDir) return all;
+      return open + relativePath(newDir, moved || target) + (p.endsWith('/') ? '/' : '') + hash;
     })).join('');
   }
 }
 
-// Computes every file change of a rename. `files` are all md files ({ path, text }).
+// Adds node paths to the depends_on of a front matter (lines 0..end), keeping its list style.
+// Returns the new end of the front matter.
+function addDependsOn(lines, end, paths) {
+  if (!paths.length) return end;
+  const i = lines.slice(1, end).findIndex(l => /^depends_on\s*:/.test(l)) + 1;
+  if (i === 0) { lines.splice(end, 0, `depends_on: [${paths.join(', ')}]`); return end + 1; }
+  const v = lines[i].replace(/^depends_on\s*:\s*/, '').trim();
+  if (v.startsWith('[') || (v === '' && !/^\s*-\s+/.test(lines[i + 1] || ''))) {
+    const items = v.replace(/^\[|\]$/g, '').split(',').map(x => x.trim()).filter(Boolean);
+    lines[i] = `depends_on: [${[...items, ...paths].join(', ')}]`;
+    return end;
+  }
+  let k = i + 1;
+  while (k < end && /^\s*-\s+/.test(lines[k])) k++;
+  const indent = k > i + 1 ? lines[k - 1].match(/^(\s*)/)[1] : '  ';
+  lines.splice(k, 0, ...paths.map(p => `${indent}- ${p}`));
+  return end + paths.length;
+}
+
+// Computes every file change of a rename or a move. `files` are all md files ({ path, text }).
+// The node at `from` goes to `to` with its descendants; every reference to them is rewritten.
+// Options: `title` (new title of the node, or null), `convert` (a leaf file that becomes the README.md
+// of a folder of the same name, so it can hold the moved node) and `addDeps` (node paths, already at
+// their final place, added to the node's depends_on).
 // Returns the changed files as { path, newPath, text } (text is the new content).
-function planRename(files, node, title, newPath) {
-  const from = node.path, to = newPath;
+function planChanges(files, node, from, to, { title = null, convert = null, addDeps = [] } = {}) {
   const dirOf = f => f.split('/').slice(0, -1).join('/');
+  const converted = convert && convert.replace(/\.md$/i, '') + '/README.md';
+  const mapFile = f => f === convert ? converted : from !== to ? moveFile(f, from, to) : null;
   const out = [];
   for (const f of files) {
-    const target = from !== to ? moveFile(f.path, from, to) || f.path : f.path;
+    const target = mapFile(f.path) || f.path;
     const { lines, eol } = splitLines(f.text);
     let end = frontMatterEnd(lines);
-    if (f.path === node.file && title !== null && title !== node.title) {
-      const line = `title: ${yamlScalar(title)}`;
+    const own = f.path === node.file;
+    if ((own && title !== null && title !== node.title) || (own && addDeps.length && end < 0)) {
+      const line = `title: ${yamlScalar(title ?? node.title)}`;
       if (end < 0) { lines.unshift('---', line, 'depends_on: []', '---'); end = 3; }
       else {
         const i = lines.slice(1, end).findIndex(l => /^title\s*:/.test(l));
         if (i >= 0) lines[i + 1] = line; else { lines.splice(1, 0, line); end++; }
       }
     }
-    if (from !== to) {
-      if (end > 0) rewriteFrontMatterRefs(lines, end, from, to);
-      rewriteLinks(lines, end + 1, dirOf(f.path), dirOf(target), from, to);
-    }
+    if (from !== to && end > 0) rewriteFrontMatterRefs(lines, end, from, to);
+    if (own) end = addDependsOn(lines, end, addDeps);
+    rewriteLinks(lines, end + 1, dirOf(f.path), dirOf(target), mapFile);
     const text = lines.join(eol);
     if (text !== f.text || target !== f.path) out.push({ path: f.path, newPath: target, text });
   }
   return out;
 }
+const planRename = (files, node, title, newPath) => planChanges(files, node, node.path, newPath, { title });
 
 // --- File System Access helpers -------------------------------------------
 
@@ -1680,6 +1842,11 @@ async function writeFileAt(path, data) {
   const w = await (await d.getFileHandle(name, { create: true })).createWritable();
   await w.write(data);
   await w.close();
+}
+// The node index (.index.md) follows every change the page writes, if the folder has one.
+async function refreshIndex() {
+  if (!await entryExists(state.dir, INDEX_FILE)) return;
+  await writeFileAt(INDEX_FILE, nodeIndex(buildModel(await readFolder(state.dir), state.rootName)));
 }
 async function copyDir(src, dst) {
   for await (const [name, e] of src.entries()) {
@@ -1794,6 +1961,7 @@ async function doRename(n) {
     } else {
       for (const c of changes) await writeFileAt(c.newPath, c.text);
     }
+    await refreshIndex();
 
     // Keep the view where it was, under the new paths.
     const remap = p => movePath(p, from, to) ?? p;
@@ -1811,8 +1979,172 @@ async function doRename(n) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Move: in Tree edit mode a card dragged onto another card moves its node, with its
+// descendants, under that node. Same writing as Rename (copy first, delete last), plus:
+// a leaf target becomes a folder (x.md -> x/README.md, same node path) so it can hold
+// the node, and the dependencies the node stops inheriting can be kept in its depends_on.
+// ---------------------------------------------------------------------------
+
+const isUnder = (n, a) => { for (let x = n; x; x = x.parent) if (x === a) return true; return false; };
+
+function moveTargetProblem(n, t) {
+  if (!n || !t) return 'That node no longer exists. Press Reload.';
+  if (n.path === '') return 'The root cannot be moved.';
+  if (isUnder(t, n)) return 'A node cannot be moved under itself or one of its descendants.';
+  if (t === n.parent) return `"${n.title}" is already under "${t.title}".`;
+  return null;
+}
+
+// What the node stops inheriting and what it starts inheriting when it moves under t.
+// Hierarchical dependencies: its ancestors and their depends_on. Its own depends_on do not change.
+function moveDeps(n, t) {
+  const newAnc = new Set([...ancestorsOf(t), t]);
+  const gained = new Map();
+  for (const a of newAnc) for (const d of a.deps) {
+    const x = state.nodes.get(d);
+    if (x && !newAnc.has(x) && !isUnder(x, n) && !n.deps.includes(d)) gained.set(x, a);
+  }
+  const lost = [];
+  const skip = x => newAnc.has(x) || gained.has(x) || isUnder(x, n) || n.deps.includes(x.path) || lost.some(l => l.node === x);
+  for (const a of ancestorsOf(n)) if (a.path !== '' && !a.placeholder && !skip(a))
+    lost.push({ node: a, why: a === n.parent ? 'its current parent' : 'its current ancestor' });
+  for (const i of n.inherited) if (!skip(i.node)) lost.push({ node: i.node, why: `inherited from ${i.via.title}` });
+  const had = new Set(n.inherited.map(i => i.node));
+  return { lost, gained: [...gained].filter(([x]) => !had.has(x)).map(([node, via]) => ({ node, via })) };
+}
+
+const childPath = (t, name) => (t.path ? t.path + '/' : '') + name;
+
+function moveNameProblem(n, t, name) {
+  if (!/^[\w][\w.-]*$/.test(name)) return 'Use only letters, digits, "-", "_" and "." in the name.';
+  if (RESERVED.test(name)) return 'README is reserved for folder documents.';
+  const clash = t.children.find(c => lastSegment(c.path).toLowerCase() === name.toLowerCase());
+  if (clash) return `"${t.title}" already has a node named ${lastSegment(clash.path)}.`;
+  return null;
+}
+
+// A free name under t for the node: its own name, or the first "name-2", "name-3"... not taken.
+function freeName(n, t) {
+  const base = lastSegment(n.path);
+  for (let i = 1; ; i++) {
+    const name = i === 1 ? base : `${base}-${i}`;
+    if (!moveNameProblem(n, t, name)) return name;
+  }
+}
+
+let moveCtx = null;   // { n, t, deps }
+
+function keptDeps() {
+  return [...document.querySelectorAll('#movDeps input[data-keep]')].filter(c => c.checked).map(c => c.dataset.keep);
+}
+
+function updateMovePreview() {
+  const { n, t } = moveCtx;
+  const name = $('movName').value.trim();
+  const problem = moveNameProblem(n, t, name);
+  $('movError').hidden = !problem;
+  $('movError').textContent = problem || '';
+  const convert = t.file && !isReadme(t.file) ? t.file : null;
+  const changes = problem ? [] : planChanges(currentFiles(), n, n.path, childPath(t, name), { convert, addDeps: n.file ? keptDeps() : [] });
+  const moved = changes.filter(c => c.newPath !== c.path), edited = changes.filter(c => c.newPath === c.path);
+  const p = state.rootName + '/';
+  let h = '';
+  if (convert) h += `<p class="empty-note">"${esc(t.title)}" is a single file, so it becomes a folder to hold the node: ${esc(p + convert)} moves to ${esc(p + t.path)}/README.md. Its node path does not change.</p>`;
+  if (moved.length) h += '<p>Moves:</p><ul>' + moved.map(c => `<li>${esc(p + c.path)} → ${esc(p + c.newPath)}</li>`).join('') + '</ul>';
+  if (edited.length) h += '<p>Edits:</p><ul>' + edited.map(c => `<li>${esc(p + c.path)}</li>`).join('') + '</ul>';
+  h += '<p class="empty-note">' + (n.file && !isReadme(n.file) ? '' : 'Other files inside the folder (images, etc.) move with it. ') +
+    'Paths written outside the docs folder are not updated.</p>';
+  $('movPreview').innerHTML = h;
+  $('movSubmit').disabled = !!problem;
+}
+
+function openMove(n, t) {
+  const deps = moveDeps(n, t);
+  moveCtx = { n, t, deps };
+  $('movWhat').textContent = `"${n.title}"`;
+  $('movWhere').textContent = `"${t.title}"`;
+  $('movPrefix').textContent = state.rootName + '/' + (t.path ? t.path + '/' : '');
+  $('movSuffix').textContent = n.file && !isReadme(n.file) ? '.md' : '/';
+  const name = freeName(n, t);
+  $('movName').value = name;
+  $('movNameNote').hidden = name === lastSegment(n.path);
+  $('movNameNote').textContent = `"${t.title}" already has a node named ${lastSegment(n.path)}, so a new name is proposed. Change it if you prefer.`;
+  let h = '';
+  if (deps.lost.length) {
+    h += '<h3>Dependencies it stops inheriting</h3>' +
+      (n.file ? '<p class="empty-note">Ticked ones are kept as its own dependencies (added to its depends_on); its descendants keep them through it.</p>' +
+        deps.lost.map(l => `<label class="check"><input type="checkbox" checked data-keep="${esc(l.node.path)}"> ` +
+          `<span>${esc(l.node.title)} <span class="empty-note">${esc(l.node.path)} · ${esc(l.why)}</span></span></label>`).join('')
+      : '<p class="empty-note">This folder has no README.md, so it cannot keep them: ' + deps.lost.map(l => esc(l.node.title)).join(', ') + '.</p>');
+  }
+  if (deps.gained.length) h += '<h3>Dependencies it starts inheriting</h3><ul>' +
+    deps.gained.map(g => `<li>${esc(g.node.path)} <span class="empty-note">from ${esc(g.via.title)}</span></li>`).join('') + '</ul>';
+  $('movDeps').innerHTML = h;
+  $('movDeps').onchange = updateMovePreview;
+  $('movName').oninput = updateMovePreview;
+  $('movForm').onsubmit = e => { e.preventDefault(); doMove(); };
+  $('movError').hidden = true;
+  updateMovePreview();
+  $('movDialog').showModal();
+  $('movName').focus();
+}
+
+async function doMove() {
+  const { n, t } = moveCtx;
+  const name = $('movName').value.trim(), keep = n.file ? keptDeps() : [];
+  const from = n.path, to = childPath(t, name);
+  const fail = msg => { $('movError').hidden = false; $('movError').textContent = msg; };
+  try {
+    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+      return fail('The browser did not grant permission to write to the folder.');
+    $('movSubmit').disabled = true;
+
+    // Plan again from what is on disk now, not from what was loaded.
+    const files = await readFolder(state.dir);
+    const model = buildModel(files, state.rootName);
+    const fn = model.get(from), ft = model.get(t.path);
+    const problem = moveTargetProblem(fn, ft) || (ft && moveNameProblem(fn, ft, name));
+    if (problem) return fail(problem + ' Press Reload if the folder changed.');
+    const convert = ft.file && !isReadme(ft.file) ? ft.file : null;
+    const changes = planChanges(files, fn, from, to, { convert, addDeps: keep.filter(p => model.has(p)) });
+
+    const oldParent = await dirAt(parentPathOf(from), false);
+    const target = await dirAt(ft.path, true);
+    const oldName = lastSegment(from);
+    const clash = await entryExists(target, name) || await entryExists(target, name + '.md');
+    if (clash) return fail(`${clash} already exists in that folder.`);
+    // Copy first, delete last: an error half-way leaves the old files in place.
+    const oldFolder = await oldParent.getDirectoryHandle(oldName).catch(() => null);
+    if (oldFolder) await copyDir(oldFolder, await target.getDirectoryHandle(name, { create: true }));
+    for (const c of changes) await writeFileAt(c.newPath, c.text);
+    const leaf = files.find(f => /\.md$/i.test(f.path) && f.path.slice(0, -3) === from);
+    if (leaf) await oldParent.removeEntry(lastSegment(leaf.path));
+    if (oldFolder) await oldParent.removeEntry(oldName, { recursive: true });
+    if (convert) await (await dirAt(parentPathOf(ft.path), false)).removeEntry(lastSegment(convert));
+    await refreshIndex();
+
+    // Keep the view where it was, under the new paths, with the new parent open.
+    const remap = p => movePath(p, from, to) ?? p;
+    state.selected = remap(state.selected);
+    state.zoom = remap(state.zoom);
+    state.expanded = new Set([...state.expanded].map(remap));
+    for (let a = ft; a; a = a.parent) state.expanded.add(a.path);
+    for (const p of [...mapCollapsed]) { mapCollapsed.delete(p); mapCollapsed.add(remap(p)); }
+    for (let a = ft; a; a = a.parent) mapCollapsed.delete(a.path);
+    $('movDialog').close();
+    await reload();
+    select(to, true);
+    toast(`Moved. ${changes.length} file${changes.length === 1 ? '' : 's'} changed on disk; commit them in git.`);
+  } catch (e) {
+    fail('Could not finish the move: ' + (e && e.message || e) + '. Press Reload and check the folder.');
+  } finally {
+    $('movSubmit').disabled = false;
+  }
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key !== 'F2' || $('app').hidden || document.querySelector('dialog[open]')) return;
+  if (e.key !== 'F2' || state.snapshot || $('app').hidden || document.querySelector('dialog[open]')) return;
   const n = state.nodes.get(state.selected);
   if (n) { e.preventDefault(); openRename(n); }
 });
@@ -1848,10 +2180,13 @@ for (const d of document.querySelectorAll('dialog')) d.addEventListener('click',
 $('warnBtn').onclick = () => $('warnDialog').showModal();
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
+$('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };
 for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
 $('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
+$('exportBtn').onclick = () => exportHtml();
 
 async function init() {
+  if (await openSnapshot()) return;
   if (!('showDirectoryPicker' in window)) {
     $('unsupported').hidden = false;
     $('openBtn').disabled = $('welcomeOpenBtn').disabled = true;

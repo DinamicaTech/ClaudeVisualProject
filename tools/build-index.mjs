@@ -5,10 +5,11 @@
 //   node tools/build-index.mjs [docs folder]           write the index (default folder: docs)
 //   node tools/build-index.mjs [docs folder] --check   fail if the index is missing or out of date
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { readFolder } from './docs-folder.mjs';
 
 const args = process.argv.slice(2);
 const check = args.includes('--check');
@@ -20,17 +21,6 @@ if (start < 0 || end < start) throw new Error('index.html: parsing section not f
 const ctx = vm.createContext({});
 vm.runInContext(page.slice(start, end) + '\n;globalThis.api = { buildModel, nodeIndex, INDEX_FILE };', ctx);
 const { buildModel, nodeIndex, INDEX_FILE } = ctx.api;
-
-// Same files the page reads: every .md, skipping hidden entries and node_modules.
-function readFolder(dir, prefix = '') {
-  const files = [];
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name.startsWith('.') || e.name === 'node_modules') continue;
-    if (e.isDirectory()) files.push(...readFolder(join(dir, e.name), prefix + e.name + '/'));
-    else if (/\.md$/i.test(e.name)) files.push({ path: prefix + e.name, text: readFileSync(join(dir, e.name), 'utf8') });
-  }
-  return files;
-}
 
 const text = nodeIndex(buildModel(readFolder(docs), basename(docs)));
 const target = join(docs, INDEX_FILE);

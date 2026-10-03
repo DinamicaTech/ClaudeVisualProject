@@ -1,7 +1,6 @@
 ---
 title: Decisiones sustituidas
 depends_on: [model, viewer/node-card, viewer/log, viewer/map, context-pack]
-status: draft
 threads:
   - Decisiones sustituidas | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFiGwT9SfPXMH3YqsZ9BZHA
 ---
@@ -18,8 +17,10 @@ No hay sustituciones parciales: la decisión nueva repite la regla completa y la
 - 2026-10-03 08:30 · La escribe el hilo que toma la decisión nueva, en el mismo cambio. La decisión sustituida no se borra: es historia y sigue en el Log.
 - 2026-10-03 08:30 · `[replaced by …]` es sintaxis de la herramienta y va en inglés, como los nombres de campos y bloques.
 - 2026-10-03 08:30 · Se marcan con ella las sustituciones que ya estaban escritas en texto libre: en `viewer/map` (cajas de referencia, interruptor References y nombres del selector) y en `context-pack` (requisitos derivados, que era parcial y se reescribe completa).
-- 2026-10-03 08:30 · Límite conocido: Renombrar (`viewer/rename`) aún no reescribe la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
+- 2026-10-03 08:30 · [replaced by 2026-10-03 14:01] Límite conocido: Renombrar (`viewer/rename`) aún no reescribe la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
 - 2026-10-03 08:47 · Ocultas por defecto en la ficha y en el Log, con un mismo interruptor que las muestra en los dos y se recuerda tras F5 (Ronald, 08:45). En el árbol y el mapa no aparecen: solo el contador ◆, que no las cuenta.
+- 2026-10-03 14:01 · Límite conocido: Renombrar (`viewer/rename`) y Mover (`viewer/mover-nodo`) aún no reescriben la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
+- 2026-10-03 14:01 · Validado por Ronald; pasa a stable.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Definir cómo se marca que una decisión anula a otra anterior, para que la ficha atenúe la antigua y los hilos no la sigan.

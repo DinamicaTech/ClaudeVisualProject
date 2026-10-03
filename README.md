@@ -11,13 +11,24 @@ Visual, navigable map of AI-developed projects. Reads the Markdown docs in your 
 3. Browse the project as a map of cards (**Tree**, hierarchy left to right) or as rows (**Project**). Click a node to see its summary, requirements, decisions, dependencies and warnings. Double-click it to copy a context pack: a short prompt with the files a new AI thread should read. The thread first checks which node is functionally responsible for the task and, if it is another one, asks you where the task should go: the selected node, a new node, the best existing candidate, or a draft saved for later in the node where it belongs. To leave a task for later on purpose, start your message with `draft:`. Double-clicking a draft node fills in the prompt's `Task:` with its pending task.
 4. **Drafts** lists every draft node (pending tasks and work not yet validated) in a table you can sort by any column. **Log** lists every decision and requirement of the project, newest first.
 5. Press F5 (or **Reload**) after the docs change.
-6. To rename a node, select it and click **Rename** (or press F2). You can change its title and, optionally, its file or folder name; every `depends_on`, `replaced_by` and relative link that points to it is updated. This is the only action that writes to your docs folder, and the browser asks for permission first. Commit the changes in git as usual.
+6. To rename a node, select it and click **Rename** (or press F2). You can change its title and, optionally, its file or folder name; every `depends_on`, `replaced_by` and relative link that points to it is updated. The browser asks for permission before the page writes to your docs folder. Commit the changes in git as usual.
+7. To move a node (with its descendants) to another branch, turn on **Tree edit mode** in the Tree view and drag its card onto its new parent. A dialog shows the name it will get, the inherited dependencies it can keep, and the files that move or change. If the new parent is a single file (`x.md`), it becomes a folder (`x/README.md`). After renaming or moving, the page regenerates the node index (`.index.md`) if your docs folder has one, and reloads.
 
-Your docs are read from disk and never copied or uploaded; the page only writes to them when you rename a node. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
+### Standalone HTML
+
+To share the map, publish it (for example on GitHub Pages) or open it in a browser that cannot read a local folder, make a snapshot: one HTML file with your docs inside. Either click **Export HTML** in the page, or run
+
+```
+node tools/build-html.mjs docs [--out file.html]
+```
+
+(copy `index.html`, `tools/build-html.mjs` and `tools/docs-folder.mjs` into your repository; Node 18 or later). The snapshot opens in any modern browser with every view and the context packs, but it does not see later changes to the docs (make it again) and cannot rename or move nodes. Anyone who can open the file can read all your docs: on GitHub, Pages sites of private repositories are public unless you are on Enterprise.
+
+Your docs are read from disk and never copied or uploaded; the page only writes to them when you rename or move a node. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
 
 ### Node index (optional)
 
-Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html` and `tools/build-index.mjs` into your repository and run
+Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html`, `tools/build-index.mjs` and `tools/docs-folder.mjs` into your repository and run
 
 ```
 node tools/build-index.mjs docs
