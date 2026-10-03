@@ -29,11 +29,13 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-03 14:45 · Campos opcionales de cabecera: `status` (`idea`, `draft`, `stable` u `obsolete`; sin campo cuenta como `stable`) y `replaced_by` (ruta del nodo que sustituye a uno obsoleto). `idea` es una idea en debate en `creative-lab`, previa a draft (ver `context-pack/ideas`).
 - 2026-10-03 14:45 · En un nodo `idea`, una línea de Requirements que empieza por `idea:` (tras la fecha) es la idea, redactada como frase autónoma.
 - 2026-10-03 14:58 · Nodo `global-rules`, hijo de la raíz: las reglas que sigue todo hilo. Tras los bloques fijos lleva `## CVP rules`, entre las marcas `<!-- cvp-rules <versión> begin … -->` y `<!-- cvp-rules end -->`, que escribe la página y no se edita a mano, y `## Project rules`, las del proyecto, que la página nunca toca; en un conflicto mandan las Project rules. Las reglas personales del propietario van en `AGENTS.md`, no en ese nodo.
+- 2026-10-03 15:30 · Campo opcional de cabecera `docs_path`, solo en el nodo raíz: la ruta de la carpeta de docs desde la raíz del repositorio, sin barra final (`docs_path: documentacion/specs`). Sin el campo, la carpeta se supone en la raíz del repositorio. En cualquier otro nodo se ignora y da un aviso de formato. Ver `context-pack/carpeta-de-docs`.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: el significado de `draft` como pendiente o sin validar, y su paso a `stable` al validar.
 - 2026-10-03 08:05 · Derived from context-pack/routing: el prefijo `draft:` en las líneas de Requirements de un draft.
 - 2026-10-03 14:45 · Derived from context-pack/ideas: añadir el estado `idea` y la línea `idea:` de Requirements.
+- 2026-10-03 15:30 · Derived from context-pack/carpeta-de-docs: campo `docs_path` en la cabecera del nodo raíz.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: `global-rules` como nodo de reglas con una sección de CVP no editable y otra del proyecto.
 
 ## Ejemplo

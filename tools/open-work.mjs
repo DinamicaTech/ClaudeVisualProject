@@ -9,11 +9,17 @@
 // --delete-merged also deletes branches whose pull request was merged and that have nothing new since.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, basename, resolve } from 'node:path';
+import { join, basename, resolve, relative } from 'node:path';
 
 const args = process.argv.slice(2);
 const docsDir = resolve(args.find(a => !a.startsWith('--')) || 'docs');
-const docs = basename(docsDir);
+// The docs folder's path in the repository: docs_path in its root README.md (context-pack/carpeta-de-docs),
+// or else its path from the working directory, which is the repository root when the workflow runs.
+const rootReadme = join(docsDir, 'README.md');
+const frontMatter = existsSync(rootReadme) ? (/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(rootReadme, 'utf8')) || [])[1] : '';
+const docsPathField = frontMatter && /^docs_path:[ \t]*["']?([^"'\r\n]*?)["']?[ \t]*$/m.exec(frontMatter);
+const docs = (docsPathField && docsPathField[1] ? docsPathField[1] : relative(process.cwd(), docsDir))
+  .replace(/\\/g, '/').replace(/^(\.?\/)+/, '').replace(/\/+$/, '');
 const deleteMerged = args.includes('--delete-merged');
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
