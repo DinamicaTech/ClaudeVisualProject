@@ -14,6 +14,7 @@ Sale del lab cuando se decide: pasa a draft o se ejecuta, y entonces se mueve a 
 - 2026-10-03 13:50 · Cada idea se debate en su propio hilo como nodo hijo del lab (`creative-lab/<idea>`). Al pasarla a draft o ejecutarla se mueve ("Mover nodo") a su sitio funcional; si se descarta, queda aquí con una decisión que lo dice.
 - 2026-10-03 13:50 · Una idea llevará `status: idea`, estado previo a draft (opción a de Ronald, 13:42). El prefijo `idea:` y ese estado quedan pendientes en el draft `context-pack/ideas`, porque tocan los prompts, el formato y el visor que cambia PR #10 (Decisiones sustituidas), aún abierto. Hasta entonces las ideas se crean como `draft` dentro del lab.
 - 2026-10-03 13:46 · Validado por Ronald: el nodo pasa a estable. El draft `context-pack/ideas` sigue pendiente.
+- 2026-10-03 14:07 · Primera idea: `creative-lab/abrir-conversacion` (Abrir la conversación del nodo). El lab pasa de fichero a carpeta (`creative-lab/README.md`); su ruta de nodo no cambia.
 
 ## Requirements
 - 2026-10-03 10:37 · Esta rama aglutinará diferentes prompts destinados a debatir ideas de mejoras y nuevos desarrollos relacionados con este proyecto, una especie de 'brain storming room'.
