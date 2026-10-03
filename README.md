@@ -28,13 +28,15 @@ Your docs are read from disk and never copied or uploaded; the page only writes 
 
 ### Node index (optional)
 
-Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html`, `tools/build-index.mjs` and `tools/docs-folder.mjs` into your repository and run
+Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html`, `tools/build-index.mjs`, `tools/page-model.mjs` and `tools/docs-folder.mjs` into your repository and run
 
 ```
 node tools/build-index.mjs docs
 ```
 
 It writes `docs/.index.md` with every node's title, dependencies, children and Summary (Node 18 or later, no packages). The prompts ask threads to run it again after changing a node; add `node tools/build-index.mjs docs --check` to your CI to catch a stale index, as [this repository does](.github/workflows/node-index.yml).
+
+To also fail a pull request that leaves format warnings in the docs (the same warnings the page shows; dependency cycles are listed but allowed), copy `tools/check-format.mjs` too and add `node tools/check-format.mjs docs` to your CI ([example](.github/workflows/docs-format.yml)).
 
 ## Status
 

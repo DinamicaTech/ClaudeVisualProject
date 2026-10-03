@@ -22,6 +22,7 @@ Todo lo que muestra el visor y lo que lista el paquete de contexto sale de este 
 - 2026-10-02 09:46 · Las rutas de `depends_on` se toleran con `./`, `/` final o extensión `.md`, y se normalizan.
 - 2026-10-02 10:38 · Un nodo tiene además su lista de chats (`threads`), cada uno con título y enlace.
 - 2026-10-03 08:30 · Una decisión puede estar sustituida (marca `[replaced by …]`, ver `format/decisiones-sustituidas`): el modelo guarda a qué decisión apunta. Aviso si la marca apunta a un nodo o a una decisión (fecha y hora) que no existen.
+- 2026-10-03 14:40 · Los avisos de formato también se comprueban en GitHub: un PR que deja alguno (salvo los de ciclo) sale en rojo (`model/comprobacion-de-formato`).
 - 2026-10-03 14:45 · Un nodo tiene además estado (`idea`, `draft`, `stable`, `obsolete`) y, si es obsoleto, opcionalmente su sustituto. `idea` no da el aviso de estado desconocido.
 
 ## Requirements

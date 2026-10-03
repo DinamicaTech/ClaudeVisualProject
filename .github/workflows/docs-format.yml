@@ -1,0 +1,12 @@
+name: Docs format
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No md in docs has format warnings
+        run: node tools/check-format.mjs docs
