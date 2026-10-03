@@ -245,6 +245,7 @@
   <span id="openWorkNote" hidden></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
+  <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
   <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
@@ -467,6 +468,7 @@ async function reload() {
   $('welcome').hidden = true;
   $('app').hidden = false;
   $('viewSeg').hidden = false;
+  $('loadReqBtn').hidden = false;
   for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
   $('openBtn').hidden = !!state.snapshot;
   $('folderName').textContent = docsPrefix() +
@@ -969,7 +971,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 1;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 2;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1008,13 +1010,26 @@ const CVP_RULES = [
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
   'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
   'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it. ' +
-  'When the prompt\'s task is taken from a draft\'s Requirements, it is already recorded there: do not copy it again.',
+  'When the prompt\'s task is taken from a draft\'s Requirements, it is already recorded there: do not copy it again. ' +
+  'A line starting with "question:" in a draft\'s Requirements is an open question about its task, left by a requirements load: resolve it with the owner before doing the task.',
   '**Ideas.** An owner\'s sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. ' +
   `Ideas live in the lab, the root node \`${LAB}\` (create it if it is missing). Propose the idea's path, \`${LAB}/<idea>\`, and wait for the owner's OK; ` +
   'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
   'An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see Routing), ' +
   'set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". ' +
   'A discarded idea stays in the lab with a decision that says so.',
+  '**Requirements load.** A task that starts with "Load requirements:" brings a block of requirements to spread over the tree (in a new project, an empty tree). ' +
+  'It is not routed as one task; instead:\n' +
+  '1. Number each sentence of the block that asks for something as R1, R2…, word for word, and propose the node each one belongs to: an existing node, or a new one with its full path.\n' +
+  '2. List every gap, ambiguity or contradiction, between sentences or with a decision in force in the docs, as a question Q1, Q2…: its kind, the R sentences it touches, the questions it depends on, 2 to 4 options with their consequence, and your recommendation. ' +
+  'A question is blocking if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node.\n' +
+  '3. Ask only the blocking questions, in rounds of at most 7: those with the most impact first, never one that depends on a question still open. The owner may answer each one in a word ("Q3 B") or accept your recommendation for the rest. ' +
+  'After each round, close the questions it settles, add any new ones and go on with the next round until no blocking question is left.\n' +
+  '4. Keep the state of the load in `.requirements-load.md` in the docs folder (R sentences, questions, answers, proposed tree): update it every round and push it to the branch, so that another thread can take over if this one stops.\n' +
+  '5. Show the proposed tree, two or three levels deep: each node with its Summary, the R sentences it receives, the ones that become `draft:` lines and its local questions. Remake it with the owner\'s clarifications until the owner\'s OK; this is the breakdown, and only then write the md files. ' +
+  'Nodes that only give structure get their Summary and no status; nodes with pending tasks get `status: draft`, the owner\'s sentences word for word with the date and time of the block, and their `draft:` line.\n' +
+  '6. Write each local question in the Requirements of its draft node as a line "question: <question>, with its options and your recommendation" (see Drafts). ' +
+  'The owner\'s answers are requirements too: copy them as Updating the docs says, and when one overrides a decision in force, mark that decision as replaced. Finally delete `.requirements-load.md`.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
   'as a line `  - <short title> | <link>`.',
 ];
@@ -1118,7 +1133,13 @@ const inLab = n => n.status === 'idea' || n.path === LAB || n.path.startsWith(LA
 function draftTask(n) {
   if (n.status !== 'draft' || !n.requirements.length) return [];
   const marked = n.requirements.filter(r => /^draft:/i.test(r.text)).map(r => r.text.replace(/^draft:\s*/i, ''));
-  return (marked.length ? marked : n.requirements.map(r => r.text)).map(t => t.replace(/\s*\n\s*/g, ' '));
+  const rest = n.requirements.filter(r => !/^question:/i.test(r.text)).map(r => r.text);
+  return (marked.length ? marked : rest).map(t => t.replace(/\s*\n\s*/g, ' '));
+}
+// Open questions a requirements load left in a draft: its "question:" lines, to resolve before the task.
+function draftQuestions(n) {
+  if (n.status !== 'draft') return [];
+  return n.requirements.filter(r => /^question:/i.test(r.text)).map(r => r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' '));
 }
 // For an idea, the Task line starts with its "idea:" lines, to go on debating it; on the lab, with "idea: ".
 function ideaTask(n) {
@@ -1136,10 +1157,11 @@ function taskLines(n) {
     ];
   }
   if (n.path === LAB) return ['Task: idea: '];
-  const t = draftTask(n);
+  const t = draftTask(n), q = draftQuestions(n);
   if (!t.length) return ['Task: '];
   return [
     'This node is a pending draft. The task below is taken from its ## Requirements, where it is already recorded: do not copy it there again. Anything the owner adds after it is new.',
+    ...(q.length ? ['Open questions about this task, also in its ## Requirements: resolve them with the owner before doing it.\n' + q.map(x => `- ${x}`).join('\n')] : []),
     t.length === 1 ? `Task: ${t[0]}` : 'Task:\n' + t.map(x => `- ${x}`).join('\n'),
   ];
 }
@@ -1215,10 +1237,25 @@ function subTaskPack(n, title) {
   ].join('\n');
 }
 
-async function copyText(text, what) {
+// Prompt for a new thread that loads a block of requirements into the project (context-pack/carga-de-requisitos):
+// it starts at the root and spreads the block over the tree, following the "Requirements load" rule.
+function loadRequirementsPack() {
+  const root = state.nodes.get('');
+  const lines = ['Files, with paths relative to the repository root:'];
+  lines.push(root.file ? `- Root node: ${repoPath(root)}` : `- Root node: ${docsPrefix()} (folder without README.md)`);
+  lines.push(`- Node index: ${docsPrefix()}${INDEX_FILE} (if it is missing, read the Summary of every md)`);
+  return [
+    `Load a block of requirements into the project "${root.title}": spread them over its tree of nodes.`, '',
+    ...lines, '', ...rulesLines(), '',
+    'Follow the "Requirements load" rule. The block comes after "Load requirements:".', '',
+    'Task: Load requirements:', '',
+  ].join('\n');
+}
+
+async function copyText(text, what, hint = 'Paste it in a new thread.') {
   try {
     await navigator.clipboard.writeText(text);
-    toast(`${what} copied. Paste it in a new thread.`);
+    toast(`${what} copied. ${hint}`);
   } catch (e) {
     $('packText').value = text;
     $('packDialog').showModal();
@@ -2511,6 +2548,7 @@ for (const b of document.querySelectorAll('dialog [data-close]')) b.onclick = ()
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) d.close(); });
 $('warnBtn').onclick = () => $('warnDialog').showModal();
 $('rulesBtn').onclick = () => openRules();
+$('loadReqBtn').onclick = () => copyText(loadRequirementsPack(), 'Requirements load prompt', 'Paste it in a new thread and add your requirements at its end.');
 $('rulesSubmit').onclick = () => doUpdateRules();
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };

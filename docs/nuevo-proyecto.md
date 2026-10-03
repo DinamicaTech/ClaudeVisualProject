@@ -2,13 +2,29 @@
 title: Nuevo proyecto
 depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos]
 status: draft
+threads:
+  - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
 ---
 ## Summary
-Botón "New project" que copia un prompt para preparar un repositorio nuevo para CVP, sin hacerlo a mano: nodo raíz, fichero de reglas, AGENTS.md que apunta a él e índice de nodos.
+Botón "New project" que copia un prompt para preparar un proyecto nuevo para CVP, sin hacerlo a mano: pide el nombre, dónde vive (repositorio, carpeta de docs y, opcional, ruta de GitHub), crea el esqueleto (raíz, `global-rules`, `creative-lab`, `AGENTS.md`, `CLAUDE.md`, índice) y lanza la carga de requisitos con el árbol vacío.
+Al final propone un nodo `architecture` como draft para debatirlo con el propietario. Pendiente: se construye después de `context-pack/carga-de-requisitos`.
 
 ## Decisions
 - 2026-10-03 08:16 · Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
+- 2026-10-03 16:12 · Acordado con Ronald (15:38–16:04), pendiente de construir tras `context-pack/carga-de-requisitos`, que reutiliza: (1) pide primero el nombre del proyecto, que es el título del nodo raíz; (2) pide dónde vive: repositorio y carpeta de docs (si no es `docs` en la raíz, se escribe `docs_path`), y opcionalmente la ruta de GitHub, que solo sirve al hilo para crear el repositorio o subir a él y no se guarda en los md; (3) crea el nodo raíz, `global-rules` con las reglas de la página (como "Add global rules"), `creative-lab`, `AGENTS.md` apuntando a `global-rules`, `CLAUDE.md` con `@AGENTS.md` y el índice; (4) ejecuta la carga de requisitos con el árbol vacío; (5) al final crea `architecture` con una primera propuesta (lenguaje, base de datos, tipo de aplicación, despliegue…) como `status: draft`, porque depende de los requisitos.
+- 2026-10-03 16:12 · Reglas personales del propietario: el hilo pregunta si copiarlas de otro proyecto a `AGENTS.md`, proponiendo por defecto el proyecto abierto en la página al pulsar "New project"; copia solo esas reglas, no el puntero. Si no alcanza ese repositorio, pregunta su ruta. No se puede elegir "el más reciente": la página solo lee la carpeta de docs abierta.
+- 2026-10-03 16:12 · Sin identificador de proyecto aparte del nombre. Quedan fuera las comprobaciones de GitHub ("Docs format", "Open work", índice al día) en el proyecto nuevo.
+- 2026-10-03 16:12 · Índice en proyectos sin las herramientas de este repositorio: botón en la página para regenerarlo, que aparece como aviso "⚠ Rebuild index" en la cabecera cuando `.index.md` falta o no coincide con los md (le corresponde a `context-pack/index`).
 
 ## Requirements
 - 2026-10-03 08:13 · La opción de arrancar un nuevo proyecto es perfecta, automatiza todo el trabajo de creación de un proyecto.
 - 2026-10-03 08:16 · draft: Ofrecer un botón "New project" que copie un prompt para preparar un repositorio nuevo para CVP: nodo raíz con identificador de proyecto, fichero de reglas del proyecto, AGENTS.md que apunta a él e índice de nodos.
+- 2026-10-03 15:38 · un proyecto nuevo, además: Creará un nodo: Arquitectura (Architecture) en el que hará una primera propuesta de arquitectura (lenguaje, BD, etc.) que deberá ser revisada/debatida por el operador
+- 2026-10-03 15:38 · Pedirá la carpeta física donde ubicar el proyecto
+- 2026-10-03 15:38 · Creará un nodo 'Creative lab' también colgando de la raíz
+- 2026-10-03 16:02 · Botón regenerar, aunque de alguna forma se ha de avisar al operador que tiene que hacerlo
+- 2026-10-03 16:02 · Dejamos fuera comprobación de GitHub. Quizá sería bueno pedir también (opcional) la ruta de GitHub en el caso de crear un proyecto nuevo
+- 2026-10-03 16:02 · Ok con CLAUDE.md + AGENTS.md
+- 2026-10-03 16:02 · Si por identificador de proyecto entendemos el nombre del proyecto, mejor pedirlo como primer paso al crear un nuevo proyecto
+- 2026-10-03 16:02 · Entiendo que el AGENTS.md se puede heredar de alguno ya existente (el más reciente), no ?
+- 2026-10-03 16:04 · Ok a preguntar la copia de reglas personales, por defecto, seleccionar el proyecto desde el que se ha lanzando 'nuevo proyecto'
