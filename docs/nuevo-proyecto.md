@@ -1,6 +1,6 @@
 ---
 title: Nuevo proyecto
-depends_on: [context-pack/reglas-del-proyecto]
+depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos]
 status: draft
 ---
 ## Summary
