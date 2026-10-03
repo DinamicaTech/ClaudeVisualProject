@@ -2,8 +2,6 @@
 title: Avisos de desactualización
 depends_on: []
 status: draft
-threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
 ---
 ## Summary
 Avisar de los documentos que probablemente ya no reflejan la realidad: fechas antiguas, historial git, dependientes que han cambiado después que el documento.
@@ -12,3 +10,4 @@ Avisar de los documentos que probablemente ya no reflejan la realidad: fechas an
 - 2026-10-03 07:50 · Pendiente. Trasladado desde la hoja de ruta (`roadmap`) a su sitio funcional.
 
 ## Requirements
+- 2026-10-02 08:52 · Avisos de documentos desactualizados o dependencias rotas, como ampliación posterior.

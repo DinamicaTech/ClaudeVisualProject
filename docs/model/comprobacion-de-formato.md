@@ -2,8 +2,6 @@
 title: Comprobación de formato en GitHub
 depends_on: []
 status: draft
-threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
 ---
 ## Summary
 Que un PR que deje un md mal formado (dependencia rota, bloque fijo ausente o desordenado, decisión sin fecha) salga en rojo en GitHub.

@@ -2,8 +2,6 @@
 title: Nodos ocupados
 depends_on: []
 status: draft
-threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
 ---
 ## Summary
 Ver en el mapa qué nodos tienen trabajo abierto (ramas o PR sin fusionar que cambian su md).
