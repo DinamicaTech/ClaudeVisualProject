@@ -1,7 +1,6 @@
 ---
 title: Nuevo proyecto
 depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos, context-pack/index, viewer, global-rules]
-status: draft
 threads:
   - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
 ---
@@ -10,7 +9,7 @@ Botón "New project" (en la cabecera y en la pantalla inicial) que copia un prom
 Al final propone un nodo `architecture` como draft para debatirlo con el propietario. Los docs se escriben en el idioma del propietario; el índice de nodos lo crea luego la página ("Add node index").
 
 ## Decisions
-- 2026-10-03 08:16 · Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
+- 2026-10-03 08:16 · [replaced by 2026-10-03 17:17] Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
 - 2026-10-03 16:12 · Acordado con Ronald (15:38–16:04), pendiente de construir tras `context-pack/carga-de-requisitos`, que reutiliza: (1) pide primero el nombre del proyecto, que es el título del nodo raíz; (2) pide dónde vive: repositorio y carpeta de docs (si no es `docs` en la raíz, se escribe `docs_path`), y opcionalmente la ruta de GitHub, que solo sirve al hilo para crear el repositorio o subir a él y no se guarda en los md; (3) crea el nodo raíz, `global-rules` con las reglas de la página (como "Add global rules"), `creative-lab`, `AGENTS.md` apuntando a `global-rules`, `CLAUDE.md` con `@AGENTS.md` y el índice; (4) ejecuta la carga de requisitos con el árbol vacío; (5) al final crea `architecture` con una primera propuesta (lenguaje, base de datos, tipo de aplicación, despliegue…) como `status: draft`, porque depende de los requisitos.
 - 2026-10-03 16:12 · Reglas personales del propietario: el hilo pregunta si copiarlas de otro proyecto a `AGENTS.md`, proponiendo por defecto el proyecto abierto en la página al pulsar "New project"; copia solo esas reglas, no el puntero. Si no alcanza ese repositorio, pregunta su ruta. No se puede elegir "el más reciente": la página solo lee la carpeta de docs abierta.
 - 2026-10-03 16:12 · Sin identificador de proyecto aparte del nombre. Quedan fuera las comprobaciones de GitHub ("Docs format", "Open work", índice al día) en el proyecto nuevo.
@@ -20,6 +19,7 @@ Al final propone un nodo `architecture` como draft para debatirlo con el propiet
 - 2026-10-03 16:25 · Los docs del proyecto nuevo se escriben en el idioma en que escribe el propietario, sin preguntarlo, y el hilo lo deja como primera línea de las "Project rules" de `global-rules`. Los títulos de bloque (`## Summary`…) y las claves de cabecera no se traducen. Decidido por Ronald (16:15).
 - 2026-10-03 16:25 · El proyecto nuevo no tiene herramienta para el índice: al terminar, el hilo pide al propietario abrir la carpeta de docs en la página y pulsar "Add node index" (`context-pack/index`).
 
+- 2026-10-03 17:17 · Validado por Ronald a las 17:16: pasa a stable.
 ## Requirements
 - 2026-10-03 08:13 · La opción de arrancar un nuevo proyecto es perfecta, automatiza todo el trabajo de creación de un proyecto.
 - 2026-10-03 08:16 · draft: Ofrecer un botón "New project" que copie un prompt para preparar un repositorio nuevo para CVP: nodo raíz con identificador de proyecto, fichero de reglas del proyecto, AGENTS.md que apunta a él e índice de nodos.
