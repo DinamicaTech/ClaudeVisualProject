@@ -3,9 +3,10 @@ title: Mapa
 depends_on: [model]
 threads:
   - Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
+  - Drafts en gris | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLPU5reGH3ekLHXmNgLPLVWA
 ---
 ## Summary
-Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas.
+Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas. Los nodos draft tienen la tarjeta en gris claro, como desactivados, con la etiqueta DRAFT.
 Es la vista por defecto. En el selector "Tree / Project / Drafts / Log", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
 La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes. Con "Tree edit mode" se mueve un nodo arrastrando su tarjeta (`viewer/mover-nodo`).
 
@@ -29,6 +30,8 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 07:50 · El selector de vista es "Tree / Project / Drafts / Log": "Tree" es el mapa de nodos (esta vista), "Project" la vista en filas, el proyecto organizado tabularmente (`viewer/tree`), y después `viewer/drafts` y `viewer/log`. El mapa sigue siendo la vista por defecto.
 - 2026-10-03 08:30 · El contador ◆ de las tarjetas cuenta solo las decisiones vigentes; las sustituidas se indican al pasar el ratón. Derived from format/decisiones-sustituidas.
 - 2026-10-03 08:47 · Interruptor "Tree edit mode" en la cabecera, visible solo en esta vista: con él encendido, arrastrar una tarjeta (salvo la raíz) la lleva sobre otra para moverla allí (`viewer/mover-nodo`); arrastrar el fondo sigue moviendo el mapa. La leyenda cambia para explicarlo.
+- 2026-10-03 14:05 · [replaced by 2026-10-03 14:15] Ronald elige la opción D (caja gris) de la maqueta https://claude.ai/artifact/RRU64dTBrWaVS9xuUTrC1C: la tarjeta de un nodo draft tiene fondo gris claro (#E8E8E8; en modo oscuro, un gris algo más claro que las tarjetas), simulando un nodo desactivado. Se mantiene la etiqueta DRAFT y las líneas siguen continuas. Sustituye al borde morado discontinuo, que se distinguía poco al alejar el mapa y se confundía con el color del área Paquete de contexto.
+- 2026-10-03 14:15 · La tarjeta de un nodo draft tiene fondo gris claro #F0F0F0 (en modo oscuro, un gris apenas más claro que las tarjetas), simulando un nodo desactivado; es la opción D de la maqueta https://claude.ai/artifact/RRU64dTBrWaVS9xuUTrC1C con el gris aclarado a petición de Ronald. Se mantiene la etiqueta DRAFT y las líneas siguen continuas. Sustituye al borde morado discontinuo, que se distinguía poco al alejar el mapa y se confundía con el color del área Paquete de contexto.
 
 ## Requirements
 - 2026-10-02 12:24 · Con la tecla Z (Zoom) mostrar solo el nodo seleccionado y descendientes (recursivamente).
@@ -36,3 +39,8 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-02 18:08 · Bueno, la idea es que 'Tree' es el árbol de nodos y 'Project' el proyecto organizado tabularmente.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: contar en ◆ solo las decisiones vigentes.
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: interruptor "Tree edit mode" y arrastrar una tarjeta sobre otra para moverla.
+- 2026-10-03 13:49 · Los nodos 'Draft' no distinguen demasiado respecto los otros (aparece un recuadro DRAFT punteado). Puedes mirar otra forma de que se distingan mejor ? (aunque no han de destacar más que los nodos normales)
+- 2026-10-03 13:58 · Y si hacemos la caja de un gris claro (por ejemplo, #E8E8E8) simulando un nodo 'desactivado' ?
+- 2026-10-03 13:58 · Igualmente, mantener la etiqueta DRAFT
+- 2026-10-03 13:58 · Y las líneas de dependencia, mantenerlas continuas.
+- 2026-10-03 14:15 · Creo que falta 'aclarar' un poco más el gris para que no quede tan oscuro. Un #F0F0F0 creo que quedará mejor.
