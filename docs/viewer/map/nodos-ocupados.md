@@ -1,7 +1,6 @@
 ---
 title: Nodos ocupados
 depends_on: [viewer/node-card, viewer/node-card/abrir-conversacion, viewer/tree, viewer/mover-nodo, viewer/rename, build/html-autonomo]
-status: draft
 threads:
   - Nodos ocupados | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5bS6uc59A9NYjJ2kCxct3y
 ---
@@ -19,6 +18,7 @@ Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribi
 - 2026-10-03 15:18 · Los commits de la Action van a main con el usuario github-actions y no disparan otras comprobaciones. No afectan al Log, que solo lee los md (Ronald, 15:04).
 - 2026-10-03 15:18 · La página no puede ejecutar `git pull`, así que en vez de un botón "refresh" la raíz del repositorio tiene `Refresh.cmd`: doble clic hace `git pull --ff-only` y luego F5 (Ronald, 15:10). La cabecera muestra "open work: N · updated <fecha>"; su tooltip lo explica.
 - 2026-10-03 15:18 · El nodo ocupado lleva la etiqueta "open" en azul en su tarjeta del mapa y en su fila de la vista Project; al pasar el ratón se ve qué PR o rama lo ocupa. Sin `.open-work.md` la página se comporta como antes.
+- 2026-10-03 15:21 · Validado por Ronald a las 15:20: pasa a stable.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Mostrar en el mapa qué nodos tienen una rama o PR abierto que cambia su md. Antes de construirlo, decidir cómo se obtiene ese dato sin conexión.
