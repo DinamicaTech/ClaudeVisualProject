@@ -38,6 +38,10 @@ It writes `docs/.index.md` with every node's title, dependencies, children and S
 
 To also fail a pull request that leaves format warnings in the docs (the same warnings the page shows; dependency cycles are listed but allowed), copy `tools/check-format.mjs` too and add `node tools/check-format.mjs docs` to your CI ([example](.github/workflows/docs-format.yml)).
 
+### Open work (optional)
+
+To see which nodes another thread is working on, keep a list of open work next to your docs. Copy `tools/open-work.mjs` and [this workflow](.github/workflows/open-work.yml) into your repository: on every push and pull request, GitHub writes `docs/.open-work.md` on the default branch with each branch that changes md files in `docs`, its pull request, its thread link and when it started, and deletes the branch of a merged pull request. The page marks those nodes **open** in both views, lists the work in the node card, makes **Open thread** open that work's thread, and blocks renaming or moving a node while open work changes any file it would write. The list is as fresh as your last `git pull`: on Windows, double-click [`Refresh.cmd`](Refresh.cmd) and press F5.
+
 ## Status
 
 v1. The design lives in [`docs/`](docs/README.md), written in the format the tool reads, so the project is its own first test case. Working docs are currently in Spanish.

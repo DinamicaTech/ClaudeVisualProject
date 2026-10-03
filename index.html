@@ -113,6 +113,7 @@
   .node.draft .card { background: var(--draft-fill); }   /* grey, like a disabled node; lines stay solid */
   .node.draft .tag { border-style: solid; }
   .node.idea .tag { color: var(--idea); background: var(--idea-soft); border-style: solid; }   /* an idea under debate in the lab, not a pending task */
+  .node .tag.busy { color: var(--accent); background: var(--accent-soft); border-style: solid; }   /* open work: a branch or pull request changes its md */
   .node.placeholder .card { border-style: dashed; }
   .node.placeholder .t { font-style: italic; color: var(--muted); }
   .node.obsolete .card, .node.obsolete-inherited .card { opacity: .5; filter: grayscale(1); }
@@ -145,6 +146,7 @@
   .badge.warn { color: var(--warn); background: var(--warn-soft); }
   .badge.draft { color: var(--draft); border: 1px solid var(--draft); }
   .badge.idea { color: var(--idea); background: var(--idea-soft); border: 1px solid var(--idea); }
+  .badge.busy { color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); }
 
   #card h1 { font-size: 22px; margin: 0 0 2px; }
   #card .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
@@ -158,6 +160,10 @@
   .banner { margin-top: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--obsolete); color: var(--muted); }
   .warnings { margin: 14px 0 0; padding: 8px 12px 8px 30px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
   .warnings li { margin: 2px 0; }
+  .openwork { margin: 14px 0 0; padding: 8px 12px; border-radius: 6px; background: var(--accent-soft); }
+  .openwork ul { margin: 4px 0 0; padding-left: 18px; }
+  .openwork .when { color: var(--muted); font-size: 12.5px; }
+  header #openWorkNote { color: var(--muted); font-size: 12.5px; }
   .summary { font-size: 15px; }
   .summary p:first-child { margin-top: 0; }
   .decisions { list-style: none; padding: 0; margin: 0; }
@@ -202,12 +208,13 @@
   #renForm .namerow input { flex: 1; font-family: var(--mono); font-size: 12.5px; }
   #renPreview ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
   #renError, #movError, #rulesError { color: var(--error); }
+  .notice.blocked { background: none !important; border: 1px solid var(--error); color: var(--error) !important; }
   #movForm label.check { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; margin: 2px 0; }
   #movForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; margin-top: 4px; }
   #movForm .namerow input { flex: 1; font: 12.5px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
   #movForm h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
   #movPreview ul, #movDeps ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
-  #movForm .notice { margin-top: 14px; padding: 8px 12px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
+  #renForm .notice, #movForm .notice { margin-top: 14px; padding: 8px 12px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
   #editToggleLabel.on { color: var(--accent); font-weight: 600; }
   #mapSvg.editing .node:not(.d0) { cursor: move; }
   #mapSvg .node.lifted { pointer-events: none; opacity: .85; }
@@ -230,6 +237,7 @@
 <header>
   <span class="app">Claude Visual Project</span>
   <span class="folder" id="folderName"></span>
+  <span id="openWorkNote" hidden></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
   <button id="rulesBtn" hidden></button>
@@ -299,6 +307,7 @@
     <label class="check"><input type="checkbox" id="renPathOn"> Also rename the file or folder, and update every reference to it</label>
     <div class="namerow" id="renNameRow"><span id="renPrefix"></span><input id="renName" autocomplete="off" spellcheck="false"><span id="renSuffix"></span></div>
     <div id="renPreview"></div>
+    <div id="renWork"></div>
     <p id="renError" hidden></p>
     <p><button class="primary" type="submit" id="renSubmit">Rename</button></p>
     <p class="empty-note">The page writes the changes to the folder on your disk (the browser asks for permission the first time). Commit them in git as usual.</p>
@@ -315,7 +324,7 @@
     <h3>Files</h3>
     <div id="movPreview"></div>
     <p id="movError" hidden></p>
-    <p class="notice">If another thread has an open branch or pull request that changes these files, moving them will conflict with that work. Check it before moving.</p>
+    <div id="movWork"></div>
     <p><button class="primary" type="submit" id="movSubmit">Move</button></p>
     <p class="empty-note">The page writes the changes to the folder on your disk, regenerates the node index (.index.md) if the folder has one, and reloads. Commit the changes in git as usual.</p>
   </form>
@@ -353,7 +362,8 @@ const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
-  snapshot: null,     // { name, generated, files } when the md files are embedded in the page
+  snapshot: null,     // { name, generated, files, openWork? } when the md files are embedded in the page
+  openWork: null,     // parsed .open-work.md ({ updated, items }), or null when the folder has none
   rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
   nodes: new Map(),   // node path -> node
   selected: null,     // selected node path
@@ -438,6 +448,7 @@ async function reload() {
   try {
     const files = state.snapshot ? state.snapshot.files : await readFolder(state.dir);
     state.nodes = buildModel(files, state.rootName);
+    state.openWork = parseOpenWork(state.snapshot ? state.snapshot.openWork : await readOpenWork(state.dir));
   } catch (e) {
     showLoadError(e);
     return;
@@ -456,6 +467,7 @@ async function reload() {
   $('folderName').textContent = state.rootName + '/' +
     (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
+  renderOpenWorkNote();
   renderRulesButton();
   renderAll();
 }
@@ -501,6 +513,76 @@ function restoreViewState() {
 }
 
 // ---------------------------------------------------------------------------
+// Open work (viewer/map/nodos-ocupados): .open-work.md in the docs folder, written on GitHub by
+// tools/open-work.mjs, lists the branches and pull requests that change md files of the folder.
+// The page only reads it, so it is as fresh as the last git pull of the folder.
+// ---------------------------------------------------------------------------
+
+const OPEN_WORK_FILE = '.open-work.md';
+
+async function readOpenWork(dir) {
+  try { return await (await (await dir.getFileHandle(OPEN_WORK_FILE)).getFile()).text(); }
+  catch (e) { return null; }
+}
+
+// { updated, items: [{ branch, pr: { number, title, url } | null, thread, since, files }] }; files relative to the docs folder.
+function parseOpenWork(text) {
+  if (!text) return null;
+  const work = { updated: '', items: [] };
+  let it = null, m;
+  for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
+    if ((m = /^Updated:\s*(.+)$/.exec(line))) work.updated = m[1].trim();
+    else if ((m = /^##\s+(.+)$/.exec(line))) work.items.push(it = { branch: m[1].trim(), pr: null, thread: '', since: '', files: [] });
+    else if (it && (m = /^-\s*(Pull request|Thread|Since|Files):\s*(.*)$/i.exec(line))) {
+      const key = m[1].toLowerCase(), val = m[2].trim();
+      if (key === 'pull request') {
+        const p = val.split(' · ');
+        it.pr = { number: p[0].replace(/^#/, ''), title: p.slice(1, -1).join(' · '), url: /^https?:\/\//.test(p[p.length - 1]) ? p[p.length - 1] : '' };
+      } else if (key === 'thread') it.thread = val;
+      else if (key === 'since') it.since = val;
+      else it.files = val.split(',').map(f => f.trim()).filter(Boolean);
+    }
+  }
+  return work;
+}
+
+// The open work that changes the md of node n, or any of these md files (paths relative to the docs folder).
+const openWorkOf = n => n.file ? openWorkOn([n.file]) : [];
+const openWorkOn = paths => state.openWork ? state.openWork.items.filter(i => i.files.some(f => paths.includes(f))) : [];
+const workLabel = i => i.pr ? `PR #${i.pr.number} (${i.pr.title})` : `branch ${i.branch} (no pull request yet)`;
+const isLink = s => /^https?:\/\//i.test(s || '');
+
+function renderOpenWorkNote() {
+  const w = state.openWork, el = $('openWorkNote');
+  el.hidden = !w;
+  if (!w) return;
+  el.textContent = `· open work: ${w.items.length}` + (w.updated ? ` · updated ${w.updated}` : '');
+  el.title = state.snapshot ? 'Open work as it was when this snapshot was made.'
+    : `From ${OPEN_WORK_FILE}, as of the last git pull of this folder. To update it, double-click Refresh.cmd in the repository and press F5.`;
+}
+
+// One line per open work item, with links to its pull request and its thread.
+function openWorkList(items) {
+  return '<ul>' + items.map(i => '<li>' +
+    (i.pr && isLink(i.pr.url) ? `<a href="${esc(i.pr.url)}" target="_blank" rel="noopener">${esc(workLabel(i))}</a>` : esc(workLabel(i))) +
+    (i.since ? ` <span class="when">since ${esc(i.since)}</span>` : '') +
+    (isLink(i.thread) ? ` · <a href="${esc(i.thread)}" target="_blank" rel="noopener">Open thread</a>` : ' · <span class="when">no thread link</span>') +
+    '</li>').join('') + '</ul>';
+}
+
+// Rename and Move are blocked while open work changes any md they would write: merging it would conflict.
+// Returns the html for the dialog and whether the action is blocked.
+function openWorkCheck(changes) {
+  if (!state.openWork) return { blocked: false,
+    html: '<p class="notice">If another thread has an open branch or pull request that changes these files, this will conflict with that work. Check it before going on.</p>' };
+  const busy = openWorkOn(changes.map(c => c.path));
+  if (!busy.length) return { blocked: false,
+    html: `<p class="empty-note">No open work changes these files${state.openWork.updated ? ` (open work updated ${esc(state.openWork.updated)})` : ''}.</p>` };
+  return { blocked: true,
+    html: '<div class="notice blocked">Open work changes some of these files, so this is blocked until it is merged or closed:' + openWorkList(busy) + '</div>' };
+}
+
+// ---------------------------------------------------------------------------
 // Standalone HTML (snapshot): the md files embedded in a copy of this page
 // ---------------------------------------------------------------------------
 // Same format as tools/build-html.mjs: { name, generated, files: [{ path, text }] } as JSON
@@ -537,7 +619,8 @@ async function exportHtml() {
     return;
   }
   const page = PAGE_TEMPLATE.cloneNode(true);
-  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files });
+  const openWork = await readOpenWork(state.dir);
+  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files, ...(openWork ? { openWork } : {}) });
   const blob = new Blob(['<!doctype html>\n' + page.outerHTML + '\n'], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1276,6 +1359,7 @@ function addRow(container, n, depth) {
     `<span class="twisty">${expandable ? (open ? '▼' : '▶') : ''}</span>` +
     `<span class="title">${esc(n.title)}</span>` +
     (n.status === 'draft' || n.status === 'idea' ? `<span class="badge ${n.status}">${n.status}</span>` : '') +
+    (openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">open</span>` : '') +
     (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
   container.appendChild(row);
   if (!open) return;
@@ -1417,13 +1501,15 @@ function renderMap() {
       n.placeholder && 'placeholder', n.status === 'draft' && 'draft', n.status === 'idea' && 'idea', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
     ].filter(Boolean).join(' ');
     const summary = it.depth <= 1 && n.summary ? plain(n.summary.split('\n')[0]) : '';
+    const busy = openWorkOf(n);
     const chips = state.showRefs && n.depLinks.length ? `<div class="chips">${n.depLinks.map(l => l.node
       ? `<span class="chip" data-ref="${esc(l.node.path)}" title="Depends on ${esc(l.node.title)}. Click to jump, double-click to copy its context"><b>↗</b> ${esc(l.node.title)}</span>`
       : `<span class="chip missing" title="Missing dependency: ${esc(l.path)}"><b>↗</b> ${esc(l.path)} (missing)</span>`).join('')}</div>` : '';
     boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
       `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
-      `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}</div>` +
+      `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}` +
+      `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
       `<div class="p">${esc(n.path || state.rootName + '/')}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
       `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
@@ -1709,6 +1795,9 @@ function renderCard() {
       (r ? ` Replaced by ${nodeLink(r)}.` : '') + '</div>';
   }
   if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
+  const busy = openWorkOf(n);
+  if (busy.length) h += '<div class="openwork"><b>Open work</b> changes this node' +
+    (state.openWork.updated ? ` <span class="when">(updated ${esc(state.openWork.updated)})</span>` : '') + ':' + openWorkList(busy) + '</div>';
 
   h += '<section><h2>Threads</h2>' + (n.threads.length
     ? '<ul class="links">' + n.threads.map(t => /^https?:\/\//i.test(t.link)
@@ -1755,21 +1844,29 @@ function renderCard() {
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
 }
 
-// "Open thread" opens the node's last `threads` entry (the most recent chat) in a new tab.
+// "Open thread" opens the thread of the node's open work, if a branch or pull request is changing it,
+// and otherwise its last `threads` entry (the most recent chat), in a new tab.
 // Earlier threads stay listed in the card's Threads section.
+function threadToOpen(n) {
+  const w = openWorkOf(n).filter(i => isLink(i.thread)).pop();
+  if (w) return { title: workLabel(w), link: w.thread, open: true };
+  return n.threads[n.threads.length - 1];
+}
+
 function openThreadButton(n) {
-  const t = n.threads[n.threads.length - 1];
+  const t = threadToOpen(n);
   const tip = !t ? 'This node has no linked threads'
-    : /^https?:\/\//i.test(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
+    : t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
+    : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
     : `The node's last thread is not a link: ${t.link}`;
-  const off = !t || !/^https?:\/\//i.test(t.link);
+  const off = !t || !isLink(t.link);
   return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
 }
 
 function openLastThread(n) {
-  const t = n.threads[n.threads.length - 1];
+  const t = threadToOpen(n);
   if (!t) return toast('This node has no linked threads.');
-  if (!/^https?:\/\//i.test(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
+  if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
   window.open(t.link, '_blank', 'noopener');
 }
 
@@ -2032,7 +2129,10 @@ function updateRenamePreview(n) {
   if (newPath !== n.path) h += '<p class="empty-note">' + (n.file && !isReadme(n.file) ? '' : 'Other files inside the folder (images, etc.) move with it. ') +
     'Paths written outside the docs folder are not updated.</p>';
   $('renPreview').innerHTML = h;
-  $('renSubmit').disabled = !!problem || !changes.length;
+  // Before any edit, the node's own md tells whether a rename would be blocked.
+  const work = openWorkCheck(changes.length ? changes : n.file ? [{ path: n.file }] : []);
+  $('renWork').innerHTML = changes.length || work.blocked ? work.html : '';
+  $('renSubmit').disabled = !!problem || !changes.length || work.blocked;
 }
 
 function openRename(n) {
@@ -2078,6 +2178,7 @@ async function doRename(n) {
     const fresh = buildModel(files, state.rootName).get(from);
     if (!fresh) return fail('This node no longer exists on disk. Press Reload.');
     const changes = planRename(files, fresh, title, to);
+    if (openWorkCheck(changes).blocked) return fail('Open work changes some of these files. Wait until it is merged or closed.');
 
     if (to !== from) {
       const parentDir = await dirAt(parentPathOf(from), false);
@@ -2189,7 +2290,9 @@ function updateMovePreview() {
   h += '<p class="empty-note">' + (n.file && !isReadme(n.file) ? '' : 'Other files inside the folder (images, etc.) move with it. ') +
     'Paths written outside the docs folder are not updated.</p>';
   $('movPreview').innerHTML = h;
-  $('movSubmit').disabled = !!problem;
+  const work = openWorkCheck(changes);
+  $('movWork').innerHTML = problem ? '' : work.html;
+  $('movSubmit').disabled = !!problem || work.blocked;
 }
 
 function openMove(n, t) {
@@ -2241,6 +2344,7 @@ async function doMove() {
     if (problem) return fail(problem + ' Press Reload if the folder changed.');
     const convert = ft.file && !isReadme(ft.file) ? ft.file : null;
     const changes = planChanges(files, fn, from, to, { convert, addDeps: keep.filter(p => model.has(p)) });
+    if (openWorkCheck(changes).blocked) return fail('Open work changes some of these files. Wait until it is merged or closed.');
 
     const oldParent = await dirAt(parentPathOf(from), false);
     const target = await dirAt(ft.path, true);

@@ -1,0 +1,44 @@
+name: Open work
+# Keeps docs/.open-work.md on main up to date with the md files that open branches and pull
+# requests are changing, so the page can mark busy nodes offline. Also deletes the branch of
+# a merged pull request. Its own commits to main do not trigger workflows (GITHUB_TOKEN).
+on:
+  push:
+  delete:
+  pull_request:
+    types: [opened, reopened, closed, edited, synchronize]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: open-work
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      # The tool comes from the commit that triggered the run, the docs from the default branch.
+      - uses: actions/checkout@v4
+        with:
+          path: .open-work-tool
+          sparse-checkout: tools
+      - name: Write docs/.open-work.md
+        run: node .open-work-tool/tools/open-work.mjs docs --delete-merged
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit it to the default branch
+        run: |
+          git add docs/.open-work.md
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Open work: update docs/.open-work.md"
+          for i in 1 2 3; do
+            git push origin HEAD:${{ github.event.repository.default_branch }} && exit 0
+            git pull --rebase origin ${{ github.event.repository.default_branch }}
+          done
+          exit 1

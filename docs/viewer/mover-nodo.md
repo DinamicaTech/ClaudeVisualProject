@@ -17,9 +17,10 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:47 · Si el destino es una hoja (`x.md`), pasa a ser carpeta (`x/README.md`) para alojar el nodo; su ruta de nodo no cambia y no se divide ningún md. Decidido por Ronald a las 08:37–08:39.
 - 2026-10-03 08:47 · Las dependencias declaradas (funcionales) no cambian. Las jerárquicas que pierde (su padre y antepasados actuales, y lo que heredaba de ellos) se listan con una casilla marcada por defecto: las marcadas se añaden a su `depends_on`, y sus descendientes las heredan de él. Las que gana por su nuevo sitio se muestran y no son opcionales. Una carpeta sin `README.md` no puede conservarlas. Decidido por Ronald a las 08:37.
 - 2026-10-03 08:47 · El diálogo propone el nombre actual; si ya existe uno igual en el destino, propone `nombre-2` (o el primero libre) y no deja confirmar un nombre que choque. Decidido por Ronald a las 08:37.
-- 2026-10-03 08:47 · El diálogo avisa siempre de que mover ficheros con trabajo abierto en otra rama crea conflictos; la página no puede saberlo (`viewer/map/nodos-ocupados`).
+- 2026-10-03 08:47 · [replaced by 2026-10-03 15:18] El diálogo avisa siempre de que mover ficheros con trabajo abierto en otra rama crea conflictos; la página no puede saberlo (`viewer/map/nodos-ocupados`).
 - 2026-10-03 08:47 · Usa la misma escritura que Renombrar: se planifica de nuevo con lo que hay en disco, primero se copia y al final se borra lo viejo. Después regenera `.index.md` si la carpeta lo tiene y recarga la página con el nodo seleccionado en su nuevo sitio.
 - 2026-10-03 10:30 · Validado por Ronald a las 10:29 (probado moviendo un nodo obsoleto): pasa a stable.
+- 2026-10-03 15:18 · Si trabajo abierto (`viewer/map/nodos-ocupados`) cambia alguno de los md que el movimiento movería o editaría, el diálogo lo lista en rojo, con su PR y el enlace a su hilo, y no deja mover hasta que se fusione o cierre (Ronald, 15:10); se comprueba otra vez al confirmar. Si no hay ninguno dice "No open work changes these files" con la fecha de la lista. Sin `.open-work.md` mantiene el aviso genérico de que mover ficheros con trabajo abierto crea conflictos.
 
 ## Requirements
 - 2026-10-03 08:22 · Y sí, poder mover nodos del árbol acabará siendo necesario.
@@ -32,3 +33,4 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:37 · f) Ok, con el aviso, aunque resolveremos antes la visualizacion de nodos ocupados para que haya una pista visual
 - 2026-10-03 08:37 · No se puede mover la raiz ni a un nodo inferior al seleccionado.
 - 2026-10-03 10:29 · Ok, he hecho la prueba con un nodo obsoleto y ha funcionado perfecto. Validación completada.
+- 2026-10-03 15:10 · Si realmente hay un riesgo de mover un nodo abierto, mejor bloquear la acción.

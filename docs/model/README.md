@@ -24,8 +24,9 @@ Todo lo que muestra el visor y lo que lista el paquete de contexto sale de este 
 - 2026-10-03 08:30 · Una decisión puede estar sustituida (marca `[replaced by …]`, ver `format/decisiones-sustituidas`): el modelo guarda a qué decisión apunta. Aviso si la marca apunta a un nodo o a una decisión (fecha y hora) que no existen.
 - 2026-10-03 14:40 · Los avisos de formato también se comprueban en GitHub: un PR que deja alguno (salvo los de ciclo) sale en rojo (`model/comprobacion-de-formato`).
 - 2026-10-03 14:45 · Un nodo tiene además estado (`idea`, `draft`, `stable`, `obsolete`) y, si es obsoleto, opcionalmente su sustituto. `idea` no da el aviso de estado desconocido.
+- 2026-10-03 15:18 · `.open-work.md` en la carpeta de docs es una lista generada de trabajo abierto (`viewer/map/nodos-ocupados`), no un nodo: como todo fichero oculto, no entra en el árbol.
 
 ## Requirements
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: reconocer la marca `[replaced by …]` en las decisiones y avisar si apunta a una decisión inexistente.
 - 2026-10-03 14:45 · Derived from context-pack/ideas: reconocer el estado `idea`.
-
+- 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: leer `.open-work.md` sin tratarlo como nodo.
