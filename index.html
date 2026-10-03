@@ -464,7 +464,7 @@ async function reload() {
   $('viewSeg').hidden = false;
   for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
   $('openBtn').hidden = !!state.snapshot;
-  $('folderName').textContent = state.rootName + '/' +
+  $('folderName').textContent = docsPrefix() +
     (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
   renderOpenWorkNote();
@@ -756,6 +756,8 @@ function parseDoc(text) {
     title: typeof fm.title === 'string' ? fm.title : '',
     deps, status,
     replacedBy: typeof fm.replaced_by === 'string' && fm.replaced_by ? normalizeNodePath(fm.replaced_by) : null,
+    // Root node only: where the docs folder is inside the repository (context-pack/carpeta-de-docs).
+    docsPath: typeof fm.docs_path === 'string' ? fm.docs_path.trim().replace(/\\/g, '/').replace(/^(\.?\/)+/, '').replace(/\/+$/, '') : '',
     threads: parseThreads(fm.threads),
     summary, decisions, requirements, warnings,
   };
@@ -779,7 +781,7 @@ function nodePathOf(filePath) {
 function makeNode(path, file, text) {
   const n = {
     path, file, text, parent: null, children: [], dependents: [], inherited: [], depLinks: [],
-    placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null,
+    placeholder: !file, warnings: [], deps: [], status: 'stable', replacedBy: null, docsPath: '',
     summary: '', decisions: [], requirements: [], title: '', threads: [],
   };
   if (file) Object.assign(n, parseDoc(text));
@@ -810,6 +812,7 @@ function buildModel(files, rootName) {
       ? 'No Markdown files found in this folder.'
       : 'This folder has no README.md, so the node has no document.');
     if (!n.title) n.title = n.path === '' ? rootName : lastSegment(n.path);
+    if (n.path !== '' && n.docsPath) n.warnings.push('docs_path is only read in the root node (the README.md of the docs folder); it is ignored here.');
   }
 
   // Hierarchy.
@@ -1054,8 +1057,16 @@ function updatedRulesFile(text, stamp) {
 // Context pack
 // ---------------------------------------------------------------------------
 
+// Path of the docs folder from the repository root, with a trailing slash: the root node's docs_path,
+// or else the name of the opened folder, which is then assumed to be at the root of the repository.
+function docsPrefix() {
+  const root = state.nodes && state.nodes.get('');
+  const p = (root && root.docsPath) || state.rootName;
+  return p ? p + '/' : '';
+}
+
 function repoPath(n) {
-  return (state.rootName ? state.rootName + '/' : '') + n.file;
+  return docsPrefix() + n.file;
 }
 
 // The rules part of a prompt: a pointer to the global-rules node when it holds this page's rules (or newer ones),
@@ -1110,7 +1121,7 @@ function taskLines(n) {
 // Files a thread working on node n must know: the node, its ancestors and its dependencies.
 function packFiles(n, nodeLabel) {
   const lines = ['Files, with paths relative to the repository root:'];
-  lines.push(n.file ? `- ${nodeLabel}: ${repoPath(n)}` : `- ${nodeLabel}: ${state.rootName}/${n.path}/ (folder without README.md)`);
+  lines.push(n.file ? `- ${nodeLabel}: ${repoPath(n)}` : `- ${nodeLabel}: ${docsPrefix()}${n.path}/ (folder without README.md)`);
   const ancestors = ancestorsOf(n).filter(a => a.file);
   if (ancestors.length) {
     lines.push('- Ancestors, from the root:');
@@ -1152,7 +1163,7 @@ function slugify(t) {
 function subTaskPack(n, title) {
   const slug = slugify(title);
   const childPath = n.path ? `${n.path}/${slug}` : slug;
-  const prefix = state.rootName ? state.rootName + '/' : '';
+  const prefix = docsPrefix();
   const isLeafFile = n.file && !isReadme(n.file);
   const folder = prefix + (n.path ? n.path + '/' : '');
   const steps = [];
@@ -1510,7 +1521,7 @@ function renderMap() {
       `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
       `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}` +
       `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
-      `<div class="p">${esc(n.path || state.rootName + '/')}</div>` +
+      `<div class="p">${esc(n.path || docsPrefix())}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
       `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
       chips + `</div></foreignObject>` +
@@ -1780,7 +1791,7 @@ function renderCard() {
   if (!n) { card.textContent = ''; return; }
   let h = `<h1>${esc(n.title)}` +
     (n.status !== 'stable' ? `<span class="status ${n.status}">${n.status}</span>` : '') + `</h1>`;
-  h += `<div class="path">${esc(n.file ? repoPath(n) : (state.rootName + '/' + n.path + '/'))}</div>`;
+  h += `<div class="path">${esc(n.file ? repoPath(n) : (docsPrefix() + n.path + '/'))}</div>`;
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
     '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
@@ -2122,7 +2133,7 @@ function updateRenamePreview(n) {
   $('renError').textContent = problem || '';
   const changes = problem ? [] : planRename(currentFiles(), n, title, newPath);
   const moved = changes.filter(c => c.newPath !== c.path), edited = changes.filter(c => c.newPath === c.path);
-  const p = state.rootName + '/';
+  const p = docsPrefix();
   let h = '';
   if (moved.length) h += '<p>Moves:</p><ul>' + moved.map(c => `<li>${esc(p + c.path)} → ${esc(p + c.newPath)}</li>`).join('') + '</ul>';
   if (edited.length) h += '<p>Edits:</p><ul>' + edited.map(c => `<li>${esc(p + c.path)}</li>`).join('') + '</ul>';
@@ -2145,7 +2156,7 @@ function openRename(n) {
   $('renPathOn').disabled = isRoot;
   $('renPathOn').parentElement.title = isRoot ? 'The root is the docs folder itself and cannot be renamed here' : '';
   const parent = parentPathOf(n.path) || '';
-  $('renPrefix').textContent = state.rootName + '/' + (parent ? parent + '/' : '');
+  $('renPrefix').textContent = docsPrefix() + (parent ? parent + '/' : '');
   $('renSuffix').textContent = n.file && !isReadme(n.file) ? '.md' : '/';
   $('renName').value = isRoot ? '' : lastSegment(n.path);
   let nameEdited = false;
@@ -2282,7 +2293,7 @@ function updateMovePreview() {
   const convert = t.file && !isReadme(t.file) ? t.file : null;
   const changes = problem ? [] : planChanges(currentFiles(), n, n.path, childPath(t, name), { convert, addDeps: n.file ? keptDeps() : [] });
   const moved = changes.filter(c => c.newPath !== c.path), edited = changes.filter(c => c.newPath === c.path);
-  const p = state.rootName + '/';
+  const p = docsPrefix();
   let h = '';
   if (convert) h += `<p class="empty-note">"${esc(t.title)}" is a single file, so it becomes a folder to hold the node: ${esc(p + convert)} moves to ${esc(p + t.path)}/README.md. Its node path does not change.</p>`;
   if (moved.length) h += '<p>Moves:</p><ul>' + moved.map(c => `<li>${esc(p + c.path)} → ${esc(p + c.newPath)}</li>`).join('') + '</ul>';
@@ -2300,7 +2311,7 @@ function openMove(n, t) {
   moveCtx = { n, t, deps };
   $('movWhat').textContent = `"${n.title}"`;
   $('movWhere').textContent = `"${t.title}"`;
-  $('movPrefix').textContent = state.rootName + '/' + (t.path ? t.path + '/' : '');
+  $('movPrefix').textContent = docsPrefix() + (t.path ? t.path + '/' : '');
   $('movSuffix').textContent = n.file && !isReadme(n.file) ? '.md' : '/';
   const name = freeName(n, t);
   $('movName').value = name;
