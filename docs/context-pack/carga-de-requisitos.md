@@ -1,7 +1,6 @@
 ---
 title: Carga de requisitos
 depends_on: [context-pack/routing, global-rules, viewer]
-status: draft
 threads:
   - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
 ---
@@ -11,7 +10,7 @@ Antes de escribir, el hilo resuelve con el propietario las dudas bloqueantes (in
 El botón "Load requirements" de la cabecera copia el prompt; el procedimiento está en la regla "Requirements load" de `global-rules`.
 
 ## Decisions
-- 2026-10-03 08:22 · Pendiente. Guardado como draft, decidido por Ronald.
+- 2026-10-03 08:22 · [replaced by 2026-10-03 16:13] Pendiente. Guardado como draft, decidido por Ronald.
 - 2026-10-03 08:22 · Un solo mecanismo para proyecto nuevo y existente: un proyecto nuevo es el caso del árbol vacío.
 - 2026-10-03 08:22 · Iterativo: el hilo muestra una versión del árbol (cada nodo con su Summary, qué frases recibe y cuáles quedan como draft); el propietario aclara o precisa los requisitos y sale una versión nueva, hasta su OK. Solo entonces escribe los md.
 - 2026-10-03 08:22 · Profundidad inicial de dos o tres niveles; el detalle se abre al ejecutar cada draft. Los nodos que solo estructuran se crean con su Summary y sin `draft`; los que tienen tareas pendientes, como `draft` con las frases literales y su línea `draft:`.
@@ -23,6 +22,7 @@ El botón "Load requirements" de la cabecera copia el prompt; el procedimiento e
 - 2026-10-03 16:12 · El estado de la carga (frases R, preguntas, respuestas, árbol propuesto) vive en `.requirements-load.md` en la carpeta de docs, actualizado y subido a la rama en cada ronda para que otro hilo pueda retomarla; se borra al terminar. Las respuestas del propietario son requisitos y se copian a sus nodos; si una anula una decisión vigente, esta se marca como sustituida.
 - 2026-10-03 16:12 · El árbol propuesto (Summary, frases R, líneas `draft:` y preguntas locales de cada nodo) hace de desglose: se rehace con las aclaraciones del propietario hasta su OK y solo entonces se escriben los md.
 
+- 2026-10-03 16:13 · Validado por Ronald a las 16:11: pasa a stable.
 ## Requirements
 - 2026-10-03 08:18 · Al crear un proyecto, poder indicar un conjunto de requerimientos y que eso genere todo el árbol de nodos funcionales de dicho proyecto (como drafts los que tengan tareas asociadas).
 - 2026-10-03 08:22 · Bueno, la construcción del árbol puede ser interactiva. Se muestra una primera versión y el operador puede aclarar o especificar mejor los requerimientos, lo cual generaría una nueva versión del árbol y así de forma iterativa.
