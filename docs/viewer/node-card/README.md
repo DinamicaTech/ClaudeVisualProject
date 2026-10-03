@@ -3,7 +3,7 @@ title: Ficha del nodo
 depends_on: [model]
 ---
 ## Summary
-Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, requisitos del propietario, Decisions, dependencias (propias y heredadas) y dependientes, avisos de formato y un acceso al md completo.
+Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, requisitos del propietario, Decisions, dependencias (propias y heredadas) y dependientes, avisos de formato, aviso de revisión y un acceso al md completo.
 
 ## Decisions
 - 2026-10-02 09:13 · Muestra los bloques fijos tal como están escritos; no se genera nada al vuelo.
@@ -21,6 +21,7 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 08:47 · Las decisiones sustituidas están ocultas por defecto. Bajo Decisions, "Show replaced (N)" las muestra (atenuadas y tachadas, con la etiqueta "replaced by …", que lleva a la decisión vigente y la resalta) y "Hide replaced" las vuelve a ocultar. Es el mismo interruptor que el del Log y se recuerda tras F5.
 - 2026-10-03 14:45 · El estado `idea` se muestra en la cabecera de la ficha con una etiqueta ámbar.
 - 2026-10-03 15:18 · Si una rama o un PR cambia el md del nodo, un recuadro "Open work" bajo los botones lista cada uno: el PR con su título (enlace a GitHub) o la rama si aún no tiene PR, desde cuándo y un enlace "Open thread" a su hilo (`viewer/map/nodos-ocupados`).
+- 2026-10-03 15:55 · Si el nodo tiene aviso de revisión (`model/avisos-de-desactualizacion`), la ficha muestra un bloque "⏱ Review", tras los avisos de formato, con cada dependencia que ha cambiado (enlace para saltar a ella, cuántas decisiones y la fecha de la última).
 
 ## Requirements
 - 2026-10-02 11:46 · Me gustaría poder acceder a los requerimientos escritos por mí relacionados con un nodo.
@@ -29,3 +30,4 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 14:16 · Pasa de fichero a carpeta (`viewer/node-card/README.md`) para tener hijos; su ruta de nodo no cambia. Primer hijo: el draft `viewer/node-card/abrir-conversacion` (botón que abre la conversación del nodo).
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar el estado `idea`.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: mostrar el trabajo abierto del nodo con enlace a su PR y a su hilo.
+- 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la ficha qué dependencias han cambiado después de la última decisión del nodo.
