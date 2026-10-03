@@ -18,6 +18,7 @@ También puede abrirse como instantánea con los md dentro (`build/html-autonomo
 - 2026-10-02 09:46 · Tras recargar se conservan el nodo seleccionado, los nodos desplegados y el interruptor de referencias.
 - 2026-10-02 09:46 · Se leen todos los `.md` de la carpeta y sus subcarpetas; se ignoran carpetas y ficheros ocultos (que empiezan por `.`) y `node_modules`.
 - 2026-10-03 08:30 · Segunda forma de abrir la página: la instantánea con los md incrustados (`build/html-autonomo`). Funciona en cualquier navegador moderno; en ella se ocultan "Abrir carpeta" y "Reload".
+- 2026-10-03 18:35 · Si la carpeta elegida con "Open folder" no tiene `README.md` pero sí una subcarpeta `docs` con él, la página abre esa subcarpeta y lo avisa: suele ser la carpeta del repositorio elegida por error, que mostraría `AGENTS.md` y `CLAUDE.md` como nodos, la raíz duplicada y todas las dependencias rotas (pasó en la primera prueba de Killer Flies). Aceptado por Ronald (18:30).
 
 ## Requirements
 - 2026-10-03 08:30 · Derived from build/html-autonomo: la página también se abre con los md incrustados, sin "Abrir carpeta" y en cualquier navegador moderno; Reload se oculta en ese modo.
