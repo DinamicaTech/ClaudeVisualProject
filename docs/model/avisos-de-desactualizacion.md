@@ -1,7 +1,6 @@
 ---
 title: Avisos de desactualización
 depends_on: [viewer/map, viewer/tree, viewer/node-card, model/comprobacion-de-formato]
-status: draft
 threads:
   - Avisos de desactualización | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBXUhhwTDvikxtVJrgak7o7
 ---
@@ -18,6 +17,7 @@ No es un aviso de formato: no suma al contador ⚠ ni bloquea PRs. Las dependenc
 - 2026-10-03 15:55 · Se calcula en el modelo al abrir la página o con F5. El aviso se quita cuando el nodo recibe una decisión nueva (por ejemplo, "Revisado tras el cambio en X"); no hay campos nuevos en el formato.
 - 2026-10-03 15:55 · Se muestra como "⏱ review" en el mapa y la vista Project, con las dependencias que han cambiado en el tooltip, y como bloque "⏱ Review" en la ficha. No suma al contador ⚠ y no bloquea PRs. El doble clic no cambia.
 - 2026-10-03 15:58 · Un nodo está desactualizado cuando alguna de sus dependencias declaradas tiene una decisión vigente con fecha posterior a la última decisión del propio nodo; las decisiones sustituidas no cuentan, para no generar revisiones sin valor. Las dependencias heredadas de los ancestros no cuentan, para que el operador encuentre el origen real. Se descartan la antigüedad del nodo y el historial git.
+- 2026-10-03 16:17 · Validado por Ronald: el nodo pasa a estable. Los nodos marcados hoy se irán revisando cuando se trabaje en ellos.
 
 ## Requirements
 - 2026-10-02 08:52 · Avisos de documentos desactualizados o dependencias rotas, como ampliación posterior.
