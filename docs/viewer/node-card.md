@@ -17,6 +17,8 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-02 10:38 · Botón "New sub-task": pide un título y copia el prompt de subtarea (ver `context-pack`).
 - 2026-10-02 10:52 · Botón "Rename" (también F2 con el nodo seleccionado): abre el diálogo de `viewer/rename`.
 - 2026-10-02 11:50 · Sección "Requirements" entre Summary y Decisions, con los requisitos literales del propietario (bloque `## Requirements`), en cursiva y con su fecha. Si no hay, una nota explica cómo se rellena.
+- 2026-10-03 08:30 · Las decisiones sustituidas salen atenuadas y tachadas, con la etiqueta "replaced by …"; un clic en ella lleva a la decisión vigente (en el mismo nodo o en otro) y la resalta.
 
 ## Requirements
 - 2026-10-02 11:46 · Me gustaría poder acceder a los requerimientos escritos por mí relacionados con un nodo.
+- 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: atenuar las decisiones sustituidas y enlazar a la que las sustituye.

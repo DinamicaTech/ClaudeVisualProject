@@ -160,6 +160,11 @@
   .decisions li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
   .decisions .when { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; padding-top: 1px; }
   .decisions .when.none { color: var(--warn); }
+  .decisions li.replaced > span { opacity: .5; }
+  .decisions li.replaced > span:last-child { text-decoration: line-through; text-decoration-color: var(--muted); }
+  .decisions .repl, #list .entry .repl { font-size: 12px; color: var(--muted); font-style: normal; margin-right: 4px; display: inline-block; text-decoration: none; }
+  .decisions li.flash { background: var(--accent-soft); transition: background .3s; }
+  #list .entry.replaced .body { opacity: .5; }
   .decisions.reqs li > span:last-child { border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic; }
   .links { list-style: none; padding: 0; margin: 0; }
   .links li { padding: 2px 0; }
@@ -224,7 +229,7 @@
   <div id="map" hidden>
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
-    <div class="legend">◆ decisions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
+    <div class="legend">◆ decisions in force · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="list" hidden></div>
   <div id="card"></div>
@@ -308,10 +313,14 @@ const $ = id => document.getElementById(id);
 const VIEWS = ['map', 'tree', 'drafts', 'log'];
 const READ_RULE =
   'Reading rule: read the node file in full. For its ancestors and dependencies, read only the ' +
-  'Summary and Decisions blocks; open them in full only if needed.';
+  'Summary and Decisions blocks; open them in full only if needed. ' +
+  'Ignore every decision marked "[replaced by ...]": a later decision overrides it.';
 const UPDATE_RULE =
   'Before finishing, update the Summary and Decisions of every node you changed. ' +
   'Each decision line starts with "YYYY-MM-DD HH:MM · ". ' +
+  'When a new decision overrides an earlier one, even in part, write the new one as the complete rule in force and mark the earlier one, ' +
+  'right after its date, with "[replaced by YYYY-MM-DD HH:MM] " (the new decision\'s date and time), adding the node path before the date ' +
+  'when the new decision is in another node: "[replaced by viewer/log YYYY-MM-DD HH:MM] ". ' +
   'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
   'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
@@ -463,6 +472,9 @@ function restoreViewState() {
 // (in Node), so the node index is built with the same rules as the page. Keep it free of DOM access.
 
 const STATUSES = ['draft', 'stable', 'obsolete'];
+// A decision overridden by a later one starts with "[replaced by <node path>? <date time>]" (see format/decisiones-sustituidas).
+const REPLACED_RE = /^\[replaced by\s+(?:([^\]\s]+)\s+)?(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\]\s*([\s\S]*)$/i;
+const activeDecisions = n => n.decisions.filter(d => !d.replacedBy);
 
 function unquote(s) {
   s = s.trim();
@@ -556,6 +568,10 @@ function parseDoc(text) {
       const d = it[1].match(/^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s*·\s*(.*)$/);
       if (d) items.push({ when: d[1].replace(/\s+/, ' '), text: d[2] });
       else { items.push({ when: '', text: it[1] }); undated++; }
+      // A decision that a later one overrides starts with "[replaced by <node path>? <date time>]".
+      const last = items[items.length - 1];
+      const r = what === 'decision' && last.text.match(REPLACED_RE);
+      if (r) { last.replacedBy = { path: r[1] ? normalizeNodePath(r[1]) : null, when: r[2].replace(/\s+/, ' ') }; last.text = r[3]; }
     }
     if (undated) warnings.push(`${undated} ${what} line(s) do not start with "YYYY-MM-DD HH:MM · ".`);
     return items;
@@ -672,6 +688,17 @@ function buildModel(files, rootName) {
       seen.add(d);
       n.inherited.push({ node: nodes.get(d), via: a });
     }
+  }
+
+  // Replaced decisions: the marker must point to an existing decision, in this node or the named one.
+  for (const n of nodes.values()) for (const d of n.decisions) {
+    if (!d.replacedBy) continue;
+    const t = d.replacedBy.path === null ? n : nodes.get(d.replacedBy.path);
+    d.replacedBy.node = t || null;
+    if (!t) n.warnings.push(`Decision ${d.when || '(no date)'} is marked as replaced by node "${d.replacedBy.path}", which does not exist.`);
+    else if (!t.decisions.some(x => x !== d && x.when === d.replacedBy.when))
+      n.warnings.push(`Decision ${d.when || '(no date)'} is marked as replaced by decision ${d.replacedBy.when}` +
+        (t === n ? '' : ` of "${t.path}"`) + ', which does not exist.');
   }
 
   markCycles(nodes);
@@ -1188,7 +1215,7 @@ function renderMap() {
       `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}</div>` +
       `<div class="p">${esc(n.path || state.rootName + '/')}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
-      `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions">${n.decisions.length}◆</span>` : ''}</div>` +
+      `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
       chips + `</div></foreignObject>` +
       (n.children.length ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${it.h / 2})"><title>${mapCollapsed.has(n.path) ? 'Expand' : 'Collapse'}</title>` +
         `<circle r="9"/><text y="4.5" text-anchor="middle">${mapCollapsed.has(n.path) ? '+' : '−'}</text></g>` : '') +
@@ -1348,10 +1375,11 @@ function renderLog() {
   for (const e of entries) {
     const dd = e.d.when ? e.d.when.slice(0, 10) : 'No date';
     if (dd !== day) { h += `<h3>${esc(dd)}</h3>`; day = dd; }
-    h += `<div class="entry${e.n.path === state.selected ? ' selected' : ''}" data-path="${esc(e.n.path)}">` +
+    h += `<div class="entry${e.n.path === state.selected ? ' selected' : ''}${e.d.replacedBy ? ' replaced' : ''}" data-path="${esc(e.n.path)}">` +
       `<span class="when">${esc(e.d.when ? e.d.when.slice(11) : '')}</span>` +
       `<span class="kind${e.kind === 'requirement' ? ' req' : ''}">${e.kind === 'requirement' ? 'Requirement' : 'Decision'}</span>` +
       `<div class="body md"><span class="who" style="color:${mapColor(e.n)}">${esc(e.n.title)}<span class="p">${esc(e.n.path || '(root)')}</span></span>` +
+      (e.d.replacedBy ? `<span class="repl">[replaced by ${e.d.replacedBy.node && e.d.replacedBy.node !== e.n ? esc(e.d.replacedBy.node.path) + ' ' : ''}${esc(e.d.replacedBy.when)}]</span>` : '') +
       withBase(e.n, () => e.d.text.split('\n').map(inline).join('<br>')) + '</div></div>';
   }
   list.innerHTML = h;
@@ -1385,6 +1413,14 @@ function nodeLink(n) {
     `<span class="p">${esc(n.path || '(root)')}</span>`;
 }
 
+// "Replaced by ..." label of a replaced decision; a click shows the decision in force.
+function replacedLabel(n, d) {
+  const r = d.replacedBy, t = r.node;
+  if (!t) return `<span class="repl">replaced by ${esc(r.path)} ${esc(r.when)} (missing)</span> `;
+  return `<button class="link repl" data-node="${esc(t.path)}" data-dec="${esc(r.when)}" title="Show the decision in force">` +
+    `replaced by ${t === n ? '' : esc(t.title) + ' '}${esc(r.when)}</button> `;
+}
+
 function renderCard() {
   const n = state.nodes.get(state.selected);
   const card = $('card');
@@ -1416,8 +1452,8 @@ function renderCard() {
     h += '<section><h2>Summary</h2>' +
       (n.summary ? `<div class="summary md">${renderMarkdown(n.summary)}</div>` : '<p class="empty-note">No summary.</p>') + '</section>';
     const datedList = (items, cls) => `<ul class="decisions ${cls} md">` + items.map(d =>
-      `<li><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
-      `<span>${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>';
+      `<li${d.replacedBy ? ' class="replaced"' : ''} data-when="${esc(d.when)}"><span class="when${d.when ? '' : ' none'}">${d.when ? esc(d.when) : 'no date'}</span>` +
+      `<span>${d.replacedBy ? replacedLabel(n, d) : ''}${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>';
     h += '<section><h2>Requirements</h2>' + (n.requirements.length ? datedList(n.requirements, 'reqs')
       : '<p class="empty-note">No requirements recorded. Threads copy the owner\'s requests, word for word, into the <code>## Requirements</code> block.</p>') + '</section>';
     h += '<section><h2>Decisions</h2>' + (n.decisions.length ? datedList(n.decisions, '')
@@ -1477,6 +1513,12 @@ document.addEventListener('click', e => {
   e.preventDefault();
   el.closest('dialog')?.close();
   select(el.dataset.node, true);
+  if (el.dataset.dec) {
+    const li = [...$('card').querySelectorAll('.decisions:not(.reqs) li')]
+      .find(x => x.dataset.when === el.dataset.dec && !x.classList.contains('replaced'))
+      || $('card').querySelector(`.decisions:not(.reqs) li[data-when="${CSS.escape(el.dataset.dec)}"]`);
+    if (li) { li.scrollIntoView({ block: 'center' }); li.classList.add('flash'); setTimeout(() => li.classList.remove('flash'), 1500); }
+  }
 });
 
 // ---------------------------------------------------------------------------

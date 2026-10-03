@@ -13,7 +13,9 @@ Responde a "¿qué ha cambiado?" sin abrir nodos, y muestra qué pasó con un dr
 - 2026-10-03 07:50 · Cada entrada: hora, tipo (Decision o Requirement), título y ruta del nodo en el color de su área, y el texto con sus enlaces. Un filtro All / Decisions / Requirements, que se recuerda tras F5.
 - 2026-10-03 07:50 · Las líneas sin fecha van al final, bajo "No date". Respeta el zoom (Z).
 - 2026-10-03 07:50 · Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de contexto.
+- 2026-10-03 08:30 · Las decisiones sustituidas salen atenuadas, con su marca "[replaced by …]" delante del texto. Siguen en el Log porque son historia.
 
 ## Requirements
 - 2026-10-03 07:23 · El 1 y el 2 son muy buenas propuestas. [2: una vista con todas las decisiones y requisitos del proyecto por fecha]
 - 2026-10-03 07:50 · Derived from context-pack/routing: poder consultar qué pasó con un draft que ha pasado a tarea en otro nodo.
+- 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: atenuar las decisiones sustituidas.
