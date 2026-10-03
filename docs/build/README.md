@@ -13,7 +13,7 @@ También puede abrirse como instantánea con los md dentro (`build/html-autonomo
 - 2026-10-02 09:29 · Navegadores soportados en la v1: Chrome y Edge, los únicos que permiten a una página leer una carpeta local con permiso del usuario.
 - 2026-10-02 09:29 · Un comando que genere un HTML autónomo, para publicar o para otros navegadores, queda en el roadmap.
 - 2026-10-02 09:46 · La página es `index.html` en la raíz del repositorio. Se abre con doble clic (file://) en Chrome o Edge.
-- 2026-10-02 09:46 · La página recuerda la última carpeta abierta. Tras F5 la vuelve a leer sola si el navegador conserva el permiso; si no, muestra un botón "Reopen docs/" (un clic). Chrome ofrece "Permitir en cada visita" para no volver a preguntar.
+- 2026-10-02 09:46 · [replaced by build/selector-de-proyectos 2026-10-03 17:55] La página recuerda la última carpeta abierta. Tras F5 la vuelve a leer sola si el navegador conserva el permiso; si no, muestra un botón "Reopen docs/" (un clic). Chrome ofrece "Permitir en cada visita" para no volver a preguntar.
 - 2026-10-02 09:46 · Botón "Reload" que relee la carpeta sin recargar la página, equivalente a F5.
 - 2026-10-02 09:46 · Tras recargar se conservan el nodo seleccionado, los nodos desplegados y el interruptor de referencias.
 - 2026-10-02 09:46 · Se leen todos los `.md` de la carpeta y sus subcarpetas; se ignoran carpetas y ficheros ocultos (que empiezan por `.`) y `node_modules`.

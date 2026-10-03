@@ -34,6 +34,8 @@
   button:hover { border-color: var(--accent); }
   button:disabled, button.off, button.off:hover { opacity: .5; cursor: default; border-color: var(--line); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; cursor: pointer; }
+  header #projectSel { font-weight: 600; max-width: 22em; }
   button.link { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; text-align: left; }
   button.link:hover { text-decoration: underline; }
   code, pre { font-family: var(--mono); font-size: 12.5px; }
@@ -236,6 +238,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
+  <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
   <span class="folder" id="folderName"></span>
   <span id="openWorkNote" hidden></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
@@ -254,7 +257,7 @@
   </label>
   <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
   <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
-  <button id="openBtn">Open folder</button>
+  <button id="openBtn" title="Open the docs folder of a project and add it to the project list">Open folder</button>
 </header>
 
 <main id="app" hidden>
@@ -275,7 +278,7 @@
   <p id="unsupported" class="error" hidden>This browser cannot read a local folder. Please use Chrome or Edge.</p>
   <p id="loadError" class="error" hidden></p>
   <div class="buttons">
-    <button id="reopenBtn" class="primary" hidden></button>
+    <span id="reopenBtns"></span>
     <button id="welcomeOpenBtn">Open folder</button>
     <button id="welcomeNewBtn" title="Copy a prompt for a new thread that sets up a new project">New project</button>
   </div>
@@ -370,6 +373,7 @@ const state = {
   indexText: null,    // text of the node index (.index.md) as read from the folder, or null if it has none
   openWork: null,     // parsed .open-work.md ({ updated, items }), or null when the folder has none
   rootName: '',       // name of the docs folder, used as prefix for repo-relative paths
+  projectId: '',      // id of the open project in the project list (build/selector-de-proyectos)
   nodes: new Map(),   // node path -> node
   selected: null,     // selected node path
   expanded: new Set(),
@@ -404,8 +408,46 @@ function idb(mode, fn) {
     };
   });
 }
-const saveHandle = h => idb('readwrite', s => s.put(h, 'docs')).catch(() => {});
-const loadHandle = () => idb('readonly', s => s.get('docs')).catch(() => null);
+const idbGet = key => idb('readonly', s => s.get(key)).catch(() => null);
+const idbPut = (key, value) => idb('readwrite', s => s.put(value, key)).catch(() => {});
+
+// Project list (build/selector-de-proyectos): every docs folder opened in this browser,
+// as { id, handle, title }, and the id of the last one opened, which F5 reopens.
+// A project is its folder: a folder opened again is recognised with isSameEntry, whatever its name.
+let projects = [];
+const saveProjects = () => idbPut('projects', projects.map(({ id, handle, title }) => ({ id, handle, title })));
+
+async function loadProjects() {
+  projects = (await idbGet('projects')) || [];
+  let current = await idbGet('current');
+  if (!projects.length) {
+    // Before the project list the page kept only the last folder, under "docs", and its view by folder name.
+    const old = await idbGet('docs');
+    if (old) {
+      projects = [{ id: 'p1', handle: old, title: old.name }];
+      current = 'p1';
+      try {
+        const v = localStorage.getItem('cvp:view:' + old.name);
+        if (v && !localStorage.getItem('cvp:view:p1')) localStorage.setItem('cvp:view:p1', v);
+      } catch (e) { /* storage unavailable */ }
+      await saveProjects();
+      await idbPut('current', current);
+    }
+  }
+  return projects.find(p => p.id === current) || projects[0] || null;
+}
+
+async function addProject(dir) {
+  for (const p of projects) {
+    try { if (await p.handle.isSameEntry(dir)) return p; } catch (e) { /* stale handle */ }
+  }
+  let k = projects.length + 1;
+  while (projects.some(p => p.id === 'p' + k)) k++;
+  const p = { id: 'p' + k, handle: dir, title: dir.name };
+  projects.push(p);
+  await saveProjects();
+  return p;
+}
 
 async function pickFolder() {
   let dir;
@@ -415,24 +457,67 @@ async function pickFolder() {
     if (e.name !== 'AbortError') showLoadError(e);
     return;
   }
-  await saveHandle(dir);
-  await openDir(dir);
+  await openProject(await addProject(dir));
 }
 
-async function reopenStored(dir) {
+// Opens a project of the list, asking the browser for permission to read its folder if needed.
+async function openProject(p) {
   try {
-    if (await dir.requestPermission({ mode: 'read' }) !== 'granted') return;
-    await openDir(dir);
+    if (await p.handle.queryPermission({ mode: 'read' }) !== 'granted' &&
+        await p.handle.requestPermission({ mode: 'read' }) !== 'granted') { renderProjectSel(); return; }
   } catch (e) {
     showLoadError(e);
+    return;
   }
+  await idbPut('current', p.id);
+  await openDir(p.handle, p.id);
 }
 
-async function openDir(dir) {
-  const sameFolder = state.dir && state.rootName === dir.name;
+async function removeProject(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p || !confirm(`Remove "${p.title}" from the project list? Its folder is not touched; you can open it again with Open folder.`)) { renderProjectSel(); return; }
+  projects = projects.filter(x => x !== p);
+  await saveProjects();
+  try { localStorage.removeItem('cvp:view:' + id); } catch (e) { /* storage unavailable */ }
+  if (id !== state.projectId) { renderProjectSel(); return; }
+  if (projects.length) return openProject(projects[0]);
+  await idbPut('current', null);
+  location.reload();
+}
+
+const ADD = '+add', REMOVE = '+remove';
+function renderProjectSel() {
+  const sel = $('projectSel');
+  sel.hidden = !!state.snapshot || !projects.length;
+  $('openBtn').hidden = !sel.hidden;
+  if (sel.hidden) return;
+  const cur = projects.find(p => p.id === state.projectId);
+  sel.innerHTML = projects.map(p => `<option value="${esc(p.id)}">${esc(p.title)}</option>`).join('') +
+    '<option disabled>──────────</option><option value="' + ADD + '">Open folder…</option>' +
+    (cur ? `<option value="${REMOVE}">Remove "${esc(cur.title)}" from the list</option>` : '');
+  sel.value = state.projectId;
+}
+$('projectSel').onchange = e => {
+  const v = e.target.value;
+  if (v === ADD) { renderProjectSel(); pickFolder(); }
+  else if (v === REMOVE) removeProject(state.projectId);
+  else { const p = projects.find(x => x.id === v); if (p) openProject(p); }
+};
+
+// Keeps the project's name in the list equal to the title of its root node.
+async function syncProjectTitle() {
+  const p = projects.find(x => x.id === state.projectId);
+  const title = state.nodes.get('').title;
+  if (p && p.title !== title) { p.title = title; await saveProjects(); }
+  renderProjectSel();
+}
+
+async function openDir(dir, id) {
+  const sameProject = state.dir && state.projectId === id;
   state.dir = dir;
   state.rootName = dir.name;
-  if (!sameFolder) restoreViewState();
+  state.projectId = id;
+  if (!sameProject) restoreViewState();
   await reload();
 }
 
@@ -470,10 +555,11 @@ async function reload() {
   $('viewSeg').hidden = false;
   $('loadReqBtn').hidden = false;
   for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
-  $('openBtn').hidden = !!state.snapshot;
+  $('openBtn').hidden = !!state.snapshot || projects.length > 0; // the project list has its own "Open folder…"
   $('folderName').textContent = docsPrefix() +
     (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
+  if (!state.snapshot) syncProjectTitle();
   renderOpenWorkNote();
   renderRulesButton();
   renderIndexButton();
@@ -488,7 +574,7 @@ function showLoadError(e) {
 }
 
 // View state (selection, expanded nodes, reference switch) survives F5.
-function viewKey() { return 'cvp:view:' + state.rootName; }
+function viewKey() { return 'cvp:view:' + (state.projectId || state.rootName); }
 function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
@@ -2627,16 +2713,22 @@ async function init() {
     $('openBtn').disabled = $('welcomeOpenBtn').disabled = true;
     return;
   }
-  const dir = await loadHandle();
-  if (!dir) return;
+  const last = await loadProjects();
+  if (!last) return;
   try {
-    if (await dir.queryPermission({ mode: 'read' }) === 'granted') return await openDir(dir);
-  } catch (e) { return; }
-  // The browser asks again after a reload unless the user chose "Allow on every visit".
-  const b = $('reopenBtn');
-  b.textContent = `Reopen ${dir.name}/`;
-  b.hidden = false;
-  b.onclick = () => reopenStored(dir);
+    if (await last.handle.queryPermission({ mode: 'read' }) === 'granted') return await openDir(last.handle, last.id);
+  } catch (e) { /* stale handle: offer the list */ }
+  // The browser asks again after a reload unless the user chose "Allow on every visit":
+  // the welcome screen offers every project of the list, the last one first.
+  const box = $('reopenBtns');
+  for (const p of [last, ...projects.filter(x => x !== last)]) {
+    const b = document.createElement('button');
+    b.textContent = `Open ${p.title}`;
+    b.title = `Docs folder ${p.handle.name}/`;
+    if (p === last) b.className = 'primary';
+    b.onclick = () => openProject(p);
+    box.append(b, ' ');
+  }
 }
 
 init();
