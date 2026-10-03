@@ -925,7 +925,7 @@ function rulesStatus(nodes) {
   const n = nodes.get(RULES_NODE);
   if (!n || !n.file) return { status: 'missing', node: null };
   const b = rulesBlock(n.text);
-  if (!b) return { status: 'outdated', node: n, version: 0 };
+  if (!b) return { status: 'outdated', node: n, version: null };
   if (b.version > RULES_VERSION) return { status: 'newer', node: n, version: b.version };
   return { status: b.version === RULES_VERSION && b.body === cvpRulesText() ? 'current' : 'outdated', node: n, version: b.version };
 }
@@ -984,7 +984,7 @@ function rulesLines() {
     'and its "Project rules" section, which wins on a conflict.',
   ];
   const head = r.node ? [
-    `Rules: the CVP rules in ${repoPath(r.node)} are out of date (${r.version ? 'version ' + r.version : 'no rules block'}; this page has version ${RULES_VERSION}). ` +
+    `Rules: the CVP rules in ${repoPath(r.node)} are out of date (${r.version == null ? 'no rules block' : 'version ' + r.version}; this page has version ${RULES_VERSION}). ` +
     'Follow the rules below instead, together with the "Project rules" section of that file, which wins on a conflict. ' +
     'Tell the owner once that the global rules need "Update rules" in the page.', '',
   ] : [];
@@ -2304,7 +2304,7 @@ function openRules() {
   const where = r.node ? r.node.file : RULES_NODE + '.md';
   $('rulesText').textContent = {
     missing: `This project has no global rules yet, so every prompt repeats them in full. "Add global rules" creates ${where} in the docs folder with this page's rules (version ${RULES_VERSION}).`,
-    outdated: `The CVP rules in ${where} are ${r.version ? 'version ' + r.version : 'missing or edited'}; this page has version ${RULES_VERSION}. Until they are updated, the prompts repeat this page's rules in full.`,
+    outdated: `The CVP rules in ${where} are ${r.version == null ? 'missing (no rules markers)' : 'version ' + r.version}; this page has version ${RULES_VERSION}. Until they are updated, the prompts repeat this page's rules in full.`,
     newer: `The CVP rules in ${where} are version ${r.version}, newer than this page (version ${RULES_VERSION}). The prompts point to them as they are. Get the latest index.html of Claude Visual Project.`,
   }[r.status];
   $('rulesSubmit').hidden = r.status === 'newer';

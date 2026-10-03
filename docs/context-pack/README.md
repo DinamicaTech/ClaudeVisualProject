@@ -7,19 +7,19 @@ threads:
 ---
 ## Summary
 Al hacer doble clic, copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo. Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
-El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas.
+El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas; las reglas generales las lee del nodo `global-rules` (`context-pack/reglas-del-proyecto`).
 Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pack/routing`), propone un desglose (qué nodo hace cada parte, buscándolo en el índice de nodos) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
 
 ## Decisions
 - 2026-10-02 09:00 · Solo rutas: no se pega contenido de los md en el prompt.
 - 2026-10-02 09:00 · Lista las rutas relativas al repo en este orden: el nodo, sus ascendientes (desde la raíz) y sus dependencias, incluidas las heredadas de sus ascendientes.
-- 2026-10-02 09:00 · Incluye la regla de lectura definida en `format`.
+- 2026-10-02 09:00 · [replaced by 2026-10-03 14:58] Incluye la regla de lectura definida en `format`.
 - 2026-10-02 09:19 · Si el nodo es obsoleto, el prompt lo avisa al principio e indica el sustituto si existe.
 - 2026-10-02 09:00 · Supone que el hilo nuevo tiene acceso al repositorio.
 - 2026-10-02 09:46 · Las rutas relativas al repo se forman con el nombre de la carpeta abierta delante (`docs/viewer/tree.md`): se supone que la carpeta de docs está en la raíz del repositorio.
 - 2026-10-02 09:46 · Dependencias listadas: las declaradas por el nodo y por sus ascendientes, sin repetir y sin las que ya salen como ascendientes. No se siguen las dependencias de las dependencias.
 - 2026-10-02 09:46 · Se omiten las dependencias a nodos que no existen y los nodos sin documento (carpetas sin `README.md`); la ficha ya los avisa.
-- 2026-10-02 09:46 · El prompt está en inglés, incluye además la regla de actualizar Summary y Decisions antes de terminar, y acaba en una línea `Task: ` para escribir la tarea tras pegarlo.
+- 2026-10-02 09:46 · [replaced by 2026-10-03 14:58] El prompt está en inglés, incluye además la regla de actualizar Summary y Decisions antes de terminar, y acaba en una línea `Task: ` para escribir la tarea tras pegarlo.
 - 2026-10-02 09:46 · Si el portapapeles no está disponible, el prompt se muestra en una ventana para copiarlo a mano.
 - 2026-10-02 10:38 · El prompt pide además al hilo que añada su enlace al campo `threads` del nodo, si lo conoce.
 - 2026-10-02 10:38 · Segundo prompt, "New sub-task" (decidido por Ronald): la persona escribe un título y se copia un prompt que pide al hilo nuevo crear un nodo hijo y trabajar en él. Incluye las rutas del nodo padre, sus ascendientes y dependencias, la plantilla del md nuevo (`status: draft`, `threads` con su enlace) y, si el padre es un fichero hoja, el paso de convertirlo en carpeta (`x.md` → `x/README.md`).
@@ -38,6 +38,7 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 08:05 · En un nodo `draft`, el doble clic deja "Task" ya rellenado con su tarea pendiente: sus líneas `draft:` de Requirements sin el prefijo o, si no tiene ninguna, todos sus requisitos. El prompt avisa de que ya están registrados y no hay que copiarlos otra vez. En los demás nodos "Task" sigue vacío, porque sus requisitos son historial. Elegido por Ronald (opción a, 07:57) frente a poner solo una referencia.
 - 2026-10-03 08:30 · La regla de lectura de los prompts pide ignorar las decisiones marcadas `[replaced by …]`, y la de actualización pide, cuando una decisión nueva anula otra (aunque sea en parte), escribir la nueva como regla completa y marcar la antigua (ver `format/decisiones-sustituidas`).
 - 2026-10-03 14:45 · Los dos prompts incluyen la regla de ideas (ver `context-pack/ideas`): una frase que empieza por "idea:" se guarda como nodo `status: idea` dentro de `creative-lab`, sin encaminarla. El doble clic en el lab deja "Task" en "idea: " y en una idea lo rellena con sus líneas `idea:`; "New sub-task" dentro del lab crea una idea (`status: idea`, sin encaminado ni desglose).
+- 2026-10-03 14:58 · El prompt está en inglés y acaba en una línea `Task: `. Las reglas generales (lectura, encaminado, desglose, actualización de los docs y requisitos, drafts, ideas y enlace del hilo) no van en el prompt sino en el nodo `global-rules`: si tiene las reglas de esta versión de la página (o más nuevas), los dos prompts solo piden leerlo y seguir sus "CVP rules" y sus "Project rules". Si no existe (proyecto legacy), llevan las reglas enteras, como antes. Si existe pero sus reglas son de una versión anterior, llevan las reglas enteras más un aviso para que el hilo diga al propietario que pulse "Update rules" y siga también sus "Project rules". Ver `context-pack/reglas-del-proyecto`.
 
 ## Requirements
 - 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.
@@ -51,3 +52,4 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 07:57 · Si estandarizamos el modo de generar una tarea futura con un 'draft: [XXXXX]' ya se podría resolver eliminando simplemente el prefijo al asignar el contenido de 'task:'.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: que los prompts pidan ignorar las decisiones sustituidas y marcar la antigua al anularla con una nueva.
 - 2026-10-03 14:45 · Derived from context-pack/ideas: regla de ideas en los dos prompts y "Task" prerrellenado en el lab y en las ideas.
+- 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: que los dos prompts referencien el nodo `global-rules` en vez de repetir las reglas, y las repitan enteras si falta o está desfasado.
