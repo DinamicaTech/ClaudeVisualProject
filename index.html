@@ -457,7 +457,24 @@ async function pickFolder() {
     if (e.name !== 'AbortError') showLoadError(e);
     return;
   }
+  dir = await docsFolderOf(dir);
   await openProject(await addProject(dir));
+}
+
+// A repository folder chosen by mistake (no README.md, but a docs/ subfolder that has one)
+// opens its docs folder instead, so the repository's own files do not show as nodes.
+async function docsFolderOf(dir) {
+  try {
+    if (await entryExists(dir, 'README.md')) return dir;
+    const name = await entryExists(dir, 'docs');
+    if (!name) return dir;
+    const docs = await dir.getDirectoryHandle(name);
+    if (!(await entryExists(docs, 'README.md'))) return dir;
+    toast(`Opened ${dir.name}/${name}/, the docs folder of the repository you chose.`);
+    return docs;
+  } catch (e) {
+    return dir;
+  }
 }
 
 // Opens a project of the list, asking the browser for permission to read its folder if needed.
