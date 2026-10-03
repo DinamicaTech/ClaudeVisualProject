@@ -1,8 +1,8 @@
 ---
 title: Renombrar
 depends_on: [format]
-status: draft
 threads:
+  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
   - Renombrar nodos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVHTEP7mxqJMb51UEnjneoo
 ---
 ## Summary
@@ -17,3 +17,4 @@ Es la única acción de la página que escribe en la carpeta; los cambios quedan
 - 2026-10-02 10:52 · Una carpeta se mueve entera, con los ficheros que no son md. Primero se copia y al final se borra lo viejo, para que un error a mitad no pierda nada.
 - 2026-10-02 10:52 · El diálogo muestra antes de confirmar qué ficheros se mueven y cuáles se editan, y no deja usar un nombre que ya existe, `README` ni un cambio solo de mayúsculas.
 - 2026-10-02 10:52 · No se actualizan rutas escritas fuera de docs (AGENTS.md, memoria de los asistentes, hilos ya abiertos). La raíz no cambia de ruta, solo de título; una carpeta sin README.md solo cambia de nombre.
+- 2026-10-03 07:50 · Validado por Ronald el 2026-10-02 21:15 y fusionado: pasa a stable. Confirma la opción de las 10:52 (renombrar desde la página).

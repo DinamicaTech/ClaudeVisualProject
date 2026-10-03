@@ -22,6 +22,7 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-02 09:46 · La v1 está construida: `index.html` en la raíz del repositorio.
 - 2026-10-02 10:52 · Única excepción a "sin editar": renombrar un nodo desde la página (`viewer/rename`).
 - 2026-10-02 10:26 · Se añade a la v1 una vista de mapa (`viewer/map`): la jerarquía dibujada con cajas, de izquierda a derecha, por defecto; el árbol sigue disponible.
+- 2026-10-03 07:50 · Los pendientes ya no van en una hoja de ruta: cada uno es un nodo `draft` en su sitio funcional, la vista `viewer/drafts` los reúne y `viewer/log` registra decisiones y requisitos por fecha. Una tarea arrancada en cualquier nodo se lleva a su nodo responsable (`context-pack/routing`).
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
@@ -38,4 +39,4 @@ Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
 - `viewer/`: la página que usa la persona.
 - `context-pack/`: el prompt del doble clic para un hilo nuevo.
 - `build/`: cómo se abre la página y lee la carpeta de docs.
-- `roadmap/`: lo que viene después de la v1.
+- `roadmap/`: obsoleto; los pendientes son nodos `draft` en su sitio (ver `viewer/drafts`).

@@ -24,6 +24,12 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 11:50 · Bloque opcional `## Requirements`, después de Decisions: los requisitos que ha pedido el propietario para ese nodo, con sus palabras literales y solo las frases que piden algo, una línea por requisito con fecha y hora (mismo formato que Decisions). Lo rellena el hilo en el momento, porque después no es fiable separarlos del resto de la conversación. Decidido por Ronald (11:47).
 - 2026-10-02 18:55 · En `## Requirements` puede haber también requisitos derivados de otro nodo: "YYYY-MM-DD HH:MM · Derived from <ruta del nodo>: <lo que este nodo debe aportar>". Los escribe el hilo que trabaja en el nodo de origen, tras confirmar el desglose (ver `context-pack`).
 - 2026-10-02 19:15 · `.index.md` en la raíz de la carpeta de docs es un fichero generado (ver `context-pack/index`), no un nodo: no se edita a mano. Derived from context-pack/index.
+- 2026-10-03 07:50 · `status: draft` significa pendiente o sin validar: una tarea guardada para más tarde en su sitio funcional, o un nodo en el que se trabaja y que el propietario aún no ha validado. Pasa a `stable` (se quita la línea) cuando el propietario valida el cambio.
+- 2026-10-03 08:05 · En un nodo `draft`, una línea de Requirements que empieza por `draft:` (tras la fecha) es su tarea pendiente, redactada como instrucción autónoma. Si la redactó el hilo a partir de otra frase, la frase literal del propietario va en la línea anterior.
+
+## Requirements
+- 2026-10-03 07:50 · Derived from context-pack/routing: el significado de `draft` como pendiente o sin validar, y su paso a `stable` al validar.
+- 2026-10-03 08:05 · Derived from context-pack/routing: el prefijo `draft:` en las líneas de Requirements de un draft.
 
 ## Ejemplo
 ```markdown
