@@ -19,9 +19,11 @@ No hay sustituciones parciales: la decisión nueva repite la regla completa y la
 - 2026-10-03 08:30 · Se marcan con ella las sustituciones que ya estaban escritas en texto libre: en `viewer/map` (cajas de referencia, interruptor References y nombres del selector) y en `context-pack` (requisitos derivados, que era parcial y se reescribe completa).
 - 2026-10-03 08:30 · [replaced by 2026-10-03 14:01] Límite conocido: Renombrar (`viewer/rename`) aún no reescribe la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
 - 2026-10-03 08:47 · Ocultas por defecto en la ficha y en el Log, con un mismo interruptor que las muestra en los dos y se recuerda tras F5 (Ronald, 08:45). En el árbol y el mapa no aparecen: solo el contador ◆, que no las cuenta.
-- 2026-10-03 14:01 · Límite conocido: Renombrar (`viewer/rename`) y Mover (`viewer/mover-nodo`) aún no reescriben la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
+- 2026-10-03 14:01 · [replaced by 2026-10-03 17:40] Límite conocido: Renombrar (`viewer/rename`) y Mover (`viewer/mover-nodo`) aún no reescriben la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
 - 2026-10-03 14:01 · Validado por Ronald; pasa a stable.
+- 2026-10-03 17:40 · Renombrar (`viewer/rename`) y Mover (`viewer/mover-nodo`) reescriben también la ruta de nodo dentro de las marcas `[replaced by <ruta> <fecha hora>]` cuando esa ruta cambia; las que están dentro de bloques de código no se tocan.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Definir cómo se marca que una decisión anula a otra anterior, para que la ficha atenúe la antigua y los hilos no la sigan.
 - 2026-10-03 08:44 · Ok, pero nos hará un filtro para poder ocultarlas no ? Puede llegar a ensuciar mucho el árbol.
+- 2026-10-03 17:35 · Si, resuélvelo y así nos quitamos cosas pendientes. [Que Mover y Renombrar no dejen rotas las marcas "[replaced by …]"]
