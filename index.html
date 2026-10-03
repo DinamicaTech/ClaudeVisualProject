@@ -106,6 +106,7 @@
   .node .s { font-size: 12px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .node .meta { position: absolute; top: 8px; right: 12px; font: 11px var(--mono); color: var(--muted); display: flex; gap: 6px; }
   .node .meta .wb { color: var(--warn); }
+  .node .meta .qb, .badge.q { color: var(--accent); font-weight: 600; }
   .node .tag { font: 10px/16px var(--mono); text-transform: uppercase; letter-spacing: .05em; border: 1px dashed currentColor; border-radius: 4px; padding: 0 5px; margin-left: 6px; color: var(--draft); vertical-align: 1px; }
   .node .chips { display: flex; gap: 4px; margin-top: 6px; overflow: hidden; }
   .node .chip { font-size: 11px; white-space: nowrap; border-radius: 99px; padding: 0 8px; line-height: 19px; border: 1px solid var(--line); color: var(--muted); background: var(--bg); }
@@ -266,7 +267,7 @@
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
     <div class="legend" id="editLegend" hidden>Tree edit mode: drag a card onto its new parent to move it there · drag the background to move the map</div>
-    <div class="legend" id="mapLegend">◆ decisions in force · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
+    <div class="legend" id="mapLegend">◆ decisions in force · ?N open questions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="list" hidden></div>
   <div id="card"></div>
@@ -1232,6 +1233,8 @@ function draftQuestions(n) {
   if (n.status !== 'draft') return [];
   return n.requirements.filter(r => /^question:/i.test(r.text)).map(r => r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' '));
 }
+// Number of open questions of a node, shown as "?N" on its map card and in the Drafts view.
+const questionCount = n => draftQuestions(n).length;
 // For an idea, the Task line starts with its "idea:" lines, to go on debating it; on the lab, with "idea: ".
 function ideaTask(n) {
   if (n.status !== 'idea') return [];
@@ -1727,7 +1730,8 @@ function renderMap() {
       `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
       `<div class="p">${esc(n.path || docsPrefix())}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
-      `<div class="meta">${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
+      `<div class="meta">${questionCount(n) ? `<span class="qb" title="Open questions to resolve with the owner (question: lines in Requirements)">?${questionCount(n)}</span>` : ''}` +
+      `${n.warnings.length ? `<span class="wb">⚠${n.warnings.length}</span>` : ''}${n.file ? `<span title="Decisions in force${n.decisions.length > activeDecisions(n).length ? ` (${n.decisions.length - activeDecisions(n).length} replaced, not counted)` : ''}">${activeDecisions(n).length}◆</span>` : ''}</div>` +
       chips + `</div></foreignObject>` +
       (n.children.length ? `<g class="tog" data-toggle="${esc(n.path)}" transform="translate(${W} ${it.h / 2})"><title>${mapCollapsed.has(n.path) ? 'Expand' : 'Collapse'}</title>` +
         `<circle r="9"/><text y="4.5" text-anchor="middle">${mapCollapsed.has(n.path) ? '+' : '−'}</text></g>` : '') +
@@ -1878,6 +1882,7 @@ const DRAFT_COLS = [
   { key: 'when', label: 'Since', val: n => datesOf(n)[0] || '', title: 'Date of its oldest requirement or decision' },
   { key: 'last', label: 'Last change', val: n => datesOf(n).pop() || '' },
   { key: 'reqs', label: 'Req.', val: n => n.requirements.length, title: 'Requirements' },
+  { key: 'questions', label: 'Questions', val: n => questionCount(n), title: 'Open questions (question: lines) to resolve with the owner before the task' },
   { key: 'threads', label: 'Threads', val: n => n.threads.length, title: 'Threads that worked on it; 0 means not started' },
 ];
 
@@ -1901,7 +1906,8 @@ function renderDrafts() {
         `<td class="mono">${esc(n.path)}</td>` +
         `<td><span class="area" style="--c:${mapColor(n)}">${esc(a ? a.title : '(root)')}</span></td>` +
         `<td class="mono">${esc(d[0] || '')}</td><td class="mono">${esc(d.length ? d[d.length - 1] : '')}</td>` +
-        `<td class="num">${n.requirements.length}</td><td class="num">${n.threads.length}</td></tr>`;
+        `<td class="num">${n.requirements.length}</td><td class="num">${questionCount(n) ? `<span class="badge q">?${questionCount(n)}</span>` : ''}</td>` +
+        `<td class="num">${n.threads.length}</td></tr>`;
     }).join('') + '</tbody></table>';
   }
   list.innerHTML = h;
@@ -1949,7 +1955,7 @@ $('list').addEventListener('click', e => {
   const th = e.target.closest('th[data-sort]');
   if (th) {
     const k = th.dataset.sort;
-    state.draftSort = { key: k, dir: state.draftSort.key === k ? -state.draftSort.dir : (k === 'when' || k === 'last' ? -1 : 1) };
+    state.draftSort = { key: k, dir: state.draftSort.key === k ? -state.draftSort.dir : (k === 'when' || k === 'last' || k === 'questions' ? -1 : 1) };
     return renderAll();
   }
   const kb = e.target.closest('#logKind button');
