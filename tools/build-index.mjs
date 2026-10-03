@@ -1,26 +1,20 @@
 #!/usr/bin/env node
 // Builds the node index (<docs>/.index.md) from the md files of a docs folder.
-// It runs the parsing code of index.html itself, so the index follows exactly the page's rules.
+// It runs the parsing code of index.html itself (page-model.mjs), so the index follows exactly the page's rules.
 //
 //   node tools/build-index.mjs [docs folder]           write the index (default folder: docs)
 //   node tools/build-index.mjs [docs folder] --check   fail if the index is missing or out of date
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, basename, resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
+import { join, basename, resolve } from 'node:path';
 import { readFolder } from './docs-folder.mjs';
+import { pageApi } from './page-model.mjs';
 
 const args = process.argv.slice(2);
 const check = args.includes('--check');
 const docs = resolve(args.find(a => !a.startsWith('--')) || 'docs');
 
-const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'index.html'), 'utf8');
-const start = page.indexOf('// Parsing one md file'), end = page.indexOf('// Context pack');
-if (start < 0 || end < start) throw new Error('index.html: parsing section not found');
-const ctx = vm.createContext({});
-vm.runInContext(page.slice(start, end) + '\n;globalThis.api = { buildModel, nodeIndex, INDEX_FILE };', ctx);
-const { buildModel, nodeIndex, INDEX_FILE } = ctx.api;
+const { buildModel, nodeIndex, INDEX_FILE } = pageApi(['buildModel', 'nodeIndex', 'INDEX_FILE']);
 
 const text = nodeIndex(buildModel(readFolder(docs), basename(docs)));
 const target = join(docs, INDEX_FILE);
