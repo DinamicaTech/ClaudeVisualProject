@@ -1,7 +1,6 @@
 ---
 title: Reglas del proyecto
 depends_on: [format, global-rules, viewer, build/html-autonomo]
-status: draft
 threads:
   - Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
 ---
@@ -11,7 +10,7 @@ Se cambian en un solo sitio y los drafts pendientes usan siempre las vigentes. U
 La página compara las reglas del proyecto con las suyas y, si faltan o están desfasadas, ofrece "Update rules", que reescribe solo la parte de CVP y respeta las reglas propias del proyecto.
 
 ## Decisions
-- 2026-10-03 08:16 · Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
+- 2026-10-03 08:16 · [replaced by 2026-10-03 14:54] Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
 - 2026-10-03 08:16 · [replaced by 2026-10-03 14:58] Legacy sin marca: la página mira si el fichero de reglas existe; si no, el prompt repite las reglas como hoy.
 - 2026-10-03 08:16 · [replaced by 2026-10-03 14:58] A resolver al construirlo: cada proyecto tiene su copia de las reglas, que queda vieja cuando CVP las mejora, así que la página debe compararla con su versión y avisar. Las reglas personales del propietario (como consensuar antes de programar) van aparte para que una actualización no las pise.
 - 2026-10-03 14:58 · Las reglas viven en el nodo `global-rules` (`docs/global-rules.md`), hijo de la raíz y visible en el mapa, elegido por Ronald (14:44) para que el propietario u otro hilo puedan añadir reglas propias. Su sección "CVP rules" va entre marcas con un número de versión y solo la escribe la página; su sección "Project rules" es del proyecto y la página nunca la toca.
@@ -20,6 +19,7 @@ La página compara las reglas del proyecto con las suyas y, si faltan o están d
 - 2026-10-03 14:58 · Con reglas desfasadas, el prompt lleva las reglas enteras de la página más el aviso para que el hilo diga al propietario que pulse "Update rules", y le pide seguir también las "Project rules" del nodo (opción B de Ronald, 14:44). La página muestra el aviso en la cabecera con el botón (ver `viewer`).
 - 2026-10-03 14:58 · Las reglas personales del propietario sobre cómo trabajar con él van en `AGENTS.md`, que los asistentes leen solos y la página nunca escribe; `AGENTS.md` apunta además a `global-rules` (opción C de Ronald, 14:44). Las "Project rules" son las del proyecto para cualquiera que trabaje en él (p. ej. el idioma de los docs).
 - 2026-10-03 14:58 · `node tools/update-rules.mjs [docs] [--check]` hace lo mismo que "Update rules" desde la línea de comandos. En este repositorio la comprobación "Docs format" falla si `docs/global-rules.md` no tiene las reglas de `index.html`, así que quien cambie las reglas debe subir la versión y regenerar el nodo.
+- 2026-10-03 14:54 · Validado por Ronald a las 14:53: pasa a stable.
 
 ## Requirements
 - 2026-10-03 08:13 · Eso, además, nos permitiría inyectar un prompt genérico a aplicar a todo el proyecto y con eso, reducir mucho el prompt de cada tarea puesto que todas las instrucciones generales ya estarían definidas en el nodo raíz del proyecto.
