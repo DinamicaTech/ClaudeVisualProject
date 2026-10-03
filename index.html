@@ -879,7 +879,7 @@ function buildModel(files, rootName) {
 }
 
 // Review notice (not a format warning): a node is probably out of date when one of its own declared
-// dependencies has a decision dated after the node's latest decision. A new decision in the node clears it.
+// dependencies has a decision in force dated after the node's latest decision. A new decision in the node clears it.
 // Inherited dependencies do not count, nor do draft, idea, obsolete or placeholder nodes, nor nodes with no dated decision.
 const latestDecision = n => n.decisions.reduce((m, d) => d.when > m ? d.when : m, '');
 function markStale(nodes) {
@@ -891,8 +891,8 @@ function markStale(nodes) {
     for (const l of n.depLinks) {
       const t = l.node;
       if (!t || t === n) continue;
-      const newer = t.decisions.filter(d => d.when > mine);
-      if (newer.length) n.stale.push({ node: t, when: latestDecision(t), count: newer.length });
+      const newer = activeDecisions(t).filter(d => d.when > mine);
+      if (newer.length) n.stale.push({ node: t, when: newer.reduce((m, d) => d.when > m ? d.when : m, ''), count: newer.length });
     }
   }
 }
@@ -1834,7 +1834,7 @@ function renderCard() {
       (r ? ` Replaced by ${nodeLink(r)}.` : '') + '</div>';
   }
   if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
-  if (n.stale.length) h += '<div class="review"><b>⏱ Review</b>: these dependencies decided something after this node\'s latest decision' +
+  if (n.stale.length) h += '<div class="review"><b>⏱ Review</b>: these dependencies have decisions in force after this node\'s latest decision' +
     ` <span class="when">(${esc(latestDecision(n))})</span>. A new decision in this node clears the notice.<ul>` +
     n.stale.map(s => `<li>${nodeLink(s.node)} <span class="when">${s.count} decision${s.count === 1 ? '' : 's'}, latest ${esc(s.when)}</span></li>`).join('') + '</ul></div>';
   const busy = openWorkOf(n);
