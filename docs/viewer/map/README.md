@@ -36,6 +36,7 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 14:45 · La tarjeta de un nodo `idea` es normal (no gris, que es de los drafts) con la etiqueta IDEA en ámbar sobre fondo amarillo claro.
 - 2026-10-03 15:18 · Un nodo con trabajo abierto (una rama o un PR que cambia su md) lleva la etiqueta "open" en azul junto al título, con el PR o la rama al pasar el ratón (`viewer/map/nodos-ocupados`).
 - 2026-10-03 15:55 · [replaced by model/avisos-de-desactualizacion 2026-10-03 17:31] Un nodo con aviso de revisión (`model/avisos-de-desactualizacion`) lleva la etiqueta "⏱ review" en la tarjeta, y el tooltip del nodo lista las dependencias que han cambiado, con su fecha.
+- 2026-10-03 18:40 · Una tarjeta con preguntas abiertas (líneas `question:` de un draft) muestra "?N" en azul junto a ⚠ y ◆; al pasar el ratón lo explica, y la leyenda lo incluye. Elegido por Ronald (18:33) frente a una vista propia de preguntas o no hacer nada: las preguntas se leen en la ficha.
 
 ## Requirements
 - 2026-10-02 12:24 · Con la tecla Z (Zoom) mostrar solo el nodo seleccionado y descendientes (recursivamente).
@@ -51,3 +52,4 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar las ideas con su propia etiqueta, sin confundirlas con los drafts.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: marcar en la tarjeta los nodos con trabajo abierto.
 - 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la tarjeta la marca "⏱ review" y, en el tooltip del nodo, qué dependencias han cambiado.
+- 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]

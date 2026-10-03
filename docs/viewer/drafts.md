@@ -14,7 +14,9 @@ Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de conte
 - 2026-10-03 07:50 · La columna de orden y el sentido se recuerdan tras F5.
 - 2026-10-03 07:50 · Sustituye a la hoja de ruta (`roadmap`) como lista de pendientes: los pendientes viven como drafts en su nodo y esta vista los reúne.
 - 2026-10-03 14:45 · Los nodos `idea` no salen en esta vista: son ideas en debate en `creative-lab`, no tareas pendientes (ver `context-pack/ideas`).
+- 2026-10-03 18:40 · Columna "Questions" con el número de preguntas abiertas de cada draft ("?N"), ordenable; al ordenar por ella, primero los que más tienen. Elegido por Ronald (18:33).
 
 ## Requirements
 - 2026-10-03 07:34 · Eso no quita que sea útil ver todos los drafts juntos, eso lo podríamos resolver con una nueva pestaña con una vista de drafts ordenable por columnas
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no mezclar las ideas con los drafts.
+- 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]
