@@ -7,7 +7,7 @@ threads:
 ---
 ## Summary
 Una decisión que otra posterior anula se marca en su propia línea con `[replaced by <fecha hora>]` justo después de su fecha, y la ruta del nodo delante de la fecha si la nueva está en otro nodo.
-La ficha y el Log la atenúan y enlazan a la vigente, el contador ◆ del mapa no la cuenta y los prompts piden a los hilos ignorarla.
+La ficha y el Log la ocultan por defecto (un interruptor la muestra atenuada, con enlace a la vigente), el contador ◆ del mapa no la cuenta y los prompts piden a los hilos ignorarla.
 No hay sustituciones parciales: la decisión nueva repite la regla completa y la antigua se marca entera.
 
 ## Decisions
@@ -19,6 +19,8 @@ No hay sustituciones parciales: la decisión nueva repite la regla completa y la
 - 2026-10-03 08:30 · `[replaced by …]` es sintaxis de la herramienta y va en inglés, como los nombres de campos y bloques.
 - 2026-10-03 08:30 · Se marcan con ella las sustituciones que ya estaban escritas en texto libre: en `viewer/map` (cajas de referencia, interruptor References y nombres del selector) y en `context-pack` (requisitos derivados, que era parcial y se reescribe completa).
 - 2026-10-03 08:30 · Límite conocido: Renombrar (`viewer/rename`) aún no reescribe la ruta de nodo dentro de una marca; si cambia, la marca queda rota y la ficha lo avisa.
+- 2026-10-03 08:47 · Ocultas por defecto en la ficha y en el Log, con un mismo interruptor que las muestra en los dos y se recuerda tras F5 (Ronald, 08:45). En el árbol y el mapa no aparecen: solo el contador ◆, que no las cuenta.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Definir cómo se marca que una decisión anula a otra anterior, para que la ficha atenúe la antigua y los hilos no la sigan.
+- 2026-10-03 08:44 · Ok, pero nos hará un filtro para poder ocultarlas no ? Puede llegar a ensuciar mucho el árbol.

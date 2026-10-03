@@ -163,6 +163,7 @@
   .decisions li.replaced > span { opacity: .5; }
   .decisions li.replaced > span:last-child { text-decoration: line-through; text-decoration-color: var(--muted); }
   .decisions .repl, #list .entry .repl { font-size: 12px; color: var(--muted); font-style: normal; margin-right: 4px; display: inline-block; text-decoration: none; }
+  .repl-toggle { margin-top: 6px; font-size: 12px; }
   .decisions li.flash { background: var(--accent-soft); transition: background .3s; }
   #list .entry.replaced .body { opacity: .5; }
   .decisions.reqs li > span:last-child { border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic; }
@@ -306,6 +307,7 @@ const state = {
   view: 'map',        // 'map' (Tree), 'tree' (Project), 'drafts' or 'log'
   draftSort: { key: 'when', dir: -1 },
   logKind: 'all',     // 'all', 'decision' or 'requirement'
+  showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
 };
 
@@ -439,7 +441,7 @@ function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
       selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
-      draftSort: state.draftSort, logKind: state.logKind,
+      draftSort: state.draftSort, logKind: state.logKind, showReplaced: state.showReplaced,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -459,6 +461,7 @@ function restoreViewState() {
       state.view = VIEWS.includes(v.view) ? v.view : 'map';
       if (v.draftSort && v.draftSort.key) state.draftSort = v.draftSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
+      state.showReplaced = v.showReplaced === true;
       state.zoom = v.zoom || '';
     }
   } catch (e) { /* ignore */ }
@@ -1360,16 +1363,23 @@ function renderLog() {
   const list = $('list');
   const scroll = list.scrollTop;
   const entries = [];
+  let hiddenReplaced = 0;
   for (const n of zoomNodes()) {
-    if (state.logKind !== 'requirement') for (const d of n.decisions) entries.push({ n, d, kind: 'decision' });
+    if (state.logKind !== 'requirement') for (const d of n.decisions) {
+      if (d.replacedBy && !state.showReplaced) { hiddenReplaced++; continue; }
+      entries.push({ n, d, kind: 'decision' });
+    }
     if (state.logKind !== 'decision') for (const d of n.requirements) entries.push({ n, d, kind: 'requirement' });
   }
   // Newest first; undated lines at the end. Within the same minute, keep file order.
   entries.sort((a, b) => (b.d.when || '').localeCompare(a.d.when || ''));
   const kinds = [['all', 'All'], ['decision', 'Decisions'], ['requirement', 'Requirements']];
+  const replacedCount = hiddenReplaced + entries.filter(e => e.d.replacedBy).length;
   let h = `<div class="lhead"><strong>Log</strong><div class="seg" id="logKind">` +
-    kinds.map(([k, l]) => `<button data-kind="${k}" class="${state.logKind === k ? 'on' : ''}">${l}</button>`).join('') +
-    `</div><span class="count">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}${state.zoom ? ' in this branch' : ''}</span></div>`;
+    kinds.map(([k, l]) => `<button data-kind="${k}" class="${state.logKind === k ? 'on' : ''}">${l}</button>`).join('') + '</div>' +
+    (replacedCount ? `<div class="seg"><button id="logReplaced" class="${state.showReplaced ? 'on' : ''}" ` +
+      `title="${state.showReplaced ? 'Hide' : 'Show'} the decisions that a later one overrides">Replaced (${replacedCount})</button></div>` : '') +
+    `<span class="count">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}${state.zoom ? ' in this branch' : ''}</span></div>`;
   if (!entries.length) h += '<p class="empty-note">No dated decisions or requirements.</p>';
   let day = null;
   for (const e of entries) {
@@ -1395,6 +1405,7 @@ $('list').addEventListener('click', e => {
   }
   const kb = e.target.closest('#logKind button');
   if (kb) { state.logKind = kb.dataset.kind; return renderAll(); }
+  if (e.target.closest('#logReplaced')) return toggleReplaced();
   if (e.target.closest('a')) return;
   const row = e.target.closest('[data-path]');
   if (row && row.dataset.path !== state.selected) select(row.dataset.path, false);
@@ -1412,6 +1423,14 @@ function nodeLink(n) {
   return `<button class="link" data-node="${esc(n.path)}">${esc(n.title)}</button>` +
     `<span class="p">${esc(n.path || '(root)')}</span>`;
 }
+
+// Replaced decisions are hidden by default, in the card and the Log; one switch shows them in both.
+function toggleReplaced() {
+  state.showReplaced = !state.showReplaced;
+  saveViewState();
+  renderAll();
+}
+document.addEventListener('click', e => { if (e.target.closest('#replacedToggle')) toggleReplaced(); });
 
 // "Replaced by ..." label of a replaced decision; a click shows the decision in force.
 function replacedLabel(n, d) {
@@ -1456,8 +1475,12 @@ function renderCard() {
       `<span>${d.replacedBy ? replacedLabel(n, d) : ''}${d.text.split('\n').map(inline).join('<br>')}</span></li>`).join('') + '</ul>';
     h += '<section><h2>Requirements</h2>' + (n.requirements.length ? datedList(n.requirements, 'reqs')
       : '<p class="empty-note">No requirements recorded. Threads copy the owner\'s requests, word for word, into the <code>## Requirements</code> block.</p>') + '</section>';
-    h += '<section><h2>Decisions</h2>' + (n.decisions.length ? datedList(n.decisions, '')
-      : '<p class="empty-note">No decisions.</p>') + '</section>';
+    const shown = state.showReplaced ? n.decisions : activeDecisions(n);
+    const replaced = n.decisions.length - activeDecisions(n).length;
+    h += '<section><h2>Decisions</h2>' + (shown.length ? datedList(shown, '')
+      : `<p class="empty-note">${replaced ? 'Every decision of this node has been replaced.' : 'No decisions.'}</p>`) +
+      (replaced ? `<button class="link repl-toggle" id="replacedToggle">${state.showReplaced ? 'Hide' : 'Show'} replaced (${replaced})</button>` : '') +
+      '</section>';
   });
 
   h += '<section><h2>Depends on</h2>';
