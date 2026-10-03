@@ -16,6 +16,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-03 16:12 · Versión 2 de las CVP rules: nueva regla "Requirements load" (ver `context-pack/carga-de-requisitos`) y, en Drafts, las líneas `question:` como preguntas abiertas que se resuelven antes de la tarea.
 - 2026-10-03 16:25 · Versión 3 de las CVP rules: quien no pueda ejecutar el comando del índice pide al propietario que pulse "Rebuild index" en la página (ver `context-pack/index`).
 - 2026-10-03 18:00 · Versión 4 de las CVP rules: en "Requirements load", un valor, una cantidad, un ritmo o un detalle de comportamiento dentro de un nodo nunca es pregunta bloqueante (ver `context-pack/carga-de-requisitos`).
+- 2026-10-03 18:15 · Versión 5 de las CVP rules: en "Requirements load", los ficheros adjuntos forman parte del bloque, se guardan en `sources/` y los requisitos largos se reparten como resumen más referencia (ver `context-pack/carga-de-requisitos`).
 
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
@@ -24,7 +25,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-03 18:00 · Derived from context-pack/carga-de-requisitos: una pregunta sobre un valor o un detalle dentro de un nodo nunca es bloqueante (versión 4).
 
 ## CVP rules
-<!-- cvp-rules 4 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+<!-- cvp-rules 5 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
 These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
 
 **Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
@@ -51,13 +52,14 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 
 **Ideas.** An owner's sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. Ideas live in the lab, the root node `creative-lab` (create it if it is missing). Propose the idea's path, `creative-lab/<idea>`, and wait for the owner's OK; then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see Routing), set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". A discarded idea stays in the lab with a decision that says so.
 
-**Requirements load.** A task that starts with "Load requirements:" brings a block of requirements to spread over the tree (in a new project, an empty tree). It is not routed as one task; instead:
-1. Number each sentence of the block that asks for something as R1, R2…, word for word, and propose the node each one belongs to: an existing node, or a new one with its full path.
+**Requirements load.** A task that starts with "Load requirements:" brings a block of requirements to spread over the tree (in a new project, an empty tree). The block may be pasted text or attached files: read every attached file as part of it, without being asked. It is not routed as one task; instead:
+1. Number each sentence of the block that asks for something as R1, R2…, word for word (in a long document, number each paragraph or section instead), and propose the node each one belongs to: an existing node, or a new one with its full path.
 2. List every gap, ambiguity or contradiction, between sentences or with a decision in force in the docs, as a question Q1, Q2…: its kind, the R sentences it touches, the questions it depends on, 2 to 4 options with their consequence, and your recommendation. A question is blocking only if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node. A value, an amount, a timing or a detail of behaviour inside one node (for example, how often an enemy attacks) is never blocking, however much it matters: it is local. When in doubt, it is local.
 3. Ask only the blocking questions, in rounds of at most 7: those with the most impact first, never one that depends on a question still open. The owner may answer each one in a word ("Q3 B") or accept your recommendation for the rest. After each round, close the questions it settles, add any new ones and go on with the next round until no blocking question is left.
 4. Keep the state of the load in `.requirements-load.md` in the docs folder (R sentences, questions, answers, proposed tree): update it every round and push it to the branch, so that another thread can take over if this one stops.
 5. Show the proposed tree, two or three levels deep: each node with its Summary, the R sentences it receives, the ones that become `draft:` lines and its local questions. Remake it with the owner's clarifications until the owner's OK; this is the breakdown, and only then write the md files. Nodes that only give structure get their Summary and no status; nodes with pending tasks get `status: draft`, the owner's sentences word for word with the date and time of the block, and their `draft:` line.
 6. Write each local question in the Requirements of its draft node as a line "question: <question>, with its options and your recommendation" (see Drafts). The owner's answers are requirements too: copy them as Updating the docs says, and when one overrides a decision in force, mark that decision as replaced. Finally delete `.requirements-load.md`.
+7. Requirements that come in files are kept unchanged in the repository, in the folder `sources/` at the repository root (outside the docs folder), with their original names. A node receives its R sentences word for word when they are short (about ten lines in all); when they are longer, its Requirements get, for each part, one dated line with a summary and the exact reference instead: "From sources/<file> § <section or page>: <summary>". Whoever works on that node reads the referenced part of the source.
 
 **Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - <short title> | <link>`.
 <!-- cvp-rules end -->
@@ -65,3 +67,4 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 ## Project rules
 - Working docs in `docs/` are in Spanish. Code, code comments, UI and public-facing docs (README) are in English.
 - After changing any node, run `node tools/build-index.mjs docs`; CI fails if `docs/.index.md` is out of date. If you change the CVP rules in `index.html`, raise `RULES_VERSION` and run `node tools/update-rules.mjs docs`; CI fails if `docs/global-rules.md` does not match.
+- 2026-10-03 18:15 · Derived from context-pack/carga-de-requisitos: ficheros adjuntos y reparto híbrido de requisitos largos (versión 5).
