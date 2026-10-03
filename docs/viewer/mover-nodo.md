@@ -1,7 +1,6 @@
 ---
 title: Mover nodo
 depends_on: [viewer/rename, viewer/map, context-pack/index]
-status: draft
 threads:
   - Mover nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLRhnxFYo5RpxrXySTFtZp98
 ---
@@ -20,6 +19,7 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:47 · El diálogo propone el nombre actual; si ya existe uno igual en el destino, propone `nombre-2` (o el primero libre) y no deja confirmar un nombre que choque. Decidido por Ronald a las 08:37.
 - 2026-10-03 08:47 · El diálogo avisa siempre de que mover ficheros con trabajo abierto en otra rama crea conflictos; la página no puede saberlo (`viewer/map/nodos-ocupados`).
 - 2026-10-03 08:47 · Usa la misma escritura que Renombrar: se planifica de nuevo con lo que hay en disco, primero se copia y al final se borra lo viejo. Después regenera `.index.md` si la carpeta lo tiene y recarga la página con el nodo seleccionado en su nuevo sitio.
+- 2026-10-03 10:30 · Validado por Ronald a las 10:29 (probado moviendo un nodo obsoleto): pasa a stable.
 
 ## Requirements
 - 2026-10-03 08:22 · Y sí, poder mover nodos del árbol acabará siendo necesario.
@@ -31,3 +31,4 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:37 · e) Sí, proponer un nuevo nombre y validarlo con el operador
 - 2026-10-03 08:37 · f) Ok, con el aviso, aunque resolveremos antes la visualizacion de nodos ocupados para que haya una pista visual
 - 2026-10-03 08:37 · No se puede mover la raiz ni a un nodo inferior al seleccionado.
+- 2026-10-03 10:29 · Ok, he hecho la prueba con un nodo obsoleto y ha funcionado perfecto. Validación completada.
