@@ -19,6 +19,7 @@ Lo genera `node tools/build-index.mjs docs`, y también la página al renombrar 
 - 2026-10-02 19:15 · `--check` falla si el índice falta o no coincide con los md; lo ejecuta el workflow de GitHub `Node index` en cada PR y en cada push a `main`.
 - 2026-10-02 19:15 · Los prompts piden regenerar el índice tras cambiar cualquier nodo, con el comando que indican sus primeras líneas. Para otros usuarios de CVP el índice es opcional: si no existe, el prompt pide leer el Summary de todos los md.
 - 2026-10-03 08:47 · La página regenera `.index.md` tras renombrar o mover un nodo, con la misma función que usa el script, si la carpeta ya lo tiene; no lo crea en proyectos que no lo usan. Así quien no tiene Node no deja el índice desactualizado.
+- 2026-10-03 14:40 · La carga del código de lectura y modelo de `index.html` en Node está en `tools/page-model.mjs`, compartida con la comprobación de formato (`model/comprobacion-de-formato`).
 
 ## Requirements
 - 2026-10-02 18:55 · Respecto leer el Summary, no existe algún tipo de búsqueda indexada o caché de búsqueda ?
@@ -27,3 +28,4 @@ Lo genera `node tools/build-index.mjs docs`, y también la página al renombrar 
 - 2026-10-02 19:02 · 4. Búsqueda 'en bruto' por todos los nodos
 - 2026-10-02 19:02 · Prompt al operador: 'Este requerimiento implica un desarrollo funcional XXX del cual no existe actualmente un nodo responsable. Podemos ejecutar este desarrollo desde el nodo actual o crear un nuevo nodo que, a partir de ahora, centralizará este tipo de desarrollos.
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: la página regenera .index.md al mover o renombrar.
+- 2026-10-03 14:40 · Derived from model/comprobacion-de-formato: el script del índice comparte con la comprobación de formato la carga del modelo de index.html.
