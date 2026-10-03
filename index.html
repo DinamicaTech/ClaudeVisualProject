@@ -249,7 +249,7 @@
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
-  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) left by a requirements load; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
   </label>
@@ -379,7 +379,7 @@ const state = {
   selected: null,     // selected node path
   expanded: new Set(),
   showRefs: true,
-  view: 'map',        // 'map' (Tree), 'tree' (Project), 'drafts' or 'log'
+  view: 'map',        // 'map' (Tree), 'tree' (Project), 'drafts', 'questions' or 'log'
   draftSort: { key: 'when', dir: -1 },
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
@@ -388,7 +388,7 @@ const state = {
 };
 
 const $ = id => document.getElementById(id);
-const VIEWS = ['map', 'tree', 'drafts', 'log'];
+const VIEWS = ['map', 'tree', 'drafts', 'questions', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -1528,7 +1528,7 @@ function withBase(n, fn) {
 function renderAll() {
   $('tree').hidden = state.view !== 'tree';
   $('map').hidden = state.view !== 'map';
-  $('list').hidden = state.view !== 'drafts' && state.view !== 'log';
+  $('list').hidden = !['drafts', 'questions', 'log'].includes(state.view);
   $('refsToggleLabel').hidden = !$('list').hidden;
   if (state.snapshot) state.editMode = false;
   $('editToggleLabel').hidden = state.view !== 'map' || !!state.snapshot;
@@ -1539,6 +1539,7 @@ function renderAll() {
   for (const b of document.querySelectorAll('#viewSeg button')) b.classList.toggle('on', b.dataset.view === state.view);
   if (state.view === 'tree') renderTree();
   else if (state.view === 'drafts') renderDrafts();
+  else if (state.view === 'questions') renderQuestions();
   else if (state.view === 'log') renderLog();
   else renderMap();
   const z = state.zoom && state.nodes.get(state.zoom);
@@ -1605,7 +1606,7 @@ function select(path, reveal) {
   renderAll();
   if (!reveal) return;
   if (state.view === 'map') return centerMapOn(path);
-  if (state.view === 'drafts' || state.view === 'log') return;
+  if (['drafts', 'questions', 'log'].includes(state.view)) return;
   const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
   if (row) row.scrollIntoView({ block: 'nearest' });
 }
@@ -1914,6 +1915,48 @@ function renderDrafts() {
   list.scrollTop = scroll;
 }
 
+// Questions: every open question of the drafts, in tree order, numbered. Double-click opens the thread
+// where to answer it: the node's own (open work or last thread), else the nearest ancestor's, which is
+// usually the thread of the requirements load that left it; with none, it copies the node's context pack.
+function questionThread(n) {
+  for (let a = n; a; a = a.parent) {
+    const t = threadToOpen(a);
+    if (t && isLink(t.link)) return { ...t, node: a };
+  }
+  return null;
+}
+
+function renderQuestions() {
+  const list = $('list');
+  const scroll = list.scrollTop;
+  const rows = [];
+  const walk = n => {
+    if ((!state.zoom || inZoom(n)) && n.status === 'draft')
+      for (const r of n.requirements) if (/^question:/i.test(r.text)) rows.push({ n, r });
+    n.children.forEach(walk);
+  };
+  walk(state.nodes.get(''));
+  let h = `<div class="lhead"><strong>Questions</strong><span class="count">${rows.length} open question${rows.length === 1 ? '' : 's'}` +
+    `${state.zoom ? ' in this branch' : ''} · double-click one to open the thread where to answer it</span></div>`;
+  if (!rows.length) h += '<p class="empty-note">No open questions. A requirements load leaves the questions that do not change the tree as <code>question:</code> lines in the Requirements of their draft.</p>';
+  else {
+    h += '<table><thead><tr><th>#</th><th>Question</th><th>Node</th><th>Since</th><th>Thread</th></tr></thead><tbody>';
+    h += rows.map(({ n, r }, i) => {
+      const t = questionThread(n);
+      const tt = t ? (t.title || 'thread') + (t.node !== n ? ` (${t.node.title})` : '') : '';
+      return `<tr data-path="${esc(n.path)}" class="${n.path === state.selected ? 'selected' : ''}" ` +
+        `title="${esc(t ? 'Double-click to open ' + tt : 'No thread yet: double-click copies the context pack of ' + n.title)}">` +
+        `<td class="num">${i + 1}</td>` +
+        `<td class="md">${withBase(n, () => inline(r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' ')))}</td>` +
+        `<td><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span> <span class="mono">${esc(n.path)}</span></td>` +
+        `<td class="mono">${esc(r.when || '')}</td>` +
+        `<td>${t ? esc(tt) : '<span class="when">none · copies the prompt</span>'}</td></tr>`;
+    }).join('') + '</tbody></table>';
+  }
+  list.innerHTML = h;
+  list.scrollTop = scroll;
+}
+
 function renderLog() {
   const list = $('list');
   const scroll = list.scrollTop;
@@ -1967,7 +2010,11 @@ $('list').addEventListener('click', e => {
 });
 $('list').addEventListener('dblclick', e => {
   const row = e.target.closest('[data-path]');
-  if (row && state.nodes.has(row.dataset.path)) copyPack(state.nodes.get(row.dataset.path));
+  if (!row || !state.nodes.has(row.dataset.path)) return;
+  const n = state.nodes.get(row.dataset.path);
+  const t = state.view === 'questions' && questionThread(n);
+  if (t) window.open(t.link, '_blank', 'noopener');
+  else copyPack(n);
 });
 
 // ---------------------------------------------------------------------------
