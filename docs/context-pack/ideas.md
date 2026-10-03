@@ -1,7 +1,6 @@
 ---
 title: Ideas (prefijo idea:)
 depends_on: [creative-lab, context-pack/routing, format, model, viewer, viewer/map, viewer/tree, viewer/node-card, viewer/drafts]
-status: draft
 threads:
   - Creative lab | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHYC3xQXTEZXFC2gNUuj8d3
   - Ideas (prefijo idea:) | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLGB7CEw3kxtbzHQJR5VnDcM
@@ -23,6 +22,7 @@ En el visor la idea lleva una etiqueta IDEA ámbar y no sale en la vista Drafts.
 - 2026-10-03 14:45 · Salida del lab: cuando el propietario dice que la pase a draft o la ejecute, el hilo la encamina a su nodo funcional (paso de encaminado), le pone `status: draft` (o trabaja en ella como tarea), mueve su fichero allí en su rama, actualiza todas las referencias a su ruta antigua y añade la decisión "Leaves the lab: <draft o ejecutada>". No usa el arrastre de la página. Aceptado por Ronald (14:35). Una idea descartada queda en el lab con una decisión que lo dice.
 - 2026-10-03 14:45 · Visor: la tarjeta de una idea es normal (el gris es de los drafts) con la etiqueta IDEA en ámbar, y lo mismo en la vista Project y en la ficha. No sale en la vista Drafts y no hay pestaña Ideas: Z sobre el lab las muestra todas. Aceptado por Ronald (14:35).
 - 2026-10-03 14:45 · Hecho en `index.html` (prompts y visor), en los nodos `context-pack`, `context-pack/routing`, `creative-lab`, `format`, `model`, `viewer/map`, `viewer/tree`, `viewer/node-card` y `viewer/drafts`, y en AGENTS.md.
+- 2026-10-03 14:42 · Validado por Ronald: el nodo pasa a estable.
 
 ## Requirements
 - 2026-10-03 10:42 · Es correcto que lo haga si pasamos una idea a 'Draft' o la ejecutamos.
