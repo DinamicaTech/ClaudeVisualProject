@@ -7,6 +7,7 @@ threads:
 ## Summary
 Pegar un bloque de requisitos y que el hilo los reparta por el árbol: cada frase al nodo que funcionalmente le corresponde, creando los nodos que falten, y las tareas pendientes como drafts. Sirve para ampliar un proyecto y para uno nuevo (árbol vacío, ver `nuevo-proyecto`).
 Antes de escribir, el hilo resuelve con el propietario las dudas bloqueantes (indefiniciones, ambigüedades, contradicciones) en rondas cortas de preguntas numeradas; las dudas locales quedan como líneas `question:` en su draft.
+Los requisitos que llegan en ficheros se guardan sin cambios en `sources/`; un nodo con requisitos largos recibe un resumen y la referencia exacta en vez del texto literal.
 El botón "Load requirements" de la cabecera copia el prompt; el procedimiento está en la regla "Requirements load" de `global-rules`.
 
 ## Decisions
@@ -24,6 +25,9 @@ El botón "Load requirements" de la cabecera copia el prompt; el procedimiento e
 
 - 2026-10-03 18:00 · Antes de escribir solo se resuelven las preguntas bloqueantes: las que cambian el árbol (qué nodos hay, dónde va una frase) o la arquitectura. Un valor, una cantidad, un ritmo o un detalle de comportamiento dentro de un nodo (por ejemplo, cada cuánto ataca un enemigo) nunca es bloqueante, por mucho que importe: es local; en caso de duda, es local. Se preguntan en rondas de 7 como máximo, primero las de más impacto y nunca una que dependa de otra abierta; el propietario puede contestar con una palabra ("Q3 B") o aceptar la recomendación para el resto. Tras cada ronda el hilo cierra las resueltas y añade las nuevas. Aclarado tras la primera prueba real (Killer flies), donde el hilo preguntaba detalles de juego antes de crear la estructura; CVP rules versión 4.
 - 2026-10-03 16:13 · Validado por Ronald a las 16:11: pasa a stable.
+- 2026-10-03 18:15 · El bloque puede ser texto pegado o ficheros adjuntos, que el hilo lee siempre como parte del bloque sin que se lo pidan. En un documento largo se numera cada párrafo o apartado en vez de cada frase.
+- 2026-10-03 18:15 · Modo híbrido para repartir requisitos, elegido por Ronald (18:06): los ficheros de requisitos se guardan sin cambios en `sources/` en la raíz del repositorio (fuera de la carpeta de docs, para que no se lean como nodos), con su nombre original. Un nodo recibe sus frases literales si son cortas (unas diez líneas en total); si son más largas, recibe por cada parte una línea fechada "From sources/<fichero> § <apartado o página>: <resumen>", y quien trabaje en el nodo lee esa parte de la fuente. CVP rules versión 5.
+
 ## Requirements
 - 2026-10-03 08:18 · Al crear un proyecto, poder indicar un conjunto de requerimientos y que eso genere todo el árbol de nodos funcionales de dicho proyecto (como drafts los que tengan tareas asociadas).
 - 2026-10-03 08:22 · Bueno, la construcción del árbol puede ser interactiva. Se muestra una primera versión y el operador puede aclarar o especificar mejor los requerimientos, lo cual generaría una nueva versión del árbol y así de forma iterativa.
@@ -34,3 +38,5 @@ El botón "Load requirements" de la cabecera copia el prompt; el procedimiento e
 - 2026-10-03 16:04 · Resolver solo dudas bloqueantes antes de escribir
 - 2026-10-03 16:04 · Sí, primero carga de requisitos ya que es una pieza necesaria para proyectos
 - 2026-10-03 17:50 · Pensaba que haría solo las preguntas críticas para poder definir la estructura del proyecto, crearía la estructura y luego repartiría las dudas no críticas en los nodos correspondientes.
+- 2026-10-03 18:03 · La duda es si se reparten también los requerimientos en los diferentes nodos. En este ejemplo, los requerimientos son bastante breves, pero si lanzo un proyecto serio, los requerimientos de un nodo pueden tener varias páginas.
+- 2026-10-03 18:06 · Sí, el modo Híbrido es una buena opción.
