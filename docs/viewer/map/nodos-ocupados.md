@@ -20,6 +20,7 @@ Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribi
 - 2026-10-03 15:18 · El nodo ocupado lleva la etiqueta "open" en azul en su tarjeta del mapa y en su fila de la vista Project; al pasar el ratón se ve qué PR o rama lo ocupa. Sin `.open-work.md` la página se comporta como antes.
 - 2026-10-03 15:21 · Validado por Ronald a las 15:20: pasa a stable.
 - 2026-10-03 15:30 · Una rama tiene trabajo abierto si tiene un PR abierto, o si no tiene PR cerrado con su mismo último commit y lleva cambios que main no tiene. Solo cuentan los md de la carpeta de docs (no los ocultos como `.index.md`); un fichero renombrado ocupa su ruta vieja y la nueva. La ruta de la carpeta en el repositorio es el `docs_path` del nodo raíz o, si falta, la que recibe la herramienta, relativa a la raíz del repositorio (ver `context-pack/carpeta-de-docs`).
+- 2026-10-03 19:35 · La Action también sirve a otros proyectos: `tools/project/open-work.yml` es la versión que instala "New project" (ver `nuevo-proyecto`), que descarga `tools/open-work.mjs` de este repositorio público. Por eso `tools/open-work.mjs` ha de seguir funcionando con cualquier repositorio y carpeta de docs.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Mostrar en el mapa qué nodos tienen una rama o PR abierto que cambia su md. Antes de construirlo, decidir cómo se obtiene ese dato sin conexión.

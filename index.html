@@ -634,6 +634,8 @@ function restoreViewState() {
 // ---------------------------------------------------------------------------
 
 const OPEN_WORK_FILE = '.open-work.md';
+// The Open work action a new project installs: it downloads tools/open-work.mjs from CVP's public repository.
+const OPEN_WORK_ACTION_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/tools/project/open-work.yml';
 
 async function readTextFile(dir, name) {
   try { return await (await (await dir.getFileHandle(name)).getFile()).text(); }
@@ -1377,6 +1379,8 @@ function newProjectPack() {
     '   - <docs>/creative-lab.md, the lab where ideas are debated, from the template below.',
     '   - AGENTS.md at the repository root, from the template below, and CLAUDE.md at the repository root with the single line `@AGENTS.md`.',
     '   - The attached files, unchanged, in `sources/` at the repository root (see "Requirements load").',
+    '   - If the project has a GitHub repository: `.github/workflows/open-work.yml`, copied as it is from ' + OPEN_WORK_ACTION_URL +
+    ' (change only its `DOCS: docs` line if the docs folder is elsewhere). It keeps <docs>/.open-work.md up to date with the branches and pull requests at work, so the page marks those nodes as "open".',
     '   Ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
     (from ? `Propose by default ${from}. ` : '') + 'If you cannot reach that repository, ask the owner where it is.',
     '   Put the skeleton on the default branch (commit, push and merge if you used a branch), make sure the owner has it on disk (step 1) and tell them to open its docs folder in the CVP page, so they see the tree grow from now on.',
