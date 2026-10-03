@@ -32,7 +32,7 @@
     border-radius: 6px; padding: 4px 10px; cursor: pointer;
   }
   button:hover { border-color: var(--accent); }
-  button:disabled { opacity: .5; cursor: default; border-color: var(--line); }
+  button:disabled, button.off, button.off:hover { opacity: .5; cursor: default; border-color: var(--line); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.link { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; text-align: left; }
   button.link:hover { text-decoration: underline; }
@@ -1586,6 +1586,7 @@ function renderCard() {
   h += '<div class="actions">' +
     '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
     '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
+    openThreadButton(n) +
     (state.snapshot ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
@@ -1637,8 +1638,27 @@ function renderCard() {
   card.scrollTop = 0;
   $('copyPackBtn').onclick = () => copyPack(n);
   $('subTaskBtn').onclick = () => openSubTask(n);
+  $('openThreadBtn').onclick = () => openLastThread(n);
   if (!state.snapshot) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
+}
+
+// "Open thread" opens the node's last `threads` entry (the most recent chat) in a new tab.
+// Earlier threads stay listed in the card's Threads section.
+function openThreadButton(n) {
+  const t = n.threads[n.threads.length - 1];
+  const tip = !t ? 'This node has no linked threads'
+    : /^https?:\/\//i.test(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
+    : `The node's last thread is not a link: ${t.link}`;
+  const off = !t || !/^https?:\/\//i.test(t.link);
+  return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
+}
+
+function openLastThread(n) {
+  const t = n.threads[n.threads.length - 1];
+  if (!t) return toast('This node has no linked threads.');
+  if (!/^https?:\/\//i.test(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
+  window.open(t.link, '_blank', 'noopener');
 }
 
 function openSubTask(n) {
