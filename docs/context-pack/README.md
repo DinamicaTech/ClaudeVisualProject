@@ -35,6 +35,7 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-02 19:15 · La regla de actualización pide además regenerar el índice tras cambiar cualquier nodo.
 - 2026-10-03 07:50 · Los dos prompts llevan, antes del desglose, el paso de encaminado al nodo responsable (`context-pack/routing`) y la regla de draft: un nodo `draft` sigue así hasta que el propietario valida el cambio y entonces pasa a `stable`.
 - 2026-10-03 07:50 · Sustituye en parte a la decisión de las 18:55 sobre requisitos: las frases literales del propietario van al nodo responsable elegido en el encaminado; los nodos que ejecutan partes reciben "Derived from".
+- 2026-10-03 08:05 · En un nodo `draft`, el doble clic deja "Task" ya rellenado con su tarea pendiente: sus líneas `draft:` de Requirements sin el prefijo o, si no tiene ninguna, todos sus requisitos. El prompt avisa de que ya están registrados y no hay que copiarlos otra vez. En los demás nodos "Task" sigue vacío, porque sus requisitos son historial. Elegido por Ronald (opción a, 07:57) frente a poner solo una referencia.
 
 ## Requirements
 - 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.
@@ -43,3 +44,6 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-02 18:49 · Y sí, hay que indicar en el prompt que hay que acceder a todo el árbol para determinar el responsable de ejecutar cada desglose de los requerimientos.
 - 2026-10-02 18:49 · Como apunte adicional, si un nodo afectado está pendiente de commit, sería bueno ayudar al operador con un: 'Para completar esta solicitud, hay que derivar una tarea a Modelo de Datos, pero tiene pendiente cerrar el desarrollo XXXX del 17/9/2026. ¿Quieres que lo cierre? No podré ejecutar la petición hasta no tener disponible Modelo de Datos para ejecutar una nueva tarea'
 - 2026-10-03 07:50 · Derived from context-pack/routing: los prompts del doble clic y de "New sub-task" piden encaminar la tarea a su nodo responsable antes del desglose, con las cuatro opciones.
+- 2026-10-03 07:52 · Vale, si hago doble click en 'Rol de director', que tiene unos requerimientos planteados, estos requerimientos no deberían aparecer al final del prompt que me ha copiado en el portapapeles como 'Task' ?
+- 2026-10-03 07:57 · La opción sería a)
+- 2026-10-03 07:57 · Si estandarizamos el modo de generar una tarea futura con un 'draft: [XXXXX]' ya se podría resolver eliminando simplemente el prefijo al asignar el contenido de 'task:'.

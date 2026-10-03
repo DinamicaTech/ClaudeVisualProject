@@ -763,13 +763,32 @@ function routingRule(n, proposed) {
       : `- Start the task in the selected node (${n.path || 'root'}).`,
     '- Create a new node <full path in the tree>, when no node fits and a node of its own makes functional sense.',
     '- Start in the node <path of the best candidate found>.',
-    '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft`, the owner\'s words in its Requirements, and nothing else; then stop.',
+    '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see the draft rule), and nothing else; then stop.',
     'The chosen node is the node you work on: read it as the reading rule says, put the owner\'s words in its Requirements and this thread\'s link in its `threads`. ' +
     'If the task started on a draft node and goes to another existing node, copy the draft\'s requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft\'s file.',
   ].join('\n');
 }
 const DRAFT_RULE =
-  'A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line).';
+  'A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). ' +
+  'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
+  'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
+  'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it.';
+
+// For a draft node, the Task line starts filled in with its pending task: its "draft:" requirement
+// lines without the prefix or, if it has none, all its requirements.
+function draftTask(n) {
+  if (n.status !== 'draft' || !n.requirements.length) return [];
+  const marked = n.requirements.filter(r => /^draft:/i.test(r.text)).map(r => r.text.replace(/^draft:\s*/i, ''));
+  return (marked.length ? marked : n.requirements.map(r => r.text)).map(t => t.replace(/\s*\n\s*/g, ' '));
+}
+function taskLines(n) {
+  const t = draftTask(n);
+  if (!t.length) return ['Task: '];
+  return [
+    'This node is a pending draft. The task below is taken from its ## Requirements, where it is already recorded: do not copy it there again. Anything the owner adds after it is new.',
+    t.length === 1 ? `Task: ${t[0]}` : 'Task:\n' + t.map(x => `- ${x}`).join('\n'),
+  ];
+}
 
 const THREAD_RULE =
   'If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
@@ -807,7 +826,7 @@ function contextPack(n) {
     ...obsoleteWarning(n),
     `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
     ...packFiles(n, 'Node'),
-    '', READ_RULE, '', routingRule(n), '', breakdownRule(), '', UPDATE_RULE, DRAFT_RULE, THREAD_RULE, '', 'Task: ',
+    '', READ_RULE, '', routingRule(n), '', breakdownRule(), '', UPDATE_RULE, DRAFT_RULE, THREAD_RULE, '', ...taskLines(n),
   ].join('\n');
 }
 

@@ -12,3 +12,4 @@ El desglose con confirmación y el encaminado (`context-pack/routing`) ya cubren
 
 ## Requirements
 - 2026-10-02 08:52 · Más adelante, un rol de "director": ante un requerimiento, un hilo analiza qué nodos intervienen, reparte el trabajo en subagentes, verifica y actualiza los documentos, sin que yo decida ficheros ni abra hilos a mano.
+- 2026-10-03 07:57 · draft: Rol de director: ante un requerimiento, un hilo analiza qué nodos intervienen, reparte el trabajo en subagentes, verifica y actualiza los documentos, sin que el propietario decida ficheros ni abra hilos a mano.
