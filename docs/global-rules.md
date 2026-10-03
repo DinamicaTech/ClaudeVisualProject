@@ -15,14 +15,16 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-03 14:58 · En este repositorio las CVP rules se escriben con `node tools/update-rules.mjs docs`, y una comprobación en GitHub marca en rojo el PR si no coinciden con las de `index.html`.
 - 2026-10-03 16:12 · Versión 2 de las CVP rules: nueva regla "Requirements load" (ver `context-pack/carga-de-requisitos`) y, en Drafts, las líneas `question:` como preguntas abiertas que se resuelven antes de la tarea.
 - 2026-10-03 16:25 · Versión 3 de las CVP rules: quien no pueda ejecutar el comando del índice pide al propietario que pulse "Rebuild index" en la página (ver `context-pack/index`).
+- 2026-10-03 18:00 · Versión 4 de las CVP rules: en "Requirements load", un valor, una cantidad, un ritmo o un detalle de comportamiento dentro de un nodo nunca es pregunta bloqueante (ver `context-pack/carga-de-requisitos`).
 
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
 - 2026-10-03 16:12 · Derived from context-pack/carga-de-requisitos: regla "Requirements load" y línea `question:` de los drafts en las CVP rules (versión 2).
 - 2026-10-03 16:25 · Derived from nuevo-proyecto: que las reglas valgan en un proyecto sin las herramientas de este repositorio para regenerar el índice (versión 3).
+- 2026-10-03 18:00 · Derived from context-pack/carga-de-requisitos: una pregunta sobre un valor o un detalle dentro de un nodo nunca es bloqueante (versión 4).
 
 ## CVP rules
-<!-- cvp-rules 3 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+<!-- cvp-rules 4 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
 These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
 
 **Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
@@ -51,7 +53,7 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 
 **Requirements load.** A task that starts with "Load requirements:" brings a block of requirements to spread over the tree (in a new project, an empty tree). It is not routed as one task; instead:
 1. Number each sentence of the block that asks for something as R1, R2…, word for word, and propose the node each one belongs to: an existing node, or a new one with its full path.
-2. List every gap, ambiguity or contradiction, between sentences or with a decision in force in the docs, as a question Q1, Q2…: its kind, the R sentences it touches, the questions it depends on, 2 to 4 options with their consequence, and your recommendation. A question is blocking if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node.
+2. List every gap, ambiguity or contradiction, between sentences or with a decision in force in the docs, as a question Q1, Q2…: its kind, the R sentences it touches, the questions it depends on, 2 to 4 options with their consequence, and your recommendation. A question is blocking only if its answer changes the tree (which nodes exist, where a sentence goes) or the architecture; otherwise it is local to one node. A value, an amount, a timing or a detail of behaviour inside one node (for example, how often an enemy attacks) is never blocking, however much it matters: it is local. When in doubt, it is local.
 3. Ask only the blocking questions, in rounds of at most 7: those with the most impact first, never one that depends on a question still open. The owner may answer each one in a word ("Q3 B") or accept your recommendation for the rest. After each round, close the questions it settles, add any new ones and go on with the next round until no blocking question is left.
 4. Keep the state of the load in `.requirements-load.md` in the docs folder (R sentences, questions, answers, proposed tree): update it every round and push it to the branch, so that another thread can take over if this one stops.
 5. Show the proposed tree, two or three levels deep: each node with its Summary, the R sentences it receives, the ones that become `draft:` lines and its local questions. Remake it with the owner's clarifications until the owner's OK; this is the breakdown, and only then write the md files. Nodes that only give structure get their Summary and no status; nodes with pending tasks get `status: draft`, the owner's sentences word for word with the date and time of the block, and their `draft:` line.

@@ -7,7 +7,7 @@ Visual, navigable map of AI-developed projects. Reads the Markdown docs in your 
 ## Usage
 
 1. Open [`index.html`](index.html) in Chrome or Edge (double-click the file; other browsers cannot read a local folder).
-2. Click **Open folder** and choose your repository's `docs` folder.
+2. Click **Open folder** and choose your repository's `docs` folder. The page remembers every docs folder you open: the list at the top switches between projects in one click (**Open folder…** in it adds another one), each with its own view, and F5 reopens the last one.
 3. Browse the project as a map of cards (**Tree**, hierarchy left to right) or as rows (**Project**). Click a node to see its summary, requirements, decisions, dependencies and warnings. Double-click it to copy a context pack: a short prompt with the files a new AI thread should read. The thread first checks which node is functionally responsible for the task and, if it is another one, asks you where the task should go: the selected node, a new node, the best existing candidate, or a draft saved for later in the node where it belongs. To leave a task for later on purpose, start your message with `draft:`. Double-clicking a draft node fills in the prompt's `Task:` with its pending task.
 4. **Drafts** lists every draft node (pending tasks and work not yet validated) in a table you can sort by any column. **Log** lists every decision and requirement of the project, newest first.
 5. Press F5 (or **Reload**) after the docs change.

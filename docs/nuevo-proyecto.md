@@ -20,6 +20,7 @@ Al final propone un nodo `architecture` como draft para debatirlo con el propiet
 - 2026-10-03 16:25 · El proyecto nuevo no tiene herramienta para el índice: al terminar, el hilo pide al propietario abrir la carpeta de docs en la página y pulsar "Add node index" (`context-pack/index`).
 
 - 2026-10-03 17:17 · Validado por Ronald a las 17:16: pasa a stable.
+- 2026-10-03 18:00 · El proyecto ha de acabar en una carpeta del disco del propietario, porque la página solo lee carpetas locales. Si el hilo trabaja en su máquina, pide esa carpeta; si trabaja en la nube, el proyecto necesita un repositorio de GitHub (lo crea, privado salvo que el propietario diga otra cosa) y el propietario ha de clonarlo: el hilo le da el comando o, si puede ejecutar órdenes en su máquina, pide la carpeta y lo clona. Con el esqueleto escrito, lo deja en la rama principal y pide abrir su carpeta de docs en la página, antes de la carga de requisitos, para ver crecer el árbol. Primera prueba real (Killer flies): el hilo dejó el esqueleto en la nube sin preguntar la carpeta local.
 ## Requirements
 - 2026-10-03 08:13 · La opción de arrancar un nuevo proyecto es perfecta, automatiza todo el trabajo de creación de un proyecto.
 - 2026-10-03 08:16 · draft: Ofrecer un botón "New project" que copie un prompt para preparar un repositorio nuevo para CVP: nodo raíz con identificador de proyecto, fichero de reglas del proyecto, AGENTS.md que apunta a él e índice de nodos.
@@ -33,3 +34,4 @@ Al final propone un nodo `architecture` como draft para debatirlo con el propiet
 - 2026-10-03 16:02 · Entiendo que el AGENTS.md se puede heredar de alguno ya existente (el más reciente), no ?
 - 2026-10-03 16:04 · Ok a preguntar la copia de reglas personales, por defecto, seleccionar el proyecto desde el que se ha lanzando 'nuevo proyecto'
 - 2026-10-03 16:15 · Sí, los documentos con el idioma del usuario.
+- 2026-10-03 17:50 · No, la carpeta supongo que solo está en GitHub, no me ha preguntado en ningún momento en qué carpeta local guardar el clon.
