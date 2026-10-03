@@ -8,7 +8,7 @@
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #6b7078; --line: #e3e3df;
     --accent: #3a5ccc; --accent-soft: #e8edfb; --warn: #b26a00; --warn-soft: #fff4e0;
-    --error: #c0392b; --obsolete: #a0a4aa; --draft: #7a5ab5; --ref: #2f7d62; --dependent: #b4661d; --draft-fill: #f0f0f0;
+    --error: #c0392b; --obsolete: #a0a4aa; --draft: #7a5ab5; --ref: #2f7d62; --dependent: #b4661d; --draft-fill: #f0f0f0; --idea: #9a6c00; --idea-soft: #fff3cc;
     --b0: #3d63c9; --b1: #8a4fbf; --b2: #c2513f; --b3: #2f8a73; --b4: #b8861b; --b5: #3a8bb0; --b6: #b1477d; --b7: #6b7d2a;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
@@ -16,7 +16,7 @@
     :root {
       --bg: #17181a; --panel: #1f2023; --text: #e6e6e3; --muted: #9a9ea5; --line: #2f3135;
       --accent: #8aa4ff; --accent-soft: #263055; --warn: #f0b252; --warn-soft: #3a2e17;
-      --error: #ff7b6e; --obsolete: #6d7178; --draft: #b9a0ea; --ref: #6cc7a3; --dependent: #e9a35e; --draft-fill: #27282b;
+      --error: #ff7b6e; --obsolete: #6d7178; --draft: #b9a0ea; --ref: #6cc7a3; --dependent: #e9a35e; --draft-fill: #27282b; --idea: #f0c75e; --idea-soft: #3a3115;
       --b0: #86a3ff; --b1: #c39af0; --b2: #f08f7c; --b3: #6cc7aa; --b4: #e6bd5c; --b5: #79c3e4; --b6: #ec8fbd; --b7: #b4c46a;
     }
   }
@@ -112,6 +112,7 @@
   .node .chip.missing, .node .chip.missing b { color: var(--error); border-color: var(--error); }
   .node.draft .card { background: var(--draft-fill); }   /* grey, like a disabled node; lines stay solid */
   .node.draft .tag { border-style: solid; }
+  .node.idea .tag { color: var(--idea); background: var(--idea-soft); border-style: solid; }   /* an idea under debate in the lab, not a pending task */
   .node.placeholder .card { border-style: dashed; }
   .node.placeholder .t { font-style: italic; color: var(--muted); }
   .node.obsolete .card, .node.obsolete-inherited .card { opacity: .5; filter: grayscale(1); }
@@ -143,6 +144,7 @@
   .badge { font-size: 11px; border-radius: 10px; padding: 0 6px; flex: none; }
   .badge.warn { color: var(--warn); background: var(--warn-soft); }
   .badge.draft { color: var(--draft); border: 1px solid var(--draft); }
+  .badge.idea { color: var(--idea); background: var(--idea-soft); border: 1px solid var(--idea); }
 
   #card h1 { font-size: 22px; margin: 0 0 2px; }
   #card .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
@@ -151,6 +153,7 @@
   #card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
   .status { display: inline-block; font-size: 12px; border-radius: 10px; padding: 0 8px; margin-left: 8px; vertical-align: middle; }
   .status.draft { color: var(--draft); border: 1px solid var(--draft); }
+  .status.idea { color: var(--idea); background: var(--idea-soft); border: 1px solid var(--idea); }
   .status.obsolete { color: var(--obsolete); border: 1px solid var(--obsolete); }
   .banner { margin-top: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--obsolete); color: var(--muted); }
   .warnings { margin: 14px 0 0; padding: 8px 12px 8px 30px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
@@ -564,7 +567,7 @@ async function exportHtml() {
 // From here to the "Context pack" section the code is also run by tools/build-index.mjs
 // (in Node), so the node index is built with the same rules as the page. Keep it free of DOM access.
 
-const STATUSES = ['draft', 'stable', 'obsolete'];
+const STATUSES = ['idea', 'draft', 'stable', 'obsolete'];
 // A decision overridden by a later one starts with "[replaced by <node path>? <date time>]" (see format/decisiones-sustituidas).
 const REPLACED_RE = /^\[replaced by\s+(?:([^\]\s]+)\s+)?(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\]\s*([\s\S]*)$/i;
 const activeDecisions = n => n.decisions.filter(d => !d.replacedBy);
@@ -675,7 +678,7 @@ function parseDoc(text) {
   let status = 'stable';
   if (typeof fm.status === 'string' && fm.status) {
     if (STATUSES.includes(fm.status.toLowerCase())) status = fm.status.toLowerCase();
-    else warnings.push(`Unknown status "${fm.status}"; treated as stable. Use draft, stable or obsolete.`);
+    else warnings.push(`Unknown status "${fm.status}"; treated as stable. Use idea, draft, stable or obsolete.`);
   }
   let deps = fm.depends_on;
   if (typeof deps === 'string') deps = deps ? [deps] : [];
@@ -886,6 +889,7 @@ function routingRule(n, proposed) {
     '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see the draft rule), and nothing else; then stop.',
     'The chosen node is the node you work on: read it as the reading rule says, put the owner\'s words in its Requirements and this thread\'s link in its `threads`. ' +
     'If the task started on a draft node and goes to another existing node, copy the draft\'s requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft\'s file.',
+    'Exception: a task that starts with "idea:" is not routed; it follows the idea rule.',
   ].join('\n');
 }
 const DRAFT_RULE =
@@ -894,6 +898,18 @@ const DRAFT_RULE =
   'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
   'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it.';
 
+// Ideas (context-pack/ideas): an idea is the state before a draft. It lives in the lab, the root node
+// creative-lab, and is not routed to its functional node until the owner turns it into a draft or executes it.
+const LAB = 'creative-lab';
+const inLab = n => n.status === 'idea' || n.path === LAB || n.path.startsWith(LAB + '/');
+const IDEA_RULE =
+  'An owner\'s sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. ' +
+  `Ideas live in the lab, the root node \`${LAB}\` (create it if it is missing). Propose the idea's path, \`${LAB}/<idea>\`, and wait for the owner's OK; ` +
+  'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
+  'An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see the routing step), ' +
+  'set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". ' +
+  'A discarded idea stays in the lab with a decision that says so.';
+
 // For a draft node, the Task line starts filled in with its pending task: its "draft:" requirement
 // lines without the prefix or, if it has none, all its requirements.
 function draftTask(n) {
@@ -901,7 +917,22 @@ function draftTask(n) {
   const marked = n.requirements.filter(r => /^draft:/i.test(r.text)).map(r => r.text.replace(/^draft:\s*/i, ''));
   return (marked.length ? marked : n.requirements.map(r => r.text)).map(t => t.replace(/\s*\n\s*/g, ' '));
 }
+// For an idea, the Task line starts with its "idea:" lines, to go on debating it; on the lab, with "idea: ".
+function ideaTask(n) {
+  if (n.status !== 'idea') return [];
+  const marked = n.requirements.filter(r => /^idea:/i.test(r.text));
+  return (marked.length ? marked : n.requirements).map(r => r.text.replace(/\s*\n\s*/g, ' '));
+}
 function taskLines(n) {
+  if (n.status === 'idea') {
+    const t = ideaTask(n);
+    return [
+      'This node is an idea under debate in the lab: go on debating it here, do not route it and do not build anything until the owner says to turn it into a draft or to execute it. ' +
+      (t.length ? 'The idea below is taken from its ## Requirements, where it is already recorded: do not copy it there again. Anything the owner adds after it is new.' : ''),
+      !t.length ? 'Task: ' : t.length === 1 ? `Task: ${t[0]}` : 'Task:\n' + t.map(x => `- ${x}`).join('\n'),
+    ];
+  }
+  if (n.path === LAB) return ['Task: idea: '];
   const t = draftTask(n);
   if (!t.length) return ['Task: '];
   return [
@@ -946,7 +977,7 @@ function contextPack(n) {
     ...obsoleteWarning(n),
     `Work on the node "${n.title}" (${n.path || 'root'}) of this project.`, '',
     ...packFiles(n, 'Node'),
-    '', READ_RULE, '', routingRule(n), '', breakdownRule(), '', UPDATE_RULE, DRAFT_RULE, THREAD_RULE, '', ...taskLines(n),
+    '', READ_RULE, '', routingRule(n), '', breakdownRule(), '', UPDATE_RULE, DRAFT_RULE, IDEA_RULE, THREAD_RULE, '', ...taskLines(n),
   ].join('\n');
 }
 
@@ -965,21 +996,24 @@ function subTaskPack(n, title) {
   const steps = [];
   if (isLeafFile) steps.push(`Move ${repoPath(n)} to ${folder}README.md, so the parent becomes a folder. Its node path (${n.path}) does not change.`);
   if (state.nodes.has(childPath)) steps.push(`Note: a node ${childPath} already exists; pick a different file name.`);
-  steps.push(`Create ${folder}${slug}.md with this content, then fill in its Summary:`);
+  const idea = inLab(n);
+  steps.push(`Create ${folder}${slug}.md with this content, then fill in its Summary` + (idea ? ' and the line "idea: <the idea>" in its Requirements:' : ':'));
   return [
     ...obsoleteWarning(n),
     `Start a new sub-task "${title}" under the node "${n.title}" (${n.path || 'root'}) of this project.`,
     `The sub-task is a new node, ${childPath}, child of that node.`, '',
     ...packFiles(n, 'Parent node'), '',
-    READ_RULE, '', routingRule(n, childPath), '', breakdownRule(), '',
+    READ_RULE, '',
+    ...(idea ? [`This sub-task is a new idea in the lab (\`${LAB}\`): it is not routed to its functional node and nothing is built for it; follow the idea rule.`]
+             : [routingRule(n, childPath), '', breakdownRule()]), '',
     'After the confirmation, if the sub-task stays as proposed:',
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
-    '```markdown', '---', `title: ${title}`, 'depends_on: []', 'status: draft', 'threads:',
+    '```markdown', '---', `title: ${title}`, 'depends_on: []', `status: ${idea ? 'idea' : 'draft'}`, 'threads:',
     '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
     '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
-    'Then work on the sub-task in that node.', '',
-    UPDATE_RULE, DRAFT_RULE, '', 'Task: ',
+    idea ? 'Then debate the idea in that node.' : 'Then work on the sub-task in that node.', '',
+    UPDATE_RULE, DRAFT_RULE, IDEA_RULE, '', idea ? 'Task: idea: ' : 'Task: ',
   ].join('\n');
 }
 
@@ -1163,7 +1197,7 @@ function addRow(container, n, depth) {
   row.innerHTML =
     `<span class="twisty">${expandable ? (open ? '▼' : '▶') : ''}</span>` +
     `<span class="title">${esc(n.title)}</span>` +
-    (n.status === 'draft' ? '<span class="badge draft">draft</span>' : '') +
+    (n.status === 'draft' || n.status === 'idea' ? `<span class="badge ${n.status}">${n.status}</span>` : '') +
     (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
   container.appendChild(row);
   if (!open) return;
@@ -1302,7 +1336,7 @@ function renderMap() {
     }
     const n = it.node;
     const cls = ['node', 'd' + Math.min(it.depth, 2), n === sel && 'selected', anc.has(n) && 'anc', deps.has(n) && 'isdep', users.has(n) && 'isdependent',
-      n.placeholder && 'placeholder', n.status === 'draft' && 'draft', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
+      n.placeholder && 'placeholder', n.status === 'draft' && 'draft', n.status === 'idea' && 'idea', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
     ].filter(Boolean).join(' ');
     const summary = it.depth <= 1 && n.summary ? plain(n.summary.split('\n')[0]) : '';
     const chips = state.showRefs && n.depLinks.length ? `<div class="chips">${n.depLinks.map(l => l.node

@@ -24,3 +24,7 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-02 12:40 · La tecla Z (decidida en `viewer/map`) también aplica al árbol: muestra solo el nodo seleccionado y sus descendientes. El selector de vista se llama "Tree / Project".
 - 2026-10-02 18:10 · En el selector de vista esta vista se llama "Project" (el proyecto organizado tabularmente); "Tree" es el mapa (`viewer/map`). Decidido por Ronald a las 18:08.
 - 2026-10-03 07:50 · El selector suma "Drafts" y "Log" (`viewer/drafts`, `viewer/log`); el interruptor "References" solo se muestra en "Tree" y "Project".
+- 2026-10-03 14:45 · Los nodos `idea` llevan una etiqueta "idea" en ámbar, distinta de la de los drafts.
+
+## Requirements
+- 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar las ideas con su propia etiqueta.

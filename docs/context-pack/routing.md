@@ -19,6 +19,7 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 07:50 · El nodo elegido sustituye al seleccionado como nodo de trabajo: sus ascendientes y dependencias se leen según la regla de lectura, y él recibe las frases literales del propietario y el enlace del hilo. Los nodos que ejecutan partes reciben "Derived from".
 - 2026-10-03 07:50 · La regla también está en AGENTS.md de este repositorio.
 - 2026-10-03 08:05 · Prefijo `draft:`. Una frase del propietario que empieza por "draft:" pide guardar una tarea pendiente, no hacerla; una frase que la aplaza ("más adelante revisaremos X") también, y el hilo la deduce. El hilo propone la ruta del draft y la línea exacta "draft: <tarea>", redactada como instrucción autónoma, y espera el OK. En Requirements del draft queda esa línea; si la dedujo el hilo, encima queda la frase literal del propietario.
+- 2026-10-03 14:45 · Excepción: una tarea que empieza por "idea:" no se encamina; se guarda en el lab según la regla de `context-pack/ideas`. Al salir del lab (pasar a draft o ejecutarse), la idea sí pasa por el encaminado.
 
 ## Requirements
 - 2026-10-03 07:23 · Poder arrancar una tarea en un nodo y que esta tarea se desplace al nodo más adecuada para ejecutarla.
@@ -30,3 +31,4 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 07:34 · Un draft que ha pasado a tarea de elimina, siempre podremos consultar qué pasó con él desde la nueva pestaña 'log'
 - 2026-10-03 07:34 · Me parece bien seguir el mismo criterio, sí proponiendo la ruta recomendada.
 - 2026-10-03 07:57 · Lo primero sería estandarizar que el prefijo draft implique la creación de una tarea pendiente, ese prefijo puede ser explicitado por el operador o deducido por contexto ('más adelante revisaremos [XXXX]' -> draft: [XXXXX]).
+- 2026-10-03 14:45 · Derived from context-pack/ideas: no encaminar las tareas que empiezan por "idea:"; encaminar la idea cuando sale del lab.

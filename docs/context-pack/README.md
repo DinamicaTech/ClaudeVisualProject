@@ -37,6 +37,7 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 07:50 · Requisitos: las frases literales del propietario van al nodo responsable elegido en el encaminado; en los demás nodos afectados se escribe "Derived from <ruta del nodo>: <lo que ese nodo debe aportar>".
 - 2026-10-03 08:05 · En un nodo `draft`, el doble clic deja "Task" ya rellenado con su tarea pendiente: sus líneas `draft:` de Requirements sin el prefijo o, si no tiene ninguna, todos sus requisitos. El prompt avisa de que ya están registrados y no hay que copiarlos otra vez. En los demás nodos "Task" sigue vacío, porque sus requisitos son historial. Elegido por Ronald (opción a, 07:57) frente a poner solo una referencia.
 - 2026-10-03 08:30 · La regla de lectura de los prompts pide ignorar las decisiones marcadas `[replaced by …]`, y la de actualización pide, cuando una decisión nueva anula otra (aunque sea en parte), escribir la nueva como regla completa y marcar la antigua (ver `format/decisiones-sustituidas`).
+- 2026-10-03 14:45 · Los dos prompts incluyen la regla de ideas (ver `context-pack/ideas`): una frase que empieza por "idea:" se guarda como nodo `status: idea` dentro de `creative-lab`, sin encaminarla. El doble clic en el lab deja "Task" en "idea: " y en una idea lo rellena con sus líneas `idea:`; "New sub-task" dentro del lab crea una idea (`status: idea`, sin encaminado ni desglose).
 
 ## Requirements
 - 2026-10-02 18:33 · Sí, serían unos requerimientos indirectos o derivados que han de aparecer (la parte que les corresponda) en los nodos afectados.
@@ -49,3 +50,4 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 07:57 · La opción sería a)
 - 2026-10-03 07:57 · Si estandarizamos el modo de generar una tarea futura con un 'draft: [XXXXX]' ya se podría resolver eliminando simplemente el prefijo al asignar el contenido de 'task:'.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: que los prompts pidan ignorar las decisiones sustituidas y marcar la antigua al anularla con una nueva.
+- 2026-10-03 14:45 · Derived from context-pack/ideas: regla de ideas en los dos prompts y "Task" prerrellenado en el lab y en las ideas.

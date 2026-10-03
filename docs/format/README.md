@@ -11,7 +11,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 09:22 · Profundidad sin límite. Un nodo hoja es un fichero (`ui/login.md`); cuando necesita hijos se convierte en carpeta (`ui/login/README.md`). Su ruta de nodo (`ui/login`) no cambia, así que nada de lo que depende de él se rompe.
 - 2026-10-02 09:22 · El nombre del nodo no repite el de su padre: el título es `Login`, no `UI-Login`; la ruta ya dice dónde está.
 - 2026-10-02 09:00 · Campos de cabecera: `title` (obligatorio) y `depends_on` (lista de rutas de nodo, puede estar vacía).
-- 2026-10-02 09:19 · Campos opcionales de cabecera: `status` (`draft`, `stable` u `obsolete`; sin campo cuenta como `stable`) y `replaced_by` (ruta del nodo que sustituye a uno obsoleto).
+- 2026-10-02 09:19 · [replaced by 2026-10-03 14:45] Campos opcionales de cabecera: `status` (`draft`, `stable` u `obsolete`; sin campo cuenta como `stable`) y `replaced_by` (ruta del nodo que sustituye a uno obsoleto).
 - 2026-10-02 09:19 · Un nodo obsoleto no se borra: conserva su historia y sus decisiones.
 - 2026-10-02 09:00 · Las rutas de nodo son relativas a la raíz de docs, sin extensión y con `/` (p. ej. `viewer/tree`, `format`).
 - 2026-10-02 09:00 · Las dos primeras secciones son fijas y en este orden: `## Summary` (máx. 5 líneas, funcional, sin detalle de implementación) y `## Decisions` (una línea por decisión cerrada, que empieza por su fecha y hora: `- AAAA-MM-DD HH:MM · texto`).
@@ -26,10 +26,13 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 19:15 · `.index.md` en la raíz de la carpeta de docs es un fichero generado (ver `context-pack/index`), no un nodo: no se edita a mano. Derived from context-pack/index.
 - 2026-10-03 07:50 · `status: draft` significa pendiente o sin validar: una tarea guardada para más tarde en su sitio funcional, o un nodo en el que se trabaja y que el propietario aún no ha validado. Pasa a `stable` (se quita la línea) cuando el propietario valida el cambio.
 - 2026-10-03 08:05 · En un nodo `draft`, una línea de Requirements que empieza por `draft:` (tras la fecha) es su tarea pendiente, redactada como instrucción autónoma. Si la redactó el hilo a partir de otra frase, la frase literal del propietario va en la línea anterior.
+- 2026-10-03 14:45 · Campos opcionales de cabecera: `status` (`idea`, `draft`, `stable` u `obsolete`; sin campo cuenta como `stable`) y `replaced_by` (ruta del nodo que sustituye a uno obsoleto). `idea` es una idea en debate en `creative-lab`, previa a draft (ver `context-pack/ideas`).
+- 2026-10-03 14:45 · En un nodo `idea`, una línea de Requirements que empieza por `idea:` (tras la fecha) es la idea, redactada como frase autónoma.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: el significado de `draft` como pendiente o sin validar, y su paso a `stable` al validar.
 - 2026-10-03 08:05 · Derived from context-pack/routing: el prefijo `draft:` en las líneas de Requirements de un draft.
+- 2026-10-03 14:45 · Derived from context-pack/ideas: añadir el estado `idea` y la línea `idea:` de Requirements.
 
 ## Ejemplo
 ```markdown
