@@ -30,6 +30,8 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-03 14:45 · En un nodo `idea`, una línea de Requirements que empieza por `idea:` (tras la fecha) es la idea, redactada como frase autónoma.
 - 2026-10-03 14:58 · Nodo `global-rules`, hijo de la raíz: las reglas que sigue todo hilo. Tras los bloques fijos lleva `## CVP rules`, entre las marcas `<!-- cvp-rules <versión> begin … -->` y `<!-- cvp-rules end -->`, que escribe la página y no se edita a mano, y `## Project rules`, las del proyecto, que la página nunca toca; en un conflicto mandan las Project rules. Las reglas personales del propietario van en `AGENTS.md`, no en ese nodo.
 - 2026-10-03 15:30 · Campo opcional de cabecera `docs_path`, solo en el nodo raíz: la ruta de la carpeta de docs desde la raíz del repositorio, sin barra final (`docs_path: documentacion/specs`). Sin el campo, la carpeta se supone en la raíz del repositorio. En cualquier otro nodo se ignora y da un aviso de formato. Ver `context-pack/carpeta-de-docs`.
+- 2026-10-03 16:12 · En un nodo `draft`, una línea de Requirements que empieza por `question:` (tras la fecha) es una duda abierta sobre su tarea, con sus opciones y una recomendación; la deja una carga de requisitos y se resuelve antes de hacer la tarea (ver `context-pack/carga-de-requisitos`).
+- 2026-10-03 16:12 · `.requirements-load.md` en la raíz de la carpeta de docs es el fichero de trabajo de una carga de requisitos en curso, no un nodo; se borra al terminarla. Como todo fichero que empieza por punto, la página lo ignora.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: el significado de `draft` como pendiente o sin validar, y su paso a `stable` al validar.
@@ -56,4 +58,4 @@ Pantalla de entrada. Autentica al usuario y abre la última empresa usada.
 ## Requirements
 - 2026-10-02 09:10 · Quiero entrar con mi email y no con un usuario aparte.
 ```
-
+- 2026-10-03 16:12 · Derived from context-pack/carga-de-requisitos: línea `question:` en los drafts y fichero de trabajo `.requirements-load.md`.

@@ -14,8 +14,10 @@ Solo lectura, salvo renombrar un nodo (`viewer/rename`), moverlo a otra rama (`v
 - 2026-10-03 07:50 · Dos vistas más en el selector, que queda "Tree / Project / Drafts / Log": la tabla de nodos draft (`viewer/drafts`) y el registro por fechas de decisiones y requisitos (`viewer/log`). Las dos comparten la selección, la ficha, el doble clic y el zoom.
 - 2026-10-03 08:47 · Segunda escritura en la carpeta: mover un nodo arrastrando su tarjeta en el mapa con "Tree edit mode" encendido (`viewer/mover-nodo`), pedido por Ronald.
 - 2026-10-03 14:58 · Tercera escritura en la carpeta: "Update rules" (`context-pack/reglas-del-proyecto`). La cabecera muestra "Add global rules" si el proyecto no tiene nodo `global-rules`, "⚠ Update rules" si sus reglas son de una versión anterior y "⚠ Rules newer than page" si son de una más nueva (sin acción: hay que conseguir el `index.html` nuevo). El botón reescribe solo la sección "CVP rules" o crea el nodo, regenera el índice y recarga.
+- 2026-10-03 16:12 · Botón "Load requirements" en la cabecera, también en la instantánea: copia el prompt de carga de requisitos (`context-pack/carga-de-requisitos`); el aviso dice que se pegue en un hilo nuevo con los requisitos al final.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: ver todos los drafts juntos y consultar qué pasó con un draft absorbido por otro nodo.
 - 2026-10-03 08:47 · Derived from viewer/mover-nodo: la página escribe en la carpeta también para mover nodos, no solo para renombrar.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: aviso en la cabecera cuando las reglas globales faltan o están desfasadas, con un botón que las escribe.
+- 2026-10-03 16:12 · Derived from context-pack/carga-de-requisitos: botón "Load requirements" en la cabecera.
