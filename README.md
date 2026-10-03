@@ -13,11 +13,21 @@ Visual, navigable map of AI-developed projects. Reads the Markdown docs in your 
 5. Press F5 (or **Reload**) after the docs change.
 6. To rename a node, select it and click **Rename** (or press F2). You can change its title and, optionally, its file or folder name; every `depends_on`, `replaced_by` and relative link that points to it is updated. This is the only action that writes to your docs folder, and the browser asks for permission first. Commit the changes in git as usual.
 
+### Standalone HTML
+
+To share the map, publish it (for example on GitHub Pages) or open it in a browser that cannot read a local folder, make a snapshot: one HTML file with your docs inside. Either click **Export HTML** in the page, or run
+
+```
+node tools/build-html.mjs docs [--out file.html]
+```
+
+(copy `index.html`, `tools/build-html.mjs` and `tools/docs-folder.mjs` into your repository; Node 18 or later). The snapshot opens in any modern browser with every view and the context packs, but it does not see later changes to the docs (make it again) and cannot rename nodes. Anyone who can open the file can read all your docs: on GitHub, Pages sites of private repositories are public unless you are on Enterprise.
+
 Your docs are read from disk and never copied or uploaded; the page only writes to them when you rename a node. The expected Markdown format is described in [`docs/format`](docs/format/README.md).
 
 ### Node index (optional)
 
-Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html` and `tools/build-index.mjs` into your repository and run
+Threads started from the copied prompts first propose which node carries out each part of the task. To find the right nodes in one read, keep a node index next to your docs: copy `index.html`, `tools/build-index.mjs` and `tools/docs-folder.mjs` into your repository and run
 
 ```
 node tools/build-index.mjs docs
