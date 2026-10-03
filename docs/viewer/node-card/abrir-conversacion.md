@@ -1,7 +1,6 @@
 ---
 title: Abrir la conversación del nodo
 depends_on: [build]
-status: draft
 threads:
   - Abrir la conversación del nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLTy4gbfpAdMNPEtfBCTTtAt
   - Botón Open thread | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLE6eA4o2LiqLzDixdvKh7Z8
@@ -17,6 +16,7 @@ Se hace en la página HTML, sin aplicación local, y funciona también en la ins
 - 2026-10-03 14:07 · Abrirla en el navegador o en la app de Claude no cambia nada: es la misma conversación, y los hilos trabajan sobre el repositorio de GitHub, no sobre los md del disco local (solo Remote Control llega al PC).
 - 2026-10-03 14:16 · Sale del Creative lab como draft (Ronald, 14:16): se mueve de `creative-lab/abrir-conversacion` a `viewer/node-card/abrir-conversacion`, su sitio funcional.
 - 2026-10-03 14:31 · Botón "Open thread" en la ficha, junto a "New sub-task": abre en una pestaña nueva el último enlace de `threads` (el último de la lista, que es el más reciente porque los hilos se añaden al final); con varios hilos abre el último, sin menú para elegir (Ronald, 14:28). Si el nodo no tiene hilos, o el último enlace no es una URL, el botón sale atenuado, su tooltip lo dice y al pulsarlo un aviso lo explica. Su tooltip nombra el hilo que abre.
+- 2026-10-03 14:33 · Validado por Ronald (14:33): deja de ser draft.
 
 ## Requirements
 - 2026-10-03 14:04 · me gustaría que pulsando un botón X con un nodo seleccionado, se activase la conversación de ese nodo en Claude para poder hacer seguimiento.
