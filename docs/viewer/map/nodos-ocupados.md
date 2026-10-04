@@ -6,8 +6,8 @@ threads:
 ---
 ## Summary
 Marca "open" en el mapa y en la vista Project los nodos cuyo md cambia una rama o un PR sin fusionar; la ficha lista ese trabajo y "Open thread" abre su hilo, para acabar de validarlo y cerrarlo.
-El dato sale de `docs/.open-work.md`, que una GitHub Action ("Open work") reescribe en main con cada push y cada PR. La página lo lee sin conexión, al día del último `git pull` (`Refresh.cmd`).
-Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribirían en su md.
+El dato sale de `docs/.open-work.md`, que una GitHub Action ("Open work") reescribe en main con cada push y cada PR. Desde GitHub (`build/github`) está al día en cada recarga; desde una carpeta local, al día del último `git pull` (`Refresh.cmd`).
+En un proyecto de GitHub, "View in-progress version" muestra el md del nodo tal como lo deja la rama abierta. Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribirían en su md.
 
 ## Decisions
 - 2026-10-03 07:50 · Pendiente. Trasladado desde la hoja de ruta (`roadmap`) a su sitio funcional.
@@ -21,6 +21,8 @@ Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribi
 - 2026-10-03 15:21 · Validado por Ronald a las 15:20: pasa a stable.
 - 2026-10-03 15:30 · Una rama tiene trabajo abierto si tiene un PR abierto, o si no tiene PR cerrado con su mismo último commit y lleva cambios que main no tiene. Solo cuentan los md de la carpeta de docs (no los ocultos como `.index.md`); un fichero renombrado ocupa su ruta vieja y la nueva. La ruta de la carpeta en el repositorio es el `docs_path` del nodo raíz o, si falta, la que recibe la herramienta, relativa a la raíz del repositorio (ver `context-pack/carpeta-de-docs`).
 - 2026-10-03 19:35 · La Action también sirve a otros proyectos: `tools/project/open-work.yml` es la versión que instala "New project" (ver `nuevo-proyecto`), que descarga `tools/open-work.mjs` de este repositorio público. Por eso `tools/open-work.mjs` ha de seguir funcionando con cualquier repositorio y carpeta de docs.
+- 2026-10-04 15:05 · En un proyecto abierto desde GitHub, cada trabajo abierto de la ficha tiene "View in-progress version": muestra el md del nodo leído de esa rama, con el mismo visor que "Open full document". Si la rama ya no tiene ese fichero, lo avisa (lo mueve o lo borra). En una carpeta local no está, porque la página no sabe de qué repositorio es.
+- 2026-10-04 15:05 · Pendiente, como siguiente paso de este hilo: mostrar también los nodos nuevos que solo existen en una rama sin fusionar (Ronald, 15:05).
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Mostrar en el mapa qué nodos tienen una rama o PR abierto que cambia su md. Antes de construirlo, decidir cómo se obtiene ese dato sin conexión.
@@ -29,3 +31,5 @@ Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribi
 - 2026-10-03 15:10 · Ok al Refresh.cmd
 - 2026-10-03 15:10 · Ok al borrado del historial y activar el 'borrar la rama al fusionar'
 - 2026-10-03 15:30 · Derived from context-pack/carpeta-de-docs: reconocer los ficheros de la carpeta de docs aunque no esté en la raíz del repositorio.
+- 2026-10-04 15:03 · Y poder ver los hilos no fusionados resulta realmente útil.
+- 2026-10-04 15:05 · Una vez finalizado, mira lo de que los nodos nuevos en una rama sin fusionar, que creo que resulta bastante útil, no ?

@@ -7,7 +7,7 @@ threads:
 ## Summary
 Mover un nodo (con sus descendientes) a otra rama del árbol desde la página, actualizando todas las referencias a sus rutas, como ya hace Renombrar.
 Se activa el interruptor "Tree edit mode" del mapa y se arrastra la tarjeta del nodo sobre la de su nuevo padre. Un diálogo pide confirmar el nombre y qué dependencias heredadas se conservan, y muestra los ficheros que se mueven y se editan.
-Al terminar, la página regenera el índice de nodos y recarga.
+Al terminar, la página regenera el índice de nodos y recarga. En un proyecto de GitHub escribe con un commit si hay token, o copia un prompt para un hilo si no lo hay (`build/github`).
 
 ## Decisions
 - 2026-10-03 08:22 · Pendiente. Guardado como draft, decidido por Ronald.
@@ -21,6 +21,7 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:47 · Usa la misma escritura que Renombrar: se planifica de nuevo con lo que hay en disco, primero se copia y al final se borra lo viejo. Después regenera `.index.md` si la carpeta lo tiene y recarga la página con el nodo seleccionado en su nuevo sitio.
 - 2026-10-03 10:30 · Validado por Ronald a las 10:29 (probado moviendo un nodo obsoleto): pasa a stable.
 - 2026-10-03 15:18 · Si trabajo abierto (`viewer/map/nodos-ocupados`) cambia alguno de los md que el movimiento movería o editaría, el diálogo lo lista en rojo, con su PR y el enlace a su hilo, y no deja mover hasta que se fusione o cierre (Ronald, 15:10); se comprueba otra vez al confirmar. Si no hay ninguno dice "No open work changes these files" con la fecha de la lista. Sin `.open-work.md` mantiene el aviso genérico de que mover ficheros con trabajo abierto crea conflictos.
+- 2026-10-04 15:05 · En un proyecto de GitHub con token, el movimiento es un solo commit en la rama principal, con los demás ficheros de la carpeta movida (imágenes, etc.) llevados a su sitio nuevo. Sin token, "Copy prompt" copia la tarea, la conversión de hoja en carpeta y las dependencias conservadas para un hilo.
 
 ## Requirements
 - 2026-10-03 08:22 · Y sí, poder mover nodos del árbol acabará siendo necesario.
@@ -34,3 +35,4 @@ Al terminar, la página regenera el índice de nodos y recarga.
 - 2026-10-03 08:37 · No se puede mover la raiz ni a un nodo inferior al seleccionado.
 - 2026-10-03 10:29 · Ok, he hecho la prueba con un nodo obsoleto y ha funcionado perfecto. Validación completada.
 - 2026-10-03 15:10 · Si realmente hay un riesgo de mover un nodo abierto, mejor bloquear la acción.
+- 2026-10-04 15:05 · Derived from build/github: en un proyecto de GitHub, escribir con un commit si hay token, o copiar un prompt para un hilo si no lo hay.

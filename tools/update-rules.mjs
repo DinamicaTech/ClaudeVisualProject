@@ -5,6 +5,8 @@
 //
 //   node tools/update-rules.mjs [docs folder]           write the rules (default folder: docs)
 //   node tools/update-rules.mjs [docs folder] --check   fail if the global rules are missing or not this page's
+//   node tools/update-rules.mjs [docs folder] --auto    write them only if they are missing or older than this page's
+//                                                      (the "CVP docs" action: never downgrades newer rules)
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, basename, resolve } from 'node:path';
@@ -13,6 +15,7 @@ import { pageApi } from './page-model.mjs';
 
 const args = process.argv.slice(2);
 const check = args.includes('--check');
+const auto = args.includes('--auto');
 const folderArg = args.find(a => !a.startsWith('--')) || 'docs';
 const docs = resolve(folderArg);
 
@@ -27,6 +30,8 @@ if (check) {
     process.exit(1);
   }
   console.log(`${file} holds the page's rules (version ${RULES_VERSION}).`);
+} else if (auto && r.status !== 'missing' && r.status !== 'outdated') {
+  console.log(`${file}: global rules ${r.status} (page version ${RULES_VERSION}); nothing to write.`);
 } else {
   const d = new Date(), p = x => String(x).padStart(2, '0');
   const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;

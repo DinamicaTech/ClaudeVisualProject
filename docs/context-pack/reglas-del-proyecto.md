@@ -20,6 +20,7 @@ La página compara las reglas del proyecto con las suyas y, si faltan o están d
 - 2026-10-03 14:58 · Las reglas personales del propietario sobre cómo trabajar con él van en `AGENTS.md`, que los asistentes leen solos y la página nunca escribe; `AGENTS.md` apunta además a `global-rules` (opción C de Ronald, 14:44). Las "Project rules" son las del proyecto para cualquiera que trabaje en él (p. ej. el idioma de los docs).
 - 2026-10-03 14:58 · `node tools/update-rules.mjs [docs] [--check]` hace lo mismo que "Update rules" desde la línea de comandos. En este repositorio la comprobación "Docs format" falla si `docs/global-rules.md` no tiene las reglas de `index.html`, así que quien cambie las reglas debe subir la versión y regenerar el nodo.
 - 2026-10-03 14:54 · Validado por Ronald a las 14:53: pasa a stable.
+- 2026-10-04 15:05 · Las reglas de CVP se ponen al día solas en GitHub: la Action "CVP docs" ejecuta `node tools/update-rules.mjs <docs> --auto`, que solo escribe si faltan o son de una versión anterior (nunca baja unas más nuevas). En un proyecto de GitHub, "Update rules" escribe con un commit si hay token; sin token, el diálogo explica que lo hará la Action.
 
 ## Requirements
 - 2026-10-03 08:13 · Eso, además, nos permitiría inyectar un prompt genérico a aplicar a todo el proyecto y con eso, reducir mucho el prompt de cada tarea puesto que todas las instrucciones generales ya estarían definidas en el nodo raíz del proyecto.
@@ -27,3 +28,4 @@ La página compara las reglas del proyecto con las suyas y, si faltan o están d
 - 2026-10-03 08:13 · Habría que saber si un proyecto trabaja con instrucciones en la raiz (porque lo hemos creado usando el botón de crear proyecto) o es un proyecto 'legacy' que requiere repetir las instrucciones en cada prompt.
 - 2026-10-03 08:16 · draft: Mover las reglas generales de los prompts a un fichero de reglas del proyecto en la carpeta de docs, que el prompt del doble clic solo referencia. Si el fichero no existe (proyecto legacy), repetir las reglas en el prompt como hoy. Avisar cuando el fichero sea de una versión anterior de las reglas y mantener aparte las reglas personales del propietario.
 - 2026-10-03 14:44 · Ok, en el caso de que las GlobalRules estén desactualizadas, el hilo insertará las suyas con el aviso de actualizar las globales.
+- 2026-10-04 15:03 · Derived from build/github: Ok, entonces automático. (las reglas se actualizan solas en cada proyecto)

@@ -6,7 +6,7 @@ threads:
 ---
 ## Summary
 Un desplegable en la cabecera lista los proyectos abiertos en ese navegador, cada uno con el título de su nodo raíz; elegir uno lo abre con un clic.
-Un proyecto es su carpeta de docs: la página la reconoce aunque varias se llamen `docs`, sin ningún campo en los md. Cada proyecto guarda su propia vista y F5 reabre el último.
+Un proyecto es su carpeta de docs, local o en un repositorio de GitHub (marcado "· GitHub"): la página la reconoce aunque varias se llamen `docs`, sin ningún campo en los md. Cada proyecto guarda su propia vista y F5 reabre el último.
 
 ## Decisions
 - 2026-10-03 08:16 · Pendiente. Guardado como draft al final del hilo de la hoja de ruta, decidido por Ronald.
@@ -17,6 +17,7 @@ Un proyecto es su carpeta de docs: la página la reconoce aunque varias se llame
 - 2026-10-03 17:55 · La última carpeta y la vista que guardaba la página antes del selector pasan a ser el primer proyecto de la lista, con su vista.
 - 2026-10-03 17:55 · En la instantánea (`build/html-autonomo`) no hay selector.
 - 2026-10-03 17:55 · Validado el planteamiento por Ronald (17:50); pasa a stable.
+- 2026-10-04 15:05 · Un proyecto de GitHub se identifica por owner, repositorio y carpeta de docs; en la lista lleva "· GitHub" detrás del título. El desplegable añade "Open from GitHub…" junto a "Open folder…". F5 lo reabre sin pedir permiso al navegador.
 
 ## Requirements
 - 2026-10-03 08:13 · Podemos tener un md con los diferentes proyectos y carpetas relacionadas ?
@@ -25,3 +26,4 @@ Un proyecto es su carpeta de docs: la página la reconoce aunque varias se llame
 - 2026-10-03 17:41 · quizá es buen momento para activar el selector de proyectos.
 - 2026-10-03 17:50 · 1. Por carpeta, que será un nombre único.
 - 2026-10-03 17:50 · Ok con las propuestas sobre el selector de proyectos
+- 2026-10-04 15:05 · Derived from build/github: los proyectos de GitHub entran en la lista, identificados por repositorio y carpeta de docs.
