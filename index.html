@@ -726,6 +726,9 @@ function parseOpenWork(text) {
 const openWorkOf = n => n.file ? openWorkOn([n.file]) : [];
 const openWorkOn = paths => state.openWork ? state.openWork.items.filter(i => i.files.some(f => paths.includes(f))) : [];
 const workLabel = i => i.pr ? `PR #${i.pr.number} (${i.pr.title})` : `branch ${i.branch} (no pull request yet)`;
+// Tag text of busy or new nodes: the pull request numbers ("#35 #36"), or "open" for a branch without one
+const workTag = items => [...new Set(items.map(i => i.pr ? '#' + i.pr.number : 'open'))].join(' ');
+const wipTag = w => w.pr ? `new #${w.pr.number}` : 'new';
 const isLink = s => /^https?:\/\//i.test(s || '');
 
 function renderOpenWorkNote() {
@@ -1963,8 +1966,8 @@ function addRow(container, n, depth) {
     `<span class="twisty">${expandable ? (open ? '▼' : '▶') : ''}</span>` +
     `<span class="title">${esc(n.title)}</span>` +
     (n.status === 'draft' || n.status === 'idea' ? `<span class="badge ${n.status}">${n.status}</span>` : '') +
-    (n.wip ? `<span class="badge busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">new</span>`
-      : openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">open</span>` : '') +
+    (n.wip ? `<span class="badge busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">${esc(wipTag(n.wip))}</span>`
+      : openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">${esc(workTag(openWorkOf(n)))}</span>` : '') +
     (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
   container.appendChild(row);
   if (!open) return;
@@ -2114,8 +2117,8 @@ function renderMap() {
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
       `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
       `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}` +
-      `${n.wip ? `<span class="tag busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">new</span>`
-        : busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
+      `${n.wip ? `<span class="tag busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">${esc(wipTag(n.wip))}</span>`
+        : busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">${esc(workTag(busy))}</span>` : ''}</div>` +
       `<div class="p">${esc(n.path || docsPrefix())}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
       `<div class="meta">${questionCount(n) ? `<span class="qb" title="Open questions to resolve with the owner (question: lines in Requirements)">?${questionCount(n)}</span>` : ''}` +
