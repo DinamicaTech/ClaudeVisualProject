@@ -1424,7 +1424,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 7;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 8;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1440,7 +1440,7 @@ const CVP_RULES = [
   '- Start the task in the node the prompt names (or create the new node as proposed).\n' +
   '- Create a new node <full path in the tree>, when no node fits and a node of its own makes functional sense.\n' +
   '- Start in the node <path of the best candidate found>.\n' +
-  '- Save it as a draft until it is decided: create the node at the path it belongs to with `status: draft` and its `draft:` line in Requirements (see Drafts), and nothing else; then stop.\n\n' +
+  '- Save it as a draft until it is decided: create a new draft node as a child of the node the task belongs to, with `status: draft` and its `draft:` line in Requirements (see Drafts), and nothing else; then stop.\n\n' +
   'The chosen node is the node you work on: read it as Reading says, put the owner\'s words in its Requirements and this thread\'s link in its `threads`. ' +
   'If the task started on a draft node and goes to another existing node, copy the draft\'s requirements there with their original dates, add the decision "Takes over the draft <path> (<title>)" and delete the draft\'s file. ' +
   'Exception: a task that starts with "idea:" is not routed; it follows Ideas.',
@@ -1459,10 +1459,11 @@ const CVP_RULES = [
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
   'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
   'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node; if you cannot run that command, tell the owner to press "Rebuild index" in the page.',
-  '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line). ' +
+  '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line); it stays in the tree as a node of its own. ' +
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
-  'Propose the draft node\'s path and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
-  'Then create the node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it. ' +
+  'Each draft is a node of its own with one pending task: a new child of the node the task belongs to, never an existing node set back to draft or given a second `draft:` line. ' +
+  'Propose the draft node\'s path (<path of that node>/<short name of the task>) and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
+  'Then create that new node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it. ' +
   'When the prompt\'s task is taken from a draft\'s Requirements, it is already recorded there: do not copy it again. ' +
   'A line starting with "question:" in a draft\'s Requirements is an open question about its task, left by a requirements load: resolve it with the owner before doing the task. ' +
   'When the owner answers a question, copy the answer to the same Requirements as a dated line "answer: <the question, in short> → <the answer>" and mark the question line, right after its date, with "[answered YYYY-MM-DD HH:MM] " (the answer\'s date and time): ' +
@@ -1485,7 +1486,7 @@ const CVP_RULES = [
   'After each round, close the questions it settles, add any new ones and go on with the next round until no blocking question is left.\n' +
   '4. Keep the state of the load in `.requirements-load.md` in the docs folder (R sentences, questions, answers, proposed tree): update it every round and push it to the branch, so that another thread can take over if this one stops.\n' +
   '5. Show the proposed tree, two or three levels deep: each node with its Summary, the R sentences it receives, the ones that become `draft:` lines and its local questions. Remake it with the owner\'s clarifications until the owner\'s OK; this is the breakdown, and only then write the md files. ' +
-  'Nodes that only give structure get their Summary and no status; nodes with pending tasks get `status: draft`, the owner\'s sentences word for word with the date and time of the block, and their `draft:` line.\n' +
+  'Nodes that only give structure get their Summary and no status; nodes with pending tasks get `status: draft`, the owner\'s sentences word for word with the date and time of the block, and their `draft:` line. A pending task for a node that already exists and is not a draft goes into a new draft child of it (see Drafts).\n' +
   '6. Write each local question in the Requirements of its draft node as a line "question: <question>, with its options and your recommendation" (see Drafts). ' +
   'The owner\'s answers are requirements too: copy them as Updating the docs says, and when one overrides a decision in force, mark that decision as replaced. Finally delete `.requirements-load.md`.\n' +
   '7. Requirements that come in files are kept unchanged in the repository, in the folder `sources/` at the repository root (outside the docs folder), with their original names. ' +
