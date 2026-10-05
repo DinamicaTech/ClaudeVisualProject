@@ -18,6 +18,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-03 18:00 · Versión 4 de las CVP rules: en "Requirements load", un valor, una cantidad, un ritmo o un detalle de comportamiento dentro de un nodo nunca es pregunta bloqueante (ver `context-pack/carga-de-requisitos`).
 - 2026-10-03 18:15 · Versión 5 de las CVP rules: en "Requirements load", los ficheros adjuntos forman parte del bloque, se guardan en `sources/` y los requisitos largos se reparten como resumen más referencia (ver `context-pack/carga-de-requisitos`).
 - 2026-10-03 19:20 · Versión 6 de las CVP rules: en Drafts, cómo se apunta la respuesta a una pregunta (`answer:` y marca `[answered …]`) y que una pregunta abierta de otro nodo no deja parado a un hilo (ver `context-pack/carga-de-requisitos`).
+- 2026-10-04 15:05 · En los repositorios con la Action "CVP docs", el bloque "CVP rules" se pone al día solo en la rama principal cuando CVP sube la versión de las reglas (`build/github`).
 
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
@@ -70,3 +71,4 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - After changing any node, run `node tools/build-index.mjs docs`; CI fails if `docs/.index.md` is out of date. If you change the CVP rules in `index.html`, raise `RULES_VERSION` and run `node tools/update-rules.mjs docs`; CI fails if `docs/global-rules.md` does not match.
 - 2026-10-03 18:15 · Derived from context-pack/carga-de-requisitos: ficheros adjuntos y reparto híbrido de requisitos largos (versión 5).
 - 2026-10-03 19:20 · Derived from context-pack/carga-de-requisitos: contestar preguntas y no quedarse parado por las de otro nodo (versión 6).
+- 2026-10-04 15:05 · Derived from build/github: el bloque CVP rules se actualiza automáticamente en GitHub.

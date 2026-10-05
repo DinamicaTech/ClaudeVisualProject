@@ -26,6 +26,7 @@ Después fija primero la arquitectura (`architecture`) y luego carga los requisi
 - 2026-10-03 18:15 · Los ficheros adjuntos se leen siempre como bloque de requisitos, sin que haya que pedirlo: no es arriesgado porque nada se escribe antes del OK del propietario al árbol propuesto.
 - 2026-10-03 19:35 · Sin identificador de proyecto aparte del nombre. Quedan fuera del proyecto nuevo las comprobaciones de GitHub "Docs format" e índice al día.
 - 2026-10-03 19:35 · Pedido por Ronald tras la prueba de Killer Flies (los nodos en curso seguían viéndose solo como DRAFT): si el proyecto tiene repositorio de GitHub, el esqueleto incluye la Action "Open work" (`.github/workflows/open-work.yml`), copiada tal cual de `tools/project/open-work.yml` de CVP, para que la página marque los nodos en curso como "open". La Action descarga `tools/open-work.mjs` del repositorio público de CVP, así el proyecto no guarda copia de la herramienta. Killer Flies la recibe a mano (su PR #10, Open work).
+- 2026-10-04 15:05 · Con repositorio de GitHub, el esqueleto también instala `.github/workflows/cvp-docs.yml` (desde `tools/project/cvp-docs.yml` de CVP), que crea y mantiene el índice de nodos y las reglas; solo sin repositorio hay que pulsar "Add node index". El prompt dice que la página abre el proyecto desde GitHub o desde una carpeta local.
 
 ## Requirements
 - 2026-10-03 08:13 · La opción de arrancar un nuevo proyecto es perfecta, automatiza todo el trabajo de creación de un proyecto.
@@ -48,3 +49,4 @@ Después fija primero la arquitectura (`architecture`) y luego carga los requisi
 - 2026-10-03 18:03 · Luego ya se construye todo el árbol con las dudas repartidas en los nodos.
 - 2026-10-03 19:27 · Por lo que he estado viendo, cuando un nodo trabajaba, en CVP seguía apareciendo como DRAFT
 - 2026-10-03 19:29 · A (respuesta a "¿Añadimos la marca \"open\" (Action Open work) a los proyectos nuevos y a Killer Flies?")
+- 2026-10-04 15:05 · Derived from build/github: el proyecto nuevo instala la Action "CVP docs".

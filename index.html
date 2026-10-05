@@ -213,7 +213,11 @@
   #renForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; }
   #renForm .namerow input { flex: 1; font-family: var(--mono); font-size: 12.5px; }
   #renPreview ul { margin: 4px 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
-  #renError, #movError, #rulesError { color: var(--error); }
+  #renError, #movError, #rulesError, #ghError { color: var(--error); }
+  #ghRepo, #ghDocs, #ghToken { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  #ghDialog label { display: block; margin: 12px 0 4px; }
+  #ghDialog h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+  #ghBtn.readonly { color: var(--warn); }
   .notice.blocked { background: none !important; border: 1px solid var(--error); color: var(--error) !important; }
   #movForm label.check { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; margin: 2px 0; }
   #movForm .namerow { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; margin-top: 4px; }
@@ -259,9 +263,11 @@
   <label id="editToggleLabel" hidden title="Drag a card onto another one to move it (with its descendants) under that node">
     <input type="checkbox" id="editToggle"> Tree edit mode
   </label>
-  <button id="reloadBtn" hidden title="Read the folder again (same as F5)">Reload</button>
+  <button id="ghBtn" hidden></button>
+  <button id="reloadBtn" hidden title="Read the docs again (same as F5)">Reload</button>
   <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
   <button id="openBtn" title="Open the docs folder of a project and add it to the project list">Open folder</button>
+  <button id="openGhBtn" title="Open the docs of a GitHub repository and add it to the project list">Open from GitHub</button>
 </header>
 
 <main id="app" hidden>
@@ -278,11 +284,12 @@
 
 <div id="welcome">
   <h1>Map of your project docs</h1>
-  <p>Open the <code>docs</code> folder of your repository. The page reads the Markdown files directly from your disk: nothing is copied or uploaded. Press F5 to see changes.</p>
-  <p id="unsupported" class="error" hidden>This browser cannot read a local folder. Please use Chrome or Edge.</p>
+  <p>Open the <code>docs</code> folder of your repository from GitHub, where the threads leave their work, or from a clone on your disk. The page reads the Markdown files directly: nothing is copied or uploaded. Press F5 to see changes.</p>
+  <p id="unsupported" class="error" hidden>This browser cannot read a local folder (use Chrome or Edge for that); it can still open a GitHub repository.</p>
   <p id="loadError" class="error" hidden></p>
   <div class="buttons">
     <span id="reopenBtns"></span>
+    <button id="welcomeGhBtn">Open from GitHub</button>
     <button id="welcomeOpenBtn">Open folder</button>
     <button id="welcomeNewBtn" title="Copy a prompt for a new thread that sets up a new project">New project</button>
   </div>
@@ -321,7 +328,7 @@
     <div id="renWork"></div>
     <p id="renError" hidden></p>
     <p><button class="primary" type="submit" id="renSubmit">Rename</button></p>
-    <p class="empty-note">The page writes the changes to the folder on your disk (the browser asks for permission the first time). Commit them in git as usual.</p>
+    <p class="empty-note" id="renNote">The page writes the changes to the folder on your disk (the browser asks for permission the first time). Commit them in git as usual.</p>
   </form>
 </dialog>
 
@@ -337,7 +344,7 @@
     <p id="movError" hidden></p>
     <div id="movWork"></div>
     <p><button class="primary" type="submit" id="movSubmit">Move</button></p>
-    <p class="empty-note">The page writes the changes to the folder on your disk, regenerates the node index (.index.md) if the folder has one, and reloads. Commit the changes in git as usual.</p>
+    <p class="empty-note" id="movNote">The page writes the changes to the folder on your disk, regenerates the node index (.index.md) if the folder has one, and reloads. Commit the changes in git as usual.</p>
   </form>
 </dialog>
 
@@ -349,6 +356,31 @@
     "Update rules" rewrites only its "CVP rules" section; its "Project rules" section is never changed.</p>
     <p id="rulesError" hidden></p>
     <p><button class="primary" type="button" id="rulesSubmit"></button></p>
+  </div>
+</dialog>
+
+<dialog id="ghDialog">
+  <div class="dhead"><span class="t">GitHub</span><button data-close type="button">Close</button></div>
+  <div class="dbody">
+    <div id="ghForm">
+      <h3>Open a repository</h3>
+      <label for="ghRepo">Repository</label>
+      <input id="ghRepo" placeholder="owner/name, or its link on github.com" autocomplete="off" spellcheck="false">
+      <label for="ghDocs">Docs folder</label>
+      <input id="ghDocs" placeholder="docs (leave it empty to use docs/)" autocomplete="off" spellcheck="false">
+      <p id="ghError" hidden></p>
+      <p><button class="primary" type="button" id="ghSubmit">Open</button></p>
+    </div>
+    <div id="ghTokenForm">
+      <h3>Token</h3>
+      <p id="ghTokenState"></p>
+      <label for="ghToken">Personal access token</label>
+      <input id="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+      <p><button type="button" id="ghSave">Save token</button> <button type="button" id="ghForget">Forget token</button></p>
+      <p class="empty-note">Without a token the page reads public repositories only, and Rename and Move copy a prompt for a thread instead of writing.
+      With a token it also reads private repositories and commits Rename, Move, the global rules and the node index directly to the default branch.
+      The token is kept only in this browser and sent only to api.github.com. Use a fine-grained token limited to your project repositories, with the permission "Contents: read and write".</p>
+    </div>
   </div>
 </dialog>
 
@@ -373,6 +405,7 @@ const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
+  gh: null,           // { owner, repo, branch, docs } when the project is read from GitHub (build/github)
   snapshot: null,     // { name, generated, files, openWork? } when the md files are embedded in the page
   indexText: null,    // text of the node index (.index.md) as read from the folder, or null if it has none
   openWork: null,     // parsed .open-work.md ({ updated, items }), or null when the folder has none
@@ -416,10 +449,12 @@ const idbGet = key => idb('readonly', s => s.get(key)).catch(() => null);
 const idbPut = (key, value) => idb('readwrite', s => s.put(value, key)).catch(() => {});
 
 // Project list (build/selector-de-proyectos): every docs folder opened in this browser,
-// as { id, handle, title }, and the id of the last one opened, which F5 reopens.
-// A project is its folder: a folder opened again is recognised with isSameEntry, whatever its name.
+// as { id, handle, title } (a folder on disk) or { id, gh, title } (a docs folder of a GitHub repository),
+// and the id of the last one opened, which F5 reopens.
+// A folder opened again is recognised with isSameEntry, whatever its name; a repository by owner, name and docs folder.
 let projects = [];
-const saveProjects = () => idbPut('projects', projects.map(({ id, handle, title }) => ({ id, handle, title })));
+const saveProjects = () => idbPut('projects', projects.map(({ id, handle, gh, title }) => ({ id, handle, gh, title })));
+const newProjectId = () => { let k = projects.length + 1; while (projects.some(p => p.id === 'p' + k)) k++; return 'p' + k; };
 
 async function loadProjects() {
   projects = (await idbGet('projects')) || [];
@@ -443,11 +478,9 @@ async function loadProjects() {
 
 async function addProject(dir) {
   for (const p of projects) {
-    try { if (await p.handle.isSameEntry(dir)) return p; } catch (e) { /* stale handle */ }
+    try { if (p.handle && await p.handle.isSameEntry(dir)) return p; } catch (e) { /* stale handle */ }
   }
-  let k = projects.length + 1;
-  while (projects.some(p => p.id === 'p' + k)) k++;
-  const p = { id: 'p' + k, handle: dir, title: dir.name };
+  const p = { id: newProjectId(), handle: dir, title: dir.name };
   projects.push(p);
   await saveProjects();
   return p;
@@ -483,6 +516,10 @@ async function docsFolderOf(dir) {
 
 // Opens a project of the list, asking the browser for permission to read its folder if needed.
 async function openProject(p) {
+  if (p.gh) {
+    await idbPut('current', p.id);
+    return openRepo(p.gh, p.id);
+  }
   try {
     if (await p.handle.queryPermission({ mode: 'read' }) !== 'granted' &&
         await p.handle.requestPermission({ mode: 'read' }) !== 'granted') { renderProjectSel(); return; }
@@ -496,7 +533,8 @@ async function openProject(p) {
 
 async function removeProject(id) {
   const p = projects.find(x => x.id === id);
-  if (!p || !confirm(`Remove "${p.title}" from the project list? Its folder is not touched; you can open it again with Open folder.`)) { renderProjectSel(); return; }
+  const how = p && p.gh ? 'Nothing on GitHub is touched; you can open it again with Open from GitHub.' : 'Its folder is not touched; you can open it again with Open folder.';
+  if (!p || !confirm(`Remove "${p.title}" from the project list? ${how}`)) { renderProjectSel(); return; }
   projects = projects.filter(x => x !== p);
   await saveProjects();
   try { localStorage.removeItem('cvp:view:' + id); } catch (e) { /* storage unavailable */ }
@@ -506,21 +544,22 @@ async function removeProject(id) {
   location.reload();
 }
 
-const ADD = '+add', REMOVE = '+remove';
+const ADD = '+add', ADD_GH = '+github', REMOVE = '+remove';
 function renderProjectSel() {
   const sel = $('projectSel');
   sel.hidden = !!state.snapshot || !projects.length;
-  $('openBtn').hidden = !sel.hidden;
+  $('openBtn').hidden = $('openGhBtn').hidden = !sel.hidden || !!state.snapshot;
   if (sel.hidden) return;
   const cur = projects.find(p => p.id === state.projectId);
-  sel.innerHTML = projects.map(p => `<option value="${esc(p.id)}">${esc(p.title)}</option>`).join('') +
-    '<option disabled>──────────</option><option value="' + ADD + '">Open folder…</option>' +
+  sel.innerHTML = projects.map(p => `<option value="${esc(p.id)}">${esc(p.title)}${p.gh ? ' · GitHub' : ''}</option>`).join('') +
+    '<option disabled>──────────</option><option value="' + ADD_GH + '">Open from GitHub…</option><option value="' + ADD + '">Open folder…</option>' +
     (cur ? `<option value="${REMOVE}">Remove "${esc(cur.title)}" from the list</option>` : '');
   sel.value = state.projectId;
 }
 $('projectSel').onchange = e => {
   const v = e.target.value;
   if (v === ADD) { renderProjectSel(); pickFolder(); }
+  else if (v === ADD_GH) { renderProjectSel(); openGitHubDialog(); }
   else if (v === REMOVE) removeProject(state.projectId);
   else { const p = projects.find(x => x.id === v); if (p) openProject(p); }
 };
@@ -535,6 +574,7 @@ async function syncProjectTitle() {
 
 async function openDir(dir, id) {
   const sameProject = state.dir && state.projectId === id;
+  state.gh = null;
   state.dir = dir;
   state.rootName = dir.name;
   state.projectId = id;
@@ -557,10 +597,10 @@ async function readFolder(dir) {
 
 async function reload() {
   try {
-    const files = state.snapshot ? state.snapshot.files : await readFolder(state.dir);
-    state.nodes = buildModel(files, state.rootName);
-    state.openWork = parseOpenWork(state.snapshot ? state.snapshot.openWork : await readOpenWork(state.dir));
-    state.indexText = state.snapshot ? null : await readTextFile(state.dir, INDEX_FILE);
+    const d = state.snapshot ? { files: state.snapshot.files, openWork: state.snapshot.openWork, indexText: null } : await readDocs();
+    state.nodes = buildModel(d.files, state.rootName);
+    state.openWork = parseOpenWork(d.openWork);
+    state.indexText = d.indexText;
   } catch (e) {
     showLoadError(e);
     return;
@@ -576,9 +616,10 @@ async function reload() {
   $('viewSeg').hidden = false;
   $('loadReqBtn').hidden = false;
   for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
-  $('openBtn').hidden = !!state.snapshot || projects.length > 0; // the project list has its own "Open folder…"
-  $('folderName').textContent = docsPrefix() +
+  $('openBtn').hidden = $('openGhBtn').hidden = !!state.snapshot || projects.length > 0; // the project list has its own "Open…" entries
+  $('folderName').textContent = (state.gh ? ghLabel(state.gh) + ' · ' : '') + (docsPrefix() || '/') +
     (state.snapshot ? ` · snapshot of ${state.snapshot.generated}` : '');
+  renderGhButton();
   document.title = state.nodes.get('').title + ' · Claude Visual Project';
   if (!state.snapshot) syncProjectTitle();
   renderOpenWorkNote();
@@ -591,7 +632,7 @@ function showLoadError(e) {
   $('app').hidden = true;
   $('welcome').hidden = false;
   $('loadError').hidden = false;
-  $('loadError').textContent = 'Could not read the folder: ' + (e && e.message || e);
+  $('loadError').textContent = (state.gh ? `Could not read ${ghLabel(state.gh)}: ` : 'Could not read the folder: ') + (e && e.message || e);
 }
 
 // View state (selection, expanded nodes, reference switch) survives F5.
@@ -630,12 +671,14 @@ function restoreViewState() {
 // ---------------------------------------------------------------------------
 // Open work (viewer/map/nodos-ocupados): .open-work.md in the docs folder, written on GitHub by
 // tools/open-work.mjs, lists the branches and pull requests that change md files of the folder.
-// The page only reads it, so it is as fresh as the last git pull of the folder.
+// The page only reads it: from GitHub it is current at every Reload; from a folder, as fresh as its last git pull.
 // ---------------------------------------------------------------------------
 
 const OPEN_WORK_FILE = '.open-work.md';
 // The Open work action a new project installs: it downloads tools/open-work.mjs from CVP's public repository.
 const OPEN_WORK_ACTION_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/tools/project/open-work.yml';
+// The CVP docs action a new project installs (build/github): it keeps the node index and the CVP rules up to date on GitHub.
+const CVP_DOCS_ACTION_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/tools/project/cvp-docs.yml';
 
 async function readTextFile(dir, name) {
   try { return await (await (await dir.getFileHandle(name)).getFile()).text(); }
@@ -679,15 +722,18 @@ function renderOpenWorkNote() {
   if (!w) return;
   el.textContent = `· open work: ${w.items.length}` + (w.updated ? ` · updated ${w.updated}` : '');
   el.title = state.snapshot ? 'Open work as it was when this snapshot was made.'
+    : state.gh ? `From ${OPEN_WORK_FILE} on GitHub, as of the last Reload (F5).`
     : `From ${OPEN_WORK_FILE}, as of the last git pull of this folder. To update it, double-click Refresh.cmd in the repository and press F5.`;
 }
 
-// One line per open work item, with links to its pull request and its thread.
-function openWorkList(items) {
+// One line per open work item, with links to its pull request and its thread; with `wip`
+// (a project read from GitHub), also a button that shows the node's md as that branch leaves it.
+function openWorkList(items, wip = false) {
   return '<ul>' + items.map(i => '<li>' +
     (i.pr && isLink(i.pr.url) ? `<a href="${esc(i.pr.url)}" target="_blank" rel="noopener">${esc(workLabel(i))}</a>` : esc(workLabel(i))) +
     (i.since ? ` <span class="when">since ${esc(i.since)}</span>` : '') +
     (isLink(i.thread) ? ` · <a href="${esc(i.thread)}" target="_blank" rel="noopener">Open thread</a>` : ' · <span class="when">no thread link</span>') +
+    (wip ? ` · <button class="link" data-wip="${esc(i.branch)}">View in-progress version</button>` : '') +
     '</li>').join('') + '</ul>';
 }
 
@@ -701,6 +747,270 @@ function openWorkCheck(changes) {
     html: `<p class="empty-note">No open work changes these files${state.openWork.updated ? ` (open work updated ${esc(state.openWork.updated)})` : ''}.</p>` };
   return { blocked: true,
     html: '<div class="notice blocked">Open work changes some of these files, so this is blocked until it is merged or closed:' + openWorkList(busy) + '</div>' };
+}
+
+// ---------------------------------------------------------------------------
+// GitHub (build/github): a project can be the docs folder of a GitHub repository instead of a folder on disk.
+// The page reads the default branch through GitHub's API. Without a token: public repositories only, and
+// Rename and Move copy a prompt for a thread. With a token (kept in this browser only): private repositories
+// too, and the page's changes are committed directly to the default branch.
+// ---------------------------------------------------------------------------
+
+const GH_API = 'https://api.github.com';
+const TOKEN_KEY = 'cvp:github-token';
+function ghToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+function setGhToken(t) {
+  try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) { /* storage unavailable */ }
+}
+const ghWrites = () => !!(state.gh && ghToken());
+const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+const ghRepoApi = g => `/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}`;
+const ghLabel = g => `${g.owner}/${g.repo}`;
+const ghPath = (g, p) => (g.docs ? g.docs + '/' : '') + p;   // docs-relative path -> repository path
+
+async function ghFetch(path, { method = 'GET', body = null, raw = false } = {}) {
+  const headers = { Accept: raw ? 'application/vnd.github.raw' : 'application/vnd.github+json' };
+  const token = ghToken();
+  if (token) headers.Authorization = 'Bearer ' + token;
+  if (body) headers['Content-Type'] = 'application/json';
+  let r;
+  try { r = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' }); }
+  catch (e) { throw new Error('GitHub cannot be reached. Check the connection.'); }
+  if (r.ok) return raw ? r.text() : r.json();
+  let msg = '';
+  try { msg = (await r.json()).message || ''; } catch (e) { /* not json */ }
+  const err = new Error(ghErrorText(r, msg));
+  err.status = r.status;
+  throw err;
+}
+function ghErrorText(r, msg) {
+  if (r.status === 401) return 'GitHub rejected the token (expired or revoked). Change it with the GitHub button.';
+  if ((r.status === 403 || r.status === 429) && r.headers.get('x-ratelimit-remaining') === '0')
+    return 'The requests GitHub allows per hour without a token are used up. Add a token with the GitHub button, or wait.';
+  if (r.status === 404) return ghToken() ? 'Not found on GitHub, or the token has no access to it.'
+    : 'Not found on GitHub. If the repository is private, add a token with the GitHub button.';
+  if (r.status === 403 && ghToken()) return 'GitHub refused it: the token needs the permission "Contents: read and write" on this repository.' + (msg ? ` (${msg})` : '');
+  return `GitHub answered ${r.status}${msg ? ': ' + msg : ''}.`;
+}
+
+// The default branch as it is now: its commit, its tree, and every file of the docs folder (paths relative to it).
+async function ghState(g) {
+  const b = await ghFetch(`${ghRepoApi(g)}/branches/${encPath(g.branch)}`);
+  const head = b.commit.sha, tree = b.commit.commit.tree.sha;
+  const t = await ghFetch(`${ghRepoApi(g)}/git/trees/${tree}?recursive=1`);
+  if (t.truncated) throw new Error('The repository is too big for GitHub to list it in one request.');
+  const pre = g.docs ? g.docs + '/' : '';
+  const entries = t.tree.filter(e => e.type === 'blob' && e.path.startsWith(pre))
+    .map(e => ({ path: e.path.slice(pre.length), sha: e.sha, mode: e.mode }));
+  return { head, tree, entries };
+}
+
+// Without a token files come from raw.githubusercontent.com, which does not count against the API's hourly limit.
+async function rawFile(g, ref, path, fresh = false) {
+  let r;
+  try {
+    r = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/${encPath(ref)}/${encPath(ghPath(g, path))}`,
+      fresh ? { cache: 'no-store' } : {});
+  } catch (e) { throw new Error('GitHub cannot be reached. Check the connection.'); }
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub answered ${r.status} for ${ghPath(g, path)}.`);
+  return r.text();
+}
+
+const blobCache = new Map();   // blob sha -> text: each version of a file is downloaded once
+async function ghBlob(g, head, e) {
+  if (blobCache.has(e.sha)) return blobCache.get(e.sha);
+  const text = ghToken() ? await ghFetch(`${ghRepoApi(g)}/git/blobs/${e.sha}`, { raw: true }) : await rawFile(g, head, e.path);
+  if (text == null) throw new Error(`${ghPath(g, e.path)} could not be read from GitHub.`);
+  blobCache.set(e.sha, text);
+  return text;
+}
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const k = next++; out[k] = await fn(items[k]); } };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+// Same files as readFolder: every .md, skipping hidden entries and node_modules.
+const isDocMd = p => /\.md$/i.test(p) && !p.split('/').some(seg => seg.startsWith('.') || seg === 'node_modules');
+
+// The docs as they are now on GitHub: ghState plus the md files, the open work and the node index.
+async function ghRead(g) {
+  const s = await ghState(g);
+  const files = await mapLimit(s.entries.filter(e => isDocMd(e.path)), 8, async e => ({ path: e.path, text: await ghBlob(g, s.head, e) }));
+  const hidden = async name => { const e = s.entries.find(x => x.path === name); return e ? ghBlob(g, s.head, e) : null; };
+  return { ...s, files, openWork: await hidden(OPEN_WORK_FILE), indexText: await hidden(INDEX_FILE) };
+}
+
+// The md files of the open project, with its open work and node index: from GitHub, or from the folder.
+async function readDocs() {
+  if (state.gh) return ghRead(state.gh);
+  return { files: await readFolder(state.dir), openWork: await readOpenWork(state.dir), indexText: await readTextFile(state.dir, INDEX_FILE) };
+}
+
+// One commit on the default branch with every change, on top of `base` (the ghRead the changes were planned on).
+// ops, with paths relative to the docs folder: { path, text } writes a file, { path, sha, mode } puts an
+// existing file there, { path, del: true } deletes it.
+async function ghCommit(base, ops, message) {
+  const g = state.gh;
+  const tree = ops.map(o => ({ path: ghPath(g, o.path), mode: o.mode || '100644', type: 'blob',
+    ...(o.del ? { sha: null } : o.text != null ? { content: o.text } : { sha: o.sha }) }));
+  const t = await ghFetch(`${ghRepoApi(g)}/git/trees`, { method: 'POST', body: { base_tree: base.tree, tree } });
+  const c = await ghFetch(`${ghRepoApi(g)}/git/commits`, { method: 'POST', body: { message, tree: t.sha, parents: [base.head] } });
+  try {
+    await ghFetch(`${ghRepoApi(g)}/git/refs/heads/${encPath(g.branch)}`, { method: 'PATCH', body: { sha: c.sha, force: false } });
+  } catch (e) {
+    if (e.status === 422 && /fast.?forward/i.test(e.message)) throw new Error(`${g.branch} changed on GitHub in the meantime. Press Reload and try again.`);
+    throw e;
+  }
+}
+
+// The node index follows every change the page commits, if the folder has one.
+function indexOps(base, ops) {
+  if (base.indexText == null) return [];
+  const files = new Map(base.files.map(f => [f.path, f.text]));
+  for (const o of ops) {
+    if (!isDocMd(o.path)) continue;
+    if (o.del) files.delete(o.path);
+    else files.set(o.path, o.text != null ? o.text : blobCache.get(o.sha) ?? '');
+  }
+  const text = nodeIndex(buildModel([...files].map(([path, t]) => ({ path, text: t })), state.rootName));
+  return text === base.indexText.replace(/\r\n?/g, '\n') ? [] : [{ path: INDEX_FILE, text }];
+}
+
+// The commit of a rename or a move: the planned md changes, the other files of a moved folder put
+// at their new place, and the old files deleted.
+function moveOps(entries, changes, from, to) {
+  const ops = [], done = new Set();
+  for (const c of changes) {
+    ops.push({ path: c.newPath, text: c.text });
+    if (c.newPath !== c.path) ops.push({ path: c.path, del: true });
+    done.add(c.path);
+  }
+  if (from !== to && from !== '') for (const e of entries) {
+    if (done.has(e.path) || !e.path.startsWith(from + '/')) continue;
+    ops.push({ path: to + e.path.slice(from.length), sha: e.sha, mode: e.mode }, { path: e.path, del: true });
+  }
+  return ops;
+}
+// A file or folder already at node path p (case-insensitive, as on Windows).
+const ghTaken = (entries, p) => { const l = p.toLowerCase(); return entries.some(e => { const x = e.path.toLowerCase(); return x === l + '.md' || x.startsWith(l + '/'); }); };
+
+// Without a token the page cannot write to GitHub: Rename and Move copy a prompt for a thread that makes the change.
+function changePrompt(task, changes, extra = []) {
+  const p = docsPrefix();
+  const moved = changes.filter(c => c.newPath !== c.path), edited = changes.filter(c => c.newPath === c.path);
+  return [
+    `Project: the docs folder ${p || '(repository root)'} of the GitHub repository ${ghLabel(state.gh)}.`, '',
+    ...rulesLines(), '',
+    `Task: ${task}`,
+    'The owner decided it in the Claude Visual Project page, which could not write it without a GitHub token. Do it as the page does: ' +
+    'rewrite every reference to the node paths that change inside the docs folder (depends_on, replaced_by, "[replaced by ...]" markers and relative md links), ' +
+    'move the other files of a moved folder with it, and regenerate the node index if the folder has one. The breakdown is the list below.',
+    ...extra,
+    ...(moved.length ? ['', 'Files that move:', ...moved.map(c => `- ${p + c.path} → ${p + c.newPath}`)] : []),
+    ...(edited.length ? ['', 'Files edited in place:', ...edited.map(c => `- ${p + c.path}`)] : []),
+  ].join('\n');
+}
+
+// The dialog notes and submit buttons of Rename and Move say where the change goes.
+function writeTarget(note, submit, verb, localNote) {
+  submit.textContent = state.gh && !ghToken() ? 'Copy prompt' : verb;
+  note.textContent = !state.gh ? localNote
+    : ghToken() ? `The page commits the changes directly to ${state.gh.branch} of ${ghLabel(state.gh)}, with the node index if the folder has one, and reloads.`
+    : `Without a GitHub token the page cannot write to ${ghLabel(state.gh)}: the button copies a prompt for a thread that makes this change.`;
+}
+
+// In-progress version (viewer/map/nodos-ocupados): the node's md as an open branch leaves it.
+async function showWip(n, branch) {
+  const g = state.gh;
+  try {
+    const text = ghToken()
+      ? await ghFetch(`${ghRepoApi(g)}/contents/${encPath(ghPath(g, n.file))}?ref=${encodeURIComponent(branch)}`, { raw: true })
+          .catch(e => { if (e.status === 404) return null; throw e; })
+      : await rawFile(g, branch, n.file, true);
+    if (text == null) return toast(`${repoPath(n)} is not in branch ${branch}: that work moves or deletes it.`);
+    showDoc(`${repoPath(n)} · in progress on ${branch}`, n, text);
+  } catch (e) {
+    toast('Could not read the branch: ' + (e && e.message || e));
+  }
+}
+
+async function openRepo(g, id) {
+  const sameProject = state.gh && state.projectId === id;
+  state.dir = null;
+  state.gh = { ...g };
+  state.rootName = g.docs ? lastSegment(g.docs) : g.repo;
+  state.projectId = id;
+  if (!sameProject) restoreViewState();
+  await reload();
+}
+
+async function addGhProject(g) {
+  const same = p => p.gh && p.gh.owner.toLowerCase() === g.owner.toLowerCase() && p.gh.repo.toLowerCase() === g.repo.toLowerCase() && p.gh.docs === g.docs;
+  let p = projects.find(same);
+  if (p) { p.gh = g; }
+  else { p = { id: newProjectId(), gh: g, title: g.repo }; projects.push(p); }
+  await saveProjects();
+  return p;
+}
+
+function renderGhButton() {
+  const b = $('ghBtn');
+  b.hidden = !state.gh;
+  if (!state.gh) return;
+  const t = !!ghToken();
+  b.textContent = t ? 'GitHub' : 'Read-only';
+  b.className = t ? '' : 'readonly';
+  b.title = t ? 'Reading and writing on GitHub with your token. Click to change it or to open another repository.'
+    : 'No GitHub token: public repositories only, and Rename and Move copy a prompt for a thread. Click to add a token.';
+}
+
+function openGitHubDialog() {
+  $('ghError').hidden = true;
+  $('ghToken').value = '';
+  $('ghTokenState').textContent = ghToken() ? 'A token is saved in this browser.' : 'No token saved in this browser.';
+  $('ghDialog').showModal();
+  (state.gh && !ghToken() ? $('ghToken') : $('ghRepo')).focus();
+}
+
+async function openFromGitHub() {
+  const fail = msg => { $('ghError').hidden = false; $('ghError').textContent = msg; };
+  const m = $('ghRepo').value.trim().replace(/\.git$/i, '')
+    .match(/^(?:https?:\/\/github\.com\/)?([\w.-]+)\/([\w.-]+)(?:\/tree\/[^/]+\/(.+?))?\/?$/i);
+  if (!m) return fail('Write the repository as owner/name, or paste its link on github.com.');
+  $('ghError').hidden = true;
+  $('ghSubmit').disabled = true;
+  try {
+    const r = await ghFetch(`/repos/${encodeURIComponent(m[1])}/${encodeURIComponent(m[2])}`);
+    const g = { owner: r.owner.login, repo: r.name, branch: r.default_branch, docs: '' };
+    const all = (await ghState(g)).entries.map(e => e.path.toLowerCase());
+    const docs = ($('ghDocs').value.trim() || m[3] || 'docs').replace(/^\/+|\/+$/g, '');
+    const readme = (docs ? docs + '/' : '') + 'readme.md';
+    if (!all.includes(readme.toLowerCase()))
+      return fail(`${ghLabel(g)} has no ${docs ? docs + '/' : ''}README.md on ${g.branch}. Write its docs folder above.`);
+    g.docs = docs;
+    $('ghDialog').close();
+    await openProject(await addGhProject(g));
+  } catch (e) {
+    fail(e && e.message || String(e));
+  } finally {
+    $('ghSubmit').disabled = false;
+  }
+}
+
+// The dialog stays open, so a repository can be opened right after saving the token.
+async function saveGhToken(t) {
+  setGhToken(t.trim());
+  blobCache.clear();
+  $('ghToken').value = '';
+  $('ghTokenState').textContent = ghToken() ? 'Token saved in this browser.' : 'No token saved in this browser.';
+  renderGhButton();
+  toast(t ? 'Token saved in this browser.' : 'Token forgotten.');
+  if (state.gh) await reload();
 }
 
 // ---------------------------------------------------------------------------
@@ -732,15 +1042,16 @@ function nowStamp() {
 }
 
 async function exportHtml() {
-  let files;
+  let files, openWork;
   try {
-    files = (await readFolder(state.dir)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+    const d = await readDocs();
+    files = d.files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+    openWork = d.openWork;
   } catch (e) {
-    toast('Could not read the folder: ' + (e && e.message || e));
+    toast('Could not read the docs: ' + (e && e.message || e));
     return;
   }
   const page = PAGE_TEMPLATE.cloneNode(true);
-  const openWork = await readOpenWork(state.dir);
   page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files, ...(openWork ? { openWork } : {}) });
   const blob = new Blob(['<!doctype html>\n' + page.outerHTML + '\n'], { type: 'text/html' });
   const a = document.createElement('a');
@@ -1201,6 +1512,7 @@ function updatedRulesFile(text, stamp) {
 // Path of the docs folder from the repository root, with a trailing slash: the root node's docs_path,
 // or else the name of the opened folder, which is then assumed to be at the root of the repository.
 function docsPrefix() {
+  if (state.gh) return state.gh.docs ? state.gh.docs + '/' : '';
   const root = state.nodes && state.nodes.get('');
   const p = (root && root.docsPath) || state.rootName;
   return p ? p + '/' : '';
@@ -1368,7 +1680,7 @@ function newProjectPack() {
     'Work in these steps, in order:',
     '1. Ask the owner, in one message, and wait for the answers: the name of the project (the title of the root node); its GitHub repository (optional); the folder on their disk where it will live; ' +
     'a short description (the root node\'s Summary); and the files with its requirements, if any, attached to the reply. ' +
-    'The owner opens the docs in the CVP page from a folder on their own disk, so the project must end up there. If you work on the owner\'s machine, use that folder. ' +
+    'The owner opens the docs in the CVP page from the GitHub repository or from a folder on their own disk, so the project must end up in one of them. If you work on the owner\'s machine, use that folder. ' +
     'If you work in a remote or cloud environment you need the GitHub repository: if the owner gave none, ask them to create an empty one (private unless they prefer otherwise) and send you its link, since you may not be able to create it; ' +
     'when the skeleton is pushed, the owner clones it into that folder: tell them the command (`git clone <url> <folder>`) or, if you can run commands on their machine, clone it there. ' +
     'The docs folder is `docs` at the repository root unless the owner says otherwise.',
@@ -1381,6 +1693,8 @@ function newProjectPack() {
     '   - The attached files, unchanged, in `sources/` at the repository root (see "Requirements load").',
     '   - If the project has a GitHub repository: `.github/workflows/open-work.yml`, copied as it is from ' + OPEN_WORK_ACTION_URL +
     ' (change only its `DOCS: docs` line if the docs folder is elsewhere). It keeps <docs>/.open-work.md up to date with the branches and pull requests at work, so the page marks those nodes as "open".',
+    '   - If the project has a GitHub repository: `.github/workflows/cvp-docs.yml`, copied as it is from ' + CVP_DOCS_ACTION_URL +
+    ' (same `DOCS: docs` line). It keeps the node index (<docs>/.index.md) and the CVP rules of <docs>/global-rules.md up to date on the default branch.',
     '   Ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
     (from ? `Propose by default ${from}. ` : '') + 'If you cannot reach that repository, ask the owner where it is.',
     '   Put the skeleton on the default branch (commit, push and merge if you used a branch), make sure the owner has it on disk (step 1) and tell them to open its docs folder in the CVP page, so they see the tree grow from now on.',
@@ -1389,7 +1703,7 @@ function newProjectPack() {
     'Create the node `architecture`, child of the root, with one decision per point agreed and your reasons; points left open go as "question:" lines in its Requirements, with `status: draft`.',
     '5. Then load the requirements on the tree, following the "Requirements load" rule of the global rules: its blocking questions now only concern the tree, since the architecture is settled; ' +
     'every other question goes as a "question:" line in its node.',
-    '6. The new repository has no tool to build the node index (.index.md): when you finish, tell the owner to press "Add node index" in the CVP page.', '',
+    '6. The new repository has no tool to build the node index (.index.md): with a GitHub repository the CVP docs action builds it on every push to the default branch; without one, tell the owner, when you finish, to press "Add node index" in the CVP page.', '',
     'From step 3 on, follow the CVP rules of the global rules file below, as in any project.', '',
     'Root node (<docs>/README.md):', '````markdown', '---', 'title: <project name>', 'depends_on: []', 'threads:',
     '  - New project | <link to this thread, if you can tell it>', '---',
@@ -2160,7 +2474,7 @@ function renderCard() {
   if (n.warnings.length) h += '<ul class="warnings">' + n.warnings.map(w => `<li>${esc(w)}</li>`).join('') + '</ul>';
   const busy = openWorkOf(n);
   if (busy.length) h += '<div class="openwork"><b>Open work</b> changes this node' +
-    (state.openWork.updated ? ` <span class="when">(updated ${esc(state.openWork.updated)})</span>` : '') + ':' + openWorkList(busy) + '</div>';
+    (state.openWork.updated ? ` <span class="when">(updated ${esc(state.openWork.updated)})</span>` : '') + ':' + openWorkList(busy, !!state.gh) + '</div>';
 
   h += '<section><h2>Threads</h2>' + (n.threads.length
     ? '<ul class="links">' + n.threads.map(t => /^https?:\/\//i.test(t.link)
@@ -2205,6 +2519,7 @@ function renderCard() {
   $('openThreadBtn').onclick = () => openLastThread(n);
   if (!state.snapshot) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
+  for (const b of card.querySelectorAll('[data-wip]')) b.onclick = () => showWip(n, b.dataset.wip);
 }
 
 // "Open thread" opens the thread of the node's open work, if a branch or pull request is changing it,
@@ -2247,12 +2562,13 @@ function openSubTask(n) {
   };
 }
 
-function openDoc(n) {
-  $('docTitle').textContent = repoPath(n);
+function openDoc(n) { showDoc(repoPath(n), n, n.text); }
+function showDoc(title, n, text) {
+  $('docTitle').textContent = title;
   // Front matter is shown as-is in a code block; the rest is rendered.
-  const fm = n.text.replace(/\r\n?/g, '\n').match(/^---\n[\s\S]*?\n---(\n|$)/);
+  const fm = text.replace(/\r\n?/g, '\n').match(/^---\n[\s\S]*?\n---(\n|$)/);
   const head = fm ? `<pre><code>${esc(fm[0].trim())}</code></pre>` : '';
-  withBase(n, () => { $('docBody').innerHTML = head + renderMarkdown(fm ? n.text.replace(/\r\n?/g, '\n').slice(fm[0].length) : n.text); });
+  withBase(n, () => { $('docBody').innerHTML = head + renderMarkdown(fm ? text.replace(/\r\n?/g, '\n').slice(fm[0].length) : text); });
   $('docDialog').showModal();
   $('docBody').parentElement.scrollTop = 0;
 }
@@ -2535,6 +2851,7 @@ function openRename(n) {
     updateRenamePreview(n);
   };
   $('renForm').onsubmit = e => { e.preventDefault(); doRename(n); };
+  writeTarget($('renNote'), $('renSubmit'), 'Rename', 'The page writes the changes to the folder on your disk (the browser asks for permission the first time). Commit them in git as usual.');
   updateRenamePreview(n);
   $('renDialog').showModal();
   (n.file ? $('renTitle') : $('renName')).select();
@@ -2544,19 +2861,33 @@ async function doRename(n) {
   const title = n.file ? $('renTitle').value.trim() : null;
   const from = n.path, to = renameTarget(n);
   const fail = msg => { $('renError').hidden = false; $('renError').textContent = msg; };
+  if (state.gh && !ghToken()) {
+    const changes = planRename(currentFiles(), n, title, to);
+    const task = `rename the node ${from || '(root)'} "${n.title}"` + (title !== null && title !== n.title ? `: new title "${title}"` : '') +
+      (to !== from ? `${title !== null && title !== n.title ? ',' : ':'} new node path ${to}` : '') + '.';
+    $('renDialog').close();
+    return copyText(changePrompt(task, changes), 'Rename prompt', 'Paste it in a new thread: without a GitHub token the page cannot write to the repository.');
+  }
   try {
-    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+    if (!state.gh && await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
       return fail('The browser did not grant permission to write to the folder.');
     $('renSubmit').disabled = true;
 
-    // Plan again from what is on disk now, not from what was loaded.
-    const files = await readFolder(state.dir);
+    // Plan again from what is on disk (or on GitHub) now, not from what was loaded.
+    const d = state.gh ? await ghRead(state.gh) : { files: await readFolder(state.dir) };
+    if (state.gh) state.openWork = parseOpenWork(d.openWork);
+    const files = d.files;
     const fresh = buildModel(files, state.rootName).get(from);
-    if (!fresh) return fail('This node no longer exists on disk. Press Reload.');
+    if (!fresh) return fail(`This node no longer exists ${state.gh ? 'on GitHub' : 'on disk'}. Press Reload.`);
     const changes = planRename(files, fresh, title, to);
     if (openWorkCheck(changes).blocked) return fail('Open work changes some of these files. Wait until it is merged or closed.');
 
-    if (to !== from) {
+    if (state.gh) {
+      if (to !== from && ghTaken(d.entries, to)) return fail(`${docsPrefix() + to} already exists.`);
+      const ops = moveOps(d.entries, changes, from, to);
+      await ghCommit(d, [...ops, ...indexOps(d, ops)], `Rename ${from || 'the root node'}` + (to !== from ? ` to ${to}` : '') +
+        (title !== null && title !== fresh.title ? ` (title "${title}")` : '') + ', from Claude Visual Project');
+    } else if (to !== from) {
       const parentDir = await dirAt(parentPathOf(from), false);
       const oldName = lastSegment(from), newName = lastSegment(to);
       const clash = await entryExists(parentDir, newName) || await entryExists(parentDir, newName + '.md');
@@ -2571,7 +2902,7 @@ async function doRename(n) {
     } else {
       for (const c of changes) await writeFileAt(c.newPath, c.text);
     }
-    await refreshIndex();
+    if (!state.gh) await refreshIndex();
 
     // Keep the view where it was, under the new paths.
     const remap = p => movePath(p, from, to) ?? p;
@@ -2581,9 +2912,10 @@ async function doRename(n) {
     $('renDialog').close();
     await reload();
     select(to, true);
-    toast(`Renamed. ${changes.length} file${changes.length === 1 ? '' : 's'} changed on disk; commit them in git.`);
+    toast(`Renamed. ${changes.length} file${changes.length === 1 ? '' : 's'} changed ` +
+      (state.gh ? `and committed to ${state.gh.branch} on GitHub.` : 'on disk; commit them in git.'));
   } catch (e) {
-    fail('Could not finish the rename: ' + (e && e.message || e) + '. Press Reload and check the folder.');
+    fail('Could not finish the rename: ' + (e && e.message || e) + (state.gh ? '' : '. Press Reload and check the folder.'));
   } finally {
     $('renSubmit').disabled = false;
   }
@@ -2697,6 +3029,7 @@ function openMove(n, t) {
   $('movName').oninput = updateMovePreview;
   $('movForm').onsubmit = e => { e.preventDefault(); doMove(); };
   $('movError').hidden = true;
+  writeTarget($('movNote'), $('movSubmit'), 'Move', 'The page writes the changes to the folder on your disk, regenerates the node index (.index.md) if the folder has one, and reloads. Commit the changes in git as usual.');
   updateMovePreview();
   $('movDialog').showModal();
   $('movName').focus();
@@ -2707,35 +3040,55 @@ async function doMove() {
   const name = $('movName').value.trim(), keep = n.file ? keptDeps() : [];
   const from = n.path, to = childPath(t, name);
   const fail = msg => { $('movError').hidden = false; $('movError').textContent = msg; };
+  if (state.gh && !ghToken()) {
+    const convert = t.file && !isReadme(t.file) ? t.file : null;
+    const addDeps = keep.filter(p => state.nodes.has(p));
+    const changes = planChanges(currentFiles(), n, from, to, { convert, addDeps });
+    const extra = [
+      ...(convert ? [`"${t.title}" is a single file, so it becomes a folder to hold the node: ${docsPrefix() + convert} moves to ${docsPrefix() + t.path}/README.md (same node path).`] : []),
+      ...(addDeps.length ? [`Add to the moved node's depends_on the dependencies it stops inheriting and the owner keeps: ${addDeps.join(', ')}.`] : []),
+    ];
+    $('movDialog').close();
+    return copyText(changePrompt(`move the node ${from} "${n.title}" with its descendants under ${t.path || '(root)'} "${t.title}", as ${to}.`, changes, extra),
+      'Move prompt', 'Paste it in a new thread: without a GitHub token the page cannot write to the repository.');
+  }
   try {
-    if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+    if (!state.gh && await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
       return fail('The browser did not grant permission to write to the folder.');
     $('movSubmit').disabled = true;
 
-    // Plan again from what is on disk now, not from what was loaded.
-    const files = await readFolder(state.dir);
+    // Plan again from what is on disk (or on GitHub) now, not from what was loaded.
+    const d = state.gh ? await ghRead(state.gh) : { files: await readFolder(state.dir) };
+    if (state.gh) state.openWork = parseOpenWork(d.openWork);
+    const files = d.files;
     const model = buildModel(files, state.rootName);
     const fn = model.get(from), ft = model.get(t.path);
     const problem = moveTargetProblem(fn, ft) || (ft && moveNameProblem(fn, ft, name));
-    if (problem) return fail(problem + ' Press Reload if the folder changed.');
+    if (problem) return fail(problem + ` Press Reload if the ${state.gh ? 'docs' : 'folder'} changed.`);
     const convert = ft.file && !isReadme(ft.file) ? ft.file : null;
     const changes = planChanges(files, fn, from, to, { convert, addDeps: keep.filter(p => model.has(p)) });
     if (openWorkCheck(changes).blocked) return fail('Open work changes some of these files. Wait until it is merged or closed.');
 
-    const oldParent = await dirAt(parentPathOf(from), false);
-    const target = await dirAt(ft.path, true);
-    const oldName = lastSegment(from);
-    const clash = await entryExists(target, name) || await entryExists(target, name + '.md');
-    if (clash) return fail(`${clash} already exists in that folder.`);
-    // Copy first, delete last: an error half-way leaves the old files in place.
-    const oldFolder = await oldParent.getDirectoryHandle(oldName).catch(() => null);
-    if (oldFolder) await copyDir(oldFolder, await target.getDirectoryHandle(name, { create: true }));
-    for (const c of changes) await writeFileAt(c.newPath, c.text);
-    const leaf = files.find(f => /\.md$/i.test(f.path) && f.path.slice(0, -3) === from);
-    if (leaf) await oldParent.removeEntry(lastSegment(leaf.path));
-    if (oldFolder) await oldParent.removeEntry(oldName, { recursive: true });
-    if (convert) await (await dirAt(parentPathOf(ft.path), false)).removeEntry(lastSegment(convert));
-    await refreshIndex();
+    if (state.gh) {
+      if (ghTaken(d.entries, to)) return fail(`${docsPrefix() + to} already exists.`);
+      const ops = moveOps(d.entries, changes, from, to);
+      await ghCommit(d, [...ops, ...indexOps(d, ops)], `Move ${from} to ${to}, from Claude Visual Project`);
+    } else {
+      const oldParent = await dirAt(parentPathOf(from), false);
+      const target = await dirAt(ft.path, true);
+      const oldName = lastSegment(from);
+      const clash = await entryExists(target, name) || await entryExists(target, name + '.md');
+      if (clash) return fail(`${clash} already exists in that folder.`);
+      // Copy first, delete last: an error half-way leaves the old files in place.
+      const oldFolder = await oldParent.getDirectoryHandle(oldName).catch(() => null);
+      if (oldFolder) await copyDir(oldFolder, await target.getDirectoryHandle(name, { create: true }));
+      for (const c of changes) await writeFileAt(c.newPath, c.text);
+      const leaf = files.find(f => /\.md$/i.test(f.path) && f.path.slice(0, -3) === from);
+      if (leaf) await oldParent.removeEntry(lastSegment(leaf.path));
+      if (oldFolder) await oldParent.removeEntry(oldName, { recursive: true });
+      if (convert) await (await dirAt(parentPathOf(ft.path), false)).removeEntry(lastSegment(convert));
+      await refreshIndex();
+    }
 
     // Keep the view where it was, under the new paths, with the new parent open.
     const remap = p => movePath(p, from, to) ?? p;
@@ -2748,9 +3101,10 @@ async function doMove() {
     $('movDialog').close();
     await reload();
     select(to, true);
-    toast(`Moved. ${changes.length} file${changes.length === 1 ? '' : 's'} changed on disk; commit them in git.`);
+    toast(`Moved. ${changes.length} file${changes.length === 1 ? '' : 's'} changed ` +
+      (state.gh ? `and committed to ${state.gh.branch} on GitHub.` : 'on disk; commit them in git.'));
   } catch (e) {
-    fail('Could not finish the move: ' + (e && e.message || e) + '. Press Reload and check the folder.');
+    fail('Could not finish the move: ' + (e && e.message || e) + (state.gh ? '' : '. Press Reload and check the folder.'));
   } finally {
     $('movSubmit').disabled = false;
   }
@@ -2782,7 +3136,7 @@ function renderRulesButton() {
 // Node index: "Add node index" when the folder has none, "⚠ Rebuild index" when it no longer matches the md files.
 // Projects without this repository's tools rebuild it here. Fourth write to the folder.
 function indexStatus() {
-  if (state.snapshot) return 'current';
+  if (state.snapshot || (state.gh && !ghToken())) return 'current';   // without a token, the repository's CVP docs action keeps it
   if (state.indexText == null) return 'missing';
   return state.indexText.replace(/\r\n?/g, '\n') === nodeIndex(state.nodes) ? 'current' : 'outdated';
 }
@@ -2796,6 +3150,18 @@ function renderIndexButton() {
     : `The node index (${INDEX_FILE}) does not match the md files any more. Click to rebuild it.`;
 }
 async function doRebuildIndex() {
+  if (state.gh) {
+    try {
+      const d = await ghRead(state.gh);
+      const text = nodeIndex(buildModel(d.files, state.rootName));
+      await ghCommit(d, [{ path: INDEX_FILE, text }], `Rebuild ${docsPrefix()}${INDEX_FILE}, from Claude Visual Project`);
+      await reload();
+      toast(`Node index committed to ${state.gh.branch} on GitHub.`);
+    } catch (e) {
+      toast('Could not write the node index: ' + (e && e.message || e));
+    }
+    return;
+  }
   try {
     if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted') return toast('The browser did not grant permission to write to the folder.');
     await writeFileAt(INDEX_FILE, nodeIndex(buildModel(await readFolder(state.dir), state.rootName)));
@@ -2814,7 +3180,8 @@ function openRules() {
     outdated: `The CVP rules in ${where} are ${r.version == null ? 'missing (no rules markers)' : 'version ' + r.version}; this page has version ${RULES_VERSION}. Until they are updated, the prompts repeat this page's rules in full.`,
     newer: `The CVP rules in ${where} are version ${r.version}, newer than this page (version ${RULES_VERSION}). The prompts point to them as they are. Get the latest index.html of Claude Visual Project.`,
   }[r.status];
-  $('rulesSubmit').hidden = r.status === 'newer';
+  if (state.gh && !ghToken()) $('rulesText').textContent += ` The "CVP docs" action of ${ghLabel(state.gh)}, if installed, brings them up to date on its next run (every push and once a day); with a GitHub token the page can do it now.`;
+  $('rulesSubmit').hidden = r.status === 'newer' || (!!state.gh && !ghToken());
   $('rulesSubmit').textContent = r.status === 'missing' ? 'Add global rules' : 'Update rules';
   $('rulesError').hidden = true;
   $('rulesDialog').showModal();
@@ -2822,6 +3189,25 @@ function openRules() {
 
 async function doUpdateRules() {
   const fail = msg => { $('rulesError').hidden = false; $('rulesError').textContent = msg; };
+  if (state.gh) {
+    try {
+      $('rulesSubmit').disabled = true;
+      const d = await ghRead(state.gh);
+      const n = buildModel(d.files, state.rootName).get(RULES_NODE);
+      const file = n && n.file ? n.file : RULES_NODE + '.md';
+      const ops = [{ path: file, text: updatedRulesFile(n && n.file ? n.text : null, nowStamp()) }];
+      await ghCommit(d, [...ops, ...indexOps(d, ops)], `Update the CVP rules to version ${RULES_VERSION}, from Claude Visual Project`);
+      $('rulesDialog').close();
+      await reload();
+      select(RULES_NODE, true);
+      toast(`Global rules committed to ${state.gh.branch} on GitHub.`);
+    } catch (e) {
+      fail('Could not write the rules: ' + (e && e.message || e));
+    } finally {
+      $('rulesSubmit').disabled = false;
+    }
+    return;
+  }
   try {
     if (await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
       return fail('The browser did not grant permission to write to the folder.');
@@ -2881,19 +3267,28 @@ $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll()
 $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };
 for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
 $('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
+$('openGhBtn').onclick = $('welcomeGhBtn').onclick = $('ghBtn').onclick = () => openGitHubDialog();
+// Plain buttons, not form submits: a page shown inside a sandboxed frame (a preview) may block form submission.
+$('ghSubmit').onclick = () => openFromGitHub();
+$('ghSave').onclick = () => $('ghToken').value.trim() ? saveGhToken($('ghToken').value) : $('ghToken').focus();
+for (const id of ['ghRepo', 'ghDocs']) $(id).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); openFromGitHub(); } };
+$('ghToken').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('ghSave').click(); } };
+$('ghForget').onclick = () => saveGhToken('');
 $('exportBtn').onclick = () => exportHtml();
 
 async function init() {
   if (await openSnapshot()) return;
-  if (!('showDirectoryPicker' in window)) {
+  const folders = 'showDirectoryPicker' in window;
+  if (!folders) {
     $('unsupported').hidden = false;
     $('openBtn').disabled = $('welcomeOpenBtn').disabled = true;
-    return;
   }
   const last = await loadProjects();
+  renderProjectSel();
   if (!last) return;
+  if (last.gh) return openProject(last);   // GitHub needs no permission prompt
   try {
-    if (await last.handle.queryPermission({ mode: 'read' }) === 'granted') return await openDir(last.handle, last.id);
+    if (folders && await last.handle.queryPermission({ mode: 'read' }) === 'granted') return await openDir(last.handle, last.id);
   } catch (e) { /* stale handle: offer the list */ }
   // The browser asks again after a reload unless the user chose "Allow on every visit":
   // the welcome screen offers every project of the list, the last one first.
@@ -2901,7 +3296,7 @@ async function init() {
   for (const p of [last, ...projects.filter(x => x !== last)]) {
     const b = document.createElement('button');
     b.textContent = `Open ${p.title}`;
-    b.title = `Docs folder ${p.handle.name}/`;
+    b.title = p.gh ? `${ghLabel(p.gh)} on GitHub` : `Docs folder ${p.handle.name}/`;
     if (p === last) b.className = 'primary';
     b.onclick = () => openProject(p);
     box.append(b, ' ');
