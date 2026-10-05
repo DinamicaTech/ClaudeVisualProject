@@ -20,3 +20,4 @@ Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de conte
 - 2026-10-03 07:34 · Eso no quita que sea útil ver todos los drafts juntos, eso lo podríamos resolver con una nueva pestaña con una vista de drafts ordenable por columnas
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no mezclar las ideas con los drafts.
 - 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]
+- 2026-10-05 09:17 · Derived from viewer/map/nodos-ocupados: los nodos nuevos de ramas sin fusionar no se cuentan aquí; solo la rama principal.
