@@ -8,7 +8,7 @@ threads:
 ## Summary
 Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas. Los nodos draft tienen la tarjeta en gris claro, como desactivados, con la etiqueta DRAFT.
 Es la vista por defecto. En el selector "Tree / Project / Drafts / Log", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
-Los nodos con trabajo abierto llevan la etiqueta "open" (`viewer/map/nodos-ocupados`).
+Los nodos con trabajo abierto llevan una etiqueta azul con el número de su PR (`viewer/map/nodos-ocupados`).
 La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes. Con "Tree edit mode" se mueve un nodo arrastrando su tarjeta (`viewer/mover-nodo`).
 
 ## Decisions
