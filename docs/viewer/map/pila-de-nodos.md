@@ -1,6 +1,5 @@
 ---
 title: Pila de nodos inactivos
-status: draft
 depends_on: [viewer/map/nodos-ocupados]
 threads:
   - Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
@@ -17,6 +16,7 @@ Clic en la pila la despliega en su sitio, con un botón "Stack (N)" para volver 
 - 2026-10-05 11:32 · Clic en la pila la despliega en su sitio y aparece encima del grupo un botón "Stack (N)" que la vuelve a apilar. No se recuerda tras F5, igual que las ramas plegadas.
 - 2026-10-05 11:32 · La página no tiene buscador: "al buscar" es cualquier salto a un nodo (dependencia ↗, enlaces de la ficha, Drafts, Questions, Log, Renombrar, Mover). Todo salto y todo cambio de selección a un nodo apilado despliega su pila; un salto abre además las ramas plegadas con − que lo esconden, que antes no se abrían.
 - 2026-10-05 11:32 · Si el nodo seleccionado está apilado, la pila se marca como seleccionada; si dentro hay una dependencia del seleccionado o quien lo usa, se marca en verde o ámbar. En Tree edit mode la pila no se arrastra ni admite soltar nodos encima.
+- 2026-10-05 11:36 · Ronald da el visto bueno para fusionar (11:36): pasa a estable. El umbral de 5 se seguirá afinando con pruebas reales.
 
 ## Requirements
 - 2026-10-05 10:45 · Sí que es cierto que si se acumulan N nodos debajo de un nodo, el árbol puede quedar poco manejable. Una opción sería 'apilar' los nodos hijos terminales (los que no tengan hijos a su vez) inactivos cuando sean más de X. Se visualizaría como varias capas apiladas algo decaladas para poder intuir visualmente si son muchas o pocas.
