@@ -94,6 +94,11 @@
   #mapSvg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #mapSvg.dragging { cursor: grabbing; }
   #zoomBtn { border-color: var(--accent); color: var(--accent); }
+  /* View switches: inside the view, so the header (and its view selector) never changes width */
+  .viewctl { display: flex; gap: 14px; align-items: center; font-size: 13px; }
+  .viewctl label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+  #map .viewctl { position: absolute; top: 10px; left: 10px; background: var(--panel); padding: 2px 8px; border-radius: 6px; }
+  #tree .viewctl { position: sticky; top: -8px; z-index: 1; background: var(--panel); padding: 4px 12px 6px; margin-top: -8px; border-bottom: 1px solid var(--line); }
   #map .mapctl { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
   #map .legend { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted); background: var(--panel); padding: 2px 6px; border-radius: 4px; }
   #map .legend .ld { color: var(--ref); } #map .legend .lp { color: var(--dependent); }
@@ -267,15 +272,6 @@
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
   <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
-  <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
-    <input type="checkbox" id="refsToggle" checked> References
-  </label>
-  <label id="wipToggleLabel" hidden title="Show the nodes that open branches create and that are not on the default branch yet (dashed, tagged new)">
-    <input type="checkbox" id="wipToggle" checked> Work in progress
-  </label>
-  <label id="editToggleLabel" hidden title="Drag a card onto another one to move it (with its descendants) under that node">
-    <input type="checkbox" id="editToggle"> Tree edit mode
-  </label>
   <button id="ghBtn" hidden></button>
   <button id="reloadBtn" hidden title="Read the docs again (same as F5)">Reload</button>
   <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
@@ -287,6 +283,17 @@
   <nav id="tree" role="tree" aria-label="Project nodes"></nav>
   <div id="map" hidden>
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
+    <div class="viewctl" id="viewCtl">
+      <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
+        <input type="checkbox" id="refsToggle" checked> References
+      </label>
+      <label id="wipToggleLabel" hidden title="Show the nodes that open branches create and that are not on the default branch yet (dashed, tagged new)">
+        <input type="checkbox" id="wipToggle" checked> Work in progress
+      </label>
+      <label id="editToggleLabel" hidden title="Drag a card onto another one to move it (with its descendants) under that node">
+        <input type="checkbox" id="editToggle"> Tree edit mode
+      </label>
+    </div>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
     <div class="legend" id="editLegend" hidden>Tree edit mode: drag a card onto its new parent to move it there · drag the background to move the map</div>
     <div class="legend" id="mapLegend">◆ decisions in force · ?N open questions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · "N nodes": inactive nodes stacked, click to spread · wheel to zoom, drag to move · Z: zoom to selected</div>
@@ -440,6 +447,7 @@ const state = {
 };
 
 const $ = id => document.getElementById(id);
+const viewCtl = $('viewCtl');   // the view switches: inside the map or on top of the Project rows
 const VIEWS = ['map', 'tree', 'drafts', 'questions', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
@@ -1920,6 +1928,7 @@ function withBase(n, fn) {
 function renderAll() {
   $('tree').hidden = state.view !== 'tree';
   $('map').hidden = state.view !== 'map';
+  if (state.view === 'map') $('map').prepend(viewCtl);
   $('list').hidden = !['drafts', 'questions', 'log'].includes(state.view);
   $('refsToggleLabel').hidden = !$('list').hidden;
   if (state.snapshot) state.editMode = false;
@@ -1948,6 +1957,7 @@ function renderTree() {
   const tree = $('tree');
   const scroll = tree.scrollTop;
   tree.textContent = '';
+  tree.append(viewCtl);
   const root = zoomRoot();
   if (root) addRow(tree, root, 0);
   tree.scrollTop = scroll;
