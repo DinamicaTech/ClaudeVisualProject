@@ -3,10 +3,11 @@ title: Encaminado al nodo responsable
 depends_on: [context-pack/index]
 threads:
   - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
+  - Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
 ---
 ## Summary
 Una tarea arrancada en un nodo (por ejemplo, la raíz) se desplaza al nodo funcionalmente responsable de ella antes del desglose.
-Si no es el nodo seleccionado, el hilo ofrece al propietario: arrancar en el seleccionado, crear un nodo nuevo (con su ruta completa), arrancar en el mejor candidato o guardarla como draft en su sitio funcional.
+Si no es el nodo seleccionado, el hilo ofrece al propietario: arrancar en el seleccionado, crear un nodo nuevo (con su ruta completa), arrancar en el mejor candidato o guardarla como draft: un nodo hijo nuevo de su nodo funcional, con una sola tarea pendiente.
 El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el enlace del hilo.
 
 ## Decisions
@@ -14,12 +15,15 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 07:50 · El nodo responsable es el que funcionalmente le corresponde a la tarea, no el más afectado; puede no ejecutar ninguna parte del desglose.
 - 2026-10-03 07:50 · Si coincide con el nodo seleccionado (o con el hijo propuesto en "New sub-task"), no se pregunta nada y se pasa al desglose. Si no, se pregunta con las cuatro opciones, una por línea y con una recomendada, y se espera la respuesta.
 - 2026-10-03 07:50 · En "New sub-task" la primera opción es crear el hijo propuesto (la ruta recomendada); las otras tres son las mismas.
-- 2026-10-03 07:50 · "Guardar como draft" crea el nodo en la ruta funcional que le corresponde, con `status: draft` y las palabras del propietario en Requirements, y el hilo se detiene. No se guardan en `roadmap`: así se ven dentro de su zona y se pueden atacar por zonas; la vista `viewer/drafts` los reúne todos.
+- 2026-10-03 07:50 · [replaced by 2026-10-05 10:50] "Guardar como draft" crea el nodo en la ruta funcional que le corresponde, con `status: draft` y las palabras del propietario en Requirements, y el hilo se detiene. No se guardan en `roadmap`: así se ven dentro de su zona y se pueden atacar por zonas; la vista `viewer/drafts` los reúne todos.
 - 2026-10-03 07:50 · Un draft arrancado en su sitio es ese mismo nodo: se trabaja en él y pasa a `stable` cuando el propietario valida el cambio. Solo se borra si se desplaza a otro nodo existente; ese nodo recibe sus requisitos con sus fechas originales y la decisión "Takes over the draft <ruta> (<título>)", que queda en `viewer/log`.
 - 2026-10-03 07:50 · El nodo elegido sustituye al seleccionado como nodo de trabajo: sus ascendientes y dependencias se leen según la regla de lectura, y él recibe las frases literales del propietario y el enlace del hilo. Los nodos que ejecutan partes reciben "Derived from".
 - 2026-10-03 07:50 · La regla también está en AGENTS.md de este repositorio.
 - 2026-10-03 08:05 · Prefijo `draft:`. Una frase del propietario que empieza por "draft:" pide guardar una tarea pendiente, no hacerla; una frase que la aplaza ("más adelante revisaremos X") también, y el hilo la deduce. El hilo propone la ruta del draft y la línea exacta "draft: <tarea>", redactada como instrucción autónoma, y espera el OK. En Requirements del draft queda esa línea; si la dedujo el hilo, encima queda la frase literal del propietario.
 - 2026-10-03 14:45 · Excepción: una tarea que empieza por "idea:" no se encamina; se guarda en el lab según la regla de `context-pack/ideas`. Al salir del lab (pasar a draft o ejecutarse), la idea sí pasa por el encaminado.
+
+- 2026-10-05 10:50 · Cada draft es un nodo propio con una sola tarea pendiente: un hijo nuevo del nodo al que pertenece la tarea (ruta `<nodo>/<nombre corto de la tarea>`), con `status: draft` y su línea `draft:` en Requirements; "Guardar como draft" lo crea y el hilo se detiene. Nunca se pone en draft un nodo que ya existe ni se le añade una segunda línea `draft:`. Al validarse pasa a estable y se queda en el árbol como nodo propio. No se guardan en `roadmap`: así se ven dentro de su zona y se pueden atacar por zonas; la vista `viewer/drafts` los reúne todos. Excepción: en una carga de requisitos sobre un árbol vacío los nodos aún no existen y nacen en draft con su tarea. Elegido por Ronald (opción A, 10:45); CVP rules versión 8.
+- 2026-10-05 11:00 · Cuando el propietario escribe "draft:", su frase se copia literal en Requirements pero sin el prefijo, encima de la línea `draft:` que redacta el hilo: cada draft tiene una sola línea `draft:` y el doble clic no repite la tarea (CVP rules versión 8).
 
 ## Requirements
 - 2026-10-03 07:23 · Poder arrancar una tarea en un nodo y que esta tarea se desplace al nodo más adecuada para ejecutarla.
@@ -32,3 +36,6 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 07:34 · Me parece bien seguir el mismo criterio, sí proponiendo la ruta recomendada.
 - 2026-10-03 07:57 · Lo primero sería estandarizar que el prefijo draft implique la creación de una tarea pendiente, ese prefijo puede ser explicitado por el operador o deducido por contexto ('más adelante revisaremos [XXXX]' -> draft: [XXXXX]).
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no encaminar las tareas que empiezan por "idea:"; encaminar la idea cuando sale del lab.
+- 2026-10-05 10:21 · Creo que queda más claro que sea un nodo aparte ya que, en el caso de tener dos drafts en un mismo nodo, quedará algo confuso gestionarlos.
+- 2026-10-05 10:45 · Creo que A, eso permite aligerar el prompt del nodo raíz y normalmente son desarrollos atómicos.
+- 2026-10-05 10:57 · Lo suyo sería no repetir el prefijo al crear un nuevo draft
