@@ -23,6 +23,7 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 14:45 · Excepción: una tarea que empieza por "idea:" no se encamina; se guarda en el lab según la regla de `context-pack/ideas`. Al salir del lab (pasar a draft o ejecutarse), la idea sí pasa por el encaminado.
 
 - 2026-10-05 10:50 · Cada draft es un nodo propio con una sola tarea pendiente: un hijo nuevo del nodo al que pertenece la tarea (ruta `<nodo>/<nombre corto de la tarea>`), con `status: draft` y su línea `draft:` en Requirements; "Guardar como draft" lo crea y el hilo se detiene. Nunca se pone en draft un nodo que ya existe ni se le añade una segunda línea `draft:`. Al validarse pasa a estable y se queda en el árbol como nodo propio. No se guardan en `roadmap`: así se ven dentro de su zona y se pueden atacar por zonas; la vista `viewer/drafts` los reúne todos. Excepción: en una carga de requisitos sobre un árbol vacío los nodos aún no existen y nacen en draft con su tarea. Elegido por Ronald (opción A, 10:45); CVP rules versión 8.
+- 2026-10-05 11:00 · Cuando el propietario escribe "draft:", su frase se copia literal en Requirements pero sin el prefijo, encima de la línea `draft:` que redacta el hilo: cada draft tiene una sola línea `draft:` y el doble clic no repite la tarea (CVP rules versión 8).
 
 ## Requirements
 - 2026-10-03 07:23 · Poder arrancar una tarea en un nodo y que esta tarea se desplace al nodo más adecuada para ejecutarla.
@@ -37,3 +38,4 @@ El nodo elegido es el nodo de trabajo: recibe las palabras del propietario y el 
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no encaminar las tareas que empiezan por "idea:"; encaminar la idea cuando sale del lab.
 - 2026-10-05 10:21 · Creo que queda más claro que sea un nodo aparte ya que, en el caso de tener dos drafts en un mismo nodo, quedará algo confuso gestionarlos.
 - 2026-10-05 10:45 · Creo que A, eso permite aligerar el prompt del nodo raíz y normalmente son desarrollos atómicos.
+- 2026-10-05 10:57 · Lo suyo sería no repetir el prefijo al crear un nuevo draft

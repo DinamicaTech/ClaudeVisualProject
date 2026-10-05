@@ -1463,7 +1463,7 @@ const CVP_RULES = [
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
   'Each draft is a node of its own with one pending task: a new child of the node the task belongs to, never an existing node set back to draft or given a second `draft:` line. ' +
   'Propose the draft node\'s path (<path of that node>/<short name of the task>) and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
-  'Then create that new node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, put the owner\'s literal sentence on the line above it. ' +
+  'Then create that new node with `status: draft` and that line in its Requirements (with its date and time, like every requirement); when you deduced it, or the owner\'s sentence says more than that line, put the owner\'s literal sentence on the line above it, without its "draft:" prefix, so that the node has only one "draft:" line. ' +
   'When the prompt\'s task is taken from a draft\'s Requirements, it is already recorded there: do not copy it again. ' +
   'A line starting with "question:" in a draft\'s Requirements is an open question about its task, left by a requirements load: resolve it with the owner before doing the task. ' +
   'When the owner answers a question, copy the answer to the same Requirements as a dated line "answer: <the question, in short> → <the answer>" and mark the question line, right after its date, with "[answered YYYY-MM-DD HH:MM] " (the answer\'s date and time): ' +
