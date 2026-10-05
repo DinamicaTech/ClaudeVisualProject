@@ -1002,10 +1002,12 @@ async function openFromGitHub() {
   }
 }
 
+// The dialog stays open, so a repository can be opened right after saving the token.
 async function saveGhToken(t) {
   setGhToken(t.trim());
   blobCache.clear();
-  $('ghDialog').close();
+  $('ghToken').value = '';
+  $('ghTokenState').textContent = ghToken() ? 'Token saved in this browser.' : 'No token saved in this browser.';
   renderGhButton();
   toast(t ? 'Token saved in this browser.' : 'Token forgotten.');
   if (state.gh) await reload();
