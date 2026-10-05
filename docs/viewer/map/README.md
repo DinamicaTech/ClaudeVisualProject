@@ -8,7 +8,7 @@ threads:
 ## Summary
 Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas. Los nodos draft tienen la tarjeta en gris claro, como desactivados, con la etiqueta DRAFT.
 Es la vista por defecto. En el selector "Tree / Project / Drafts / Log", "Tree" es este mapa de nodos y "Project" la vista en filas (`viewer/tree`). Comparte con el árbol la selección, la ficha y el doble clic.
-Los nodos con trabajo abierto llevan una etiqueta azul con el número de su PR (`viewer/map/nodos-ocupados`).
+Los nodos con trabajo abierto llevan una etiqueta azul con el número de su PR (`viewer/map/nodos-ocupados`). Cuando un nodo tiene muchos hijos terminales inactivos, se apilan en una tarjeta "N nodes" (`viewer/map/pila-de-nodos`).
 La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus descendientes. Con "Tree edit mode" se mueve un nodo arrastrando su tarjeta (`viewer/mover-nodo`).
 
 ## Decisions
@@ -36,6 +36,7 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 14:45 · La tarjeta de un nodo `idea` es normal (no gris, que es de los drafts) con la etiqueta IDEA en ámbar sobre fondo amarillo claro.
 - 2026-10-03 15:18 · Un nodo con trabajo abierto (una rama o un PR que cambia su md) lleva la etiqueta "open" en azul junto al título, con el PR o la rama al pasar el ratón (`viewer/map/nodos-ocupados`).
 - 2026-10-03 15:55 · [replaced by model/avisos-de-desactualizacion 2026-10-03 17:31] Un nodo con aviso de revisión (`model/avisos-de-desactualizacion`) lleva la etiqueta "⏱ review" en la tarjeta, y el tooltip del nodo lista las dependencias que han cambiado, con su fecha.
+- 2026-10-05 11:32 · 5 o más hijos terminales inactivos de un nodo se dibujan como una pila "N nodes" que se despliega con un clic; un salto a un nodo abre también las ramas plegadas que lo esconden (`viewer/map/pila-de-nodos`).
 - 2026-10-03 18:40 · Una tarjeta con preguntas abiertas (líneas `question:` de un draft) muestra "?N" en azul junto a ⚠ y ◆; al pasar el ratón lo explica, y la leyenda lo incluye. Elegido por Ronald (18:33) frente a una vista propia de preguntas o no hacer nada: las preguntas se leen en la ficha.
 
 ## Requirements
@@ -53,3 +54,4 @@ La tecla Z hace zoom: las dos vistas muestran solo el nodo seleccionado y sus de
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: marcar en la tarjeta los nodos con trabajo abierto.
 - 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la tarjeta la marca "⏱ review" y, en el tooltip del nodo, qué dependencias han cambiado.
 - 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]
+- 2026-10-05 11:32 · Derived from viewer/map/pila-de-nodos: apilar los hijos terminales inactivos y abrir lo plegado al saltar a un nodo.

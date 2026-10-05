@@ -131,6 +131,13 @@
   .node.isdep .card { border-color: var(--ref); box-shadow: inset 0 0 0 1.5px var(--ref); }
   .node.isdependent .card { border-color: var(--dependent); box-shadow: inset 0 0 0 1.5px var(--dependent); }
   #mapSvg.focus .node:not(.selected):not(.isdep):not(.isdependent):not(.anc) .card { opacity: .55; }
+  .node.stack .back { fill: var(--panel); stroke: var(--muted); stroke-opacity: .5; }   /* layers behind a stack of inactive leaves */
+  .node.stack .t { padding-right: 0; }
+  .restack rect { fill: var(--panel); stroke: var(--muted); }
+  .restack text { fill: var(--muted); font: 11px var(--mono); }
+  .restack { cursor: pointer; }
+  .restack:hover rect { stroke: var(--accent); }
+  .restack:hover text { fill: var(--text); }
   .tog circle { fill: var(--panel); stroke: var(--muted); }
   .tog text { fill: var(--muted); font-size: 13px; font-weight: 600; }
   .tog:hover circle { stroke: var(--accent); }
@@ -282,7 +289,7 @@
     <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="mapctl"><button id="fitBtn" title="Show the whole map">Fit</button></div>
     <div class="legend" id="editLegend" hidden>Tree edit mode: drag a card onto its new parent to move it there · drag the background to move the map</div>
-    <div class="legend" id="mapLegend">◆ decisions in force · ?N open questions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · wheel to zoom, drag to move · Z: zoom to selected</div>
+    <div class="legend" id="mapLegend">◆ decisions in force · ?N open questions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · "N nodes": inactive nodes stacked, click to spread · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="list" hidden></div>
   <div id="card"></div>
@@ -1990,6 +1997,7 @@ function addRow(container, n, depth) {
 function select(path, reveal) {
   if (!state.nodes.has(path)) return;
   if (state.zoom && !inZoom(state.nodes.get(path))) setZoom('', false);
+  if (path !== state.selected || reveal) showOnMap(state.nodes.get(path), reveal);
   state.selected = path;
   if (reveal) for (let a = state.nodes.get(path).parent; a; a = a.parent) state.expanded.add(a.path);
   renderAll();
@@ -2057,6 +2065,19 @@ let mapView = null;   // visible area in map coordinates: { x, y, w }; height fo
 let mapPos = null;    // node path -> its item { x, y, h }
 let mapBounds = null;
 const mapCollapsed = new Set();
+// Stacks (viewer/map/pila-de-nodos): when a node has STACK_MIN or more inactive leaves (no children, stable
+// or obsolete, no open work, no warnings), the map draws them as one stack of cards. mapUnstacked holds
+// the parents whose stack is spread out; like mapCollapsed, it is not kept after a reload.
+const STACK_MIN = 5;   // provisional: to be tuned with real projects
+const mapUnstacked = new Set();
+const stackable = n => !n.children.length && !n.wip && !n.placeholder && ['stable', 'obsolete'].includes(n.status) && !n.warnings.length && !openWorkOf(n).length;
+const stackedOf = n => { const s = n.children.filter(stackable); return s.length >= STACK_MIN ? s : []; };
+const stackLayers = k => k >= 20 ? 3 : k >= 10 ? 2 : 1;
+// Selecting or jumping to a node shows it: its stack spreads out (and, when revealed, its folded branches open).
+function showOnMap(n, reveal) {
+  if (n.parent && stackedOf(n.parent).includes(n)) mapUnstacked.add(n.parent.path);
+  if (reveal) for (let a = n.parent; a; a = a.parent) mapCollapsed.delete(a.path);
+}
 
 const mapColor = n => n.parent ? `var(--b${mapBranch(n) % 8})` : 'var(--text)';
 function mapBranch(n) {
@@ -2071,7 +2092,16 @@ function layoutMap() {
   const build = (n, depth) => {
     const it = { node: n, depth, kids: [] };
     it.h = (depth === 0 ? 92 : depth === 1 && n.summary ? 82 : 52) + (state.showRefs && n.depLinks.length ? 26 : 0);
-    if (!mapCollapsed.has(n.path)) it.kids = n.children.map(c => build(c, depth + 1));
+    if (!mapCollapsed.has(n.path)) {
+      const stacked = stackedOf(n);
+      it.kids = n.children.filter(c => !stacked.includes(c)).map(c => build(c, depth + 1));
+      if (stacked.length && !mapUnstacked.has(n.path))
+        it.kids.push({ stack: stacked, parent: n, depth: depth + 1, kids: [], kh: 0, h: 52 + stackLayers(stacked.length) * 6, block: 52 + stackLayers(stacked.length) * 6 });
+      else if (stacked.length) {
+        it.kids.push({ restack: n, depth: depth + 1, kids: [], kh: 0, h: 20, block: 20, count: stacked.length });
+        it.kids.push(...stacked.map(c => build(c, depth + 1)));
+      }
+    }
     it.kh = it.kids.reduce((s, k) => s + k.block, 0) + Math.max(0, it.kids.length - 1) * MAP.gap;
     it.block = Math.max(it.h, it.kh);
     return it;
@@ -2085,7 +2115,11 @@ function layoutMap() {
   };
   const root = build(zoomRoot(), 0);
   place(root, 0);
-  mapPos = new Map(items.map(it => [it.node.path, it]));
+  mapPos = new Map();
+  for (const it of items) {
+    if (it.node) mapPos.set(it.node.path, it);
+    if (it.stack) for (const n of it.stack) mapPos.set(n.path, it);   // a stacked node is where its stack is
+  }
   mapBounds = { x: -MAP.pad, y: -MAP.pad, w: maxDepth * MAP.colW + MAP.boxW + 2 * MAP.pad + 14, h: root.block + 2 * MAP.pad };
   return items;
 }
@@ -2100,9 +2134,16 @@ function renderMap() {
   const W = MAP.boxW;
   let lines = '', boxes = '';
   for (const it of items) {
+    if (it.stack) { boxes += stackBox(it, sel, deps, users); continue; }
+    if (it.restack) {
+      boxes += `<g class="restack" data-restack="${esc(it.restack.path)}" transform="translate(${it.x} ${it.y})"><title>Stack these ${it.count} inactive nodes again</title>` +
+        `<rect width="92" height="18" rx="9"/><text x="46" y="13" text-anchor="middle">Stack (${it.count})</text></g>`;
+      continue;
+    }
     for (const k of it.kids) {
-      const x1 = it.x + W, y1 = it.y + it.h / 2, x2 = k.x, y2 = k.y + k.h / 2, m = (x2 - x1) * .55, on = anc.has(k.node);
-      lines += `<path class="h${on ? ' on' : ''}" stroke="${mapColor(k.node)}" stroke-width="${on ? 3.5 : Math.max(1.5, 3.2 - k.depth * .5)}" d="M${x1} ${y1}C${x1 + m} ${y1} ${x2 - m} ${y2} ${x2} ${y2}"/>`;
+      if (k.restack) continue;
+      const x1 = it.x + W, y1 = it.y + it.h / 2, x2 = k.x, y2 = k.y + k.h / 2, m = (x2 - x1) * .55, on = !!k.node && anc.has(k.node);
+      lines += `<path class="h${on ? ' on' : ''}" stroke="${mapColor(k.node || k.stack[0])}" stroke-width="${on ? 3.5 : Math.max(1.5, 3.2 - k.depth * .5)}" d="M${x1} ${y1}C${x1 + m} ${y1} ${x2 - m} ${y2} ${x2} ${y2}"/>`;
     }
     const n = it.node;
     const cls = ['node', 'd' + Math.min(it.depth, 2), n === sel && 'selected', anc.has(n) && 'anc', deps.has(n) && 'isdep', users.has(n) && 'isdependent',
@@ -2132,6 +2173,19 @@ function renderMap() {
   svg.classList.toggle('focus', !!sel && sel.path !== state.zoom);
   svg.classList.toggle('editing', state.editMode);
   if (!mapView) fitMap(); else applyMapView();
+}
+
+// A stack of inactive leaves: one card ("N nodes") with a layer behind it per few nodes; click spreads it out.
+function stackBox(it, sel, deps, users) {
+  const W = MAP.boxW, k = it.stack.length, L = stackLayers(k), h = it.h - L * 6;
+  const cls = ['node', 'stack', 'd' + Math.min(it.depth, 2), it.stack.includes(sel) && 'selected',
+    it.stack.some(n => deps.has(n)) && 'isdep', it.stack.some(n => users.has(n)) && 'isdependent'].filter(Boolean).join(' ');
+  let backs = '';
+  for (let i = L; i >= 1; i--) backs += `<rect class="back" x="${i * 6}" y="${i * 6}" width="${W}" height="${h}" rx="10"/>`;
+  return `<g class="${cls}" data-stack="${esc(it.parent.path)}" transform="translate(${it.x} ${it.y})">` +
+    `<title>${k} inactive nodes (stable, no children, no open work). Click to spread them out:\n${it.stack.map(n => '· ' + esc(n.title)).join('\n')}</title>` +
+    backs + `<foreignObject width="${W}" height="${h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(it.stack[0])}">` +
+    `<div class="t">${k} nodes</div><div class="p">${esc(it.stack.slice(0, 3).map(n => n.title).join(', '))}${k > 3 ? ', …' : ''}</div></div></foreignObject></g>`;
 }
 
 function applyMapView() {
@@ -2169,7 +2223,7 @@ function centerMapOn(path) {
   let lift = null;   // { path, g, base: { x, y }, target }
   const dropTarget = e => {
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const g = el && el.closest && el.closest('#mapSvg .node');
+    const g = el && el.closest && el.closest('#mapSvg .node[data-path]');   // not a stack
     return g ? g.dataset.path : null;
   };
   svg.addEventListener('wheel', e => {
@@ -2233,6 +2287,10 @@ function centerMapOn(path) {
   });
   svg.addEventListener('click', e => {
     if (moved) { moved = false; return; }
+    const st = e.target.closest('[data-stack]');
+    if (st) { mapUnstacked.add(st.dataset.stack); return renderMap(); }
+    const rs = e.target.closest('[data-restack]');
+    if (rs) { mapUnstacked.delete(rs.dataset.restack); return renderMap(); }
     const t = e.target.closest('.tog');
     if (t) {
       const p = t.dataset.toggle;
@@ -2979,6 +3037,7 @@ async function doRename(n) {
     state.selected = remap(state.selected);
     state.expanded = new Set([...state.expanded].map(remap));
     for (const p of [...mapCollapsed]) { mapCollapsed.delete(p); mapCollapsed.add(remap(p)); }
+    for (const p of [...mapUnstacked]) { mapUnstacked.delete(p); mapUnstacked.add(remap(p)); }
     $('renDialog').close();
     await reload();
     select(to, true);
@@ -3168,6 +3227,7 @@ async function doMove() {
     state.expanded = new Set([...state.expanded].map(remap));
     for (let a = ft; a; a = a.parent) state.expanded.add(a.path);
     for (const p of [...mapCollapsed]) { mapCollapsed.delete(p); mapCollapsed.add(remap(p)); }
+    for (const p of [...mapUnstacked]) { mapUnstacked.delete(p); mapUnstacked.add(remap(p)); }
     for (let a = ft; a; a = a.parent) mapCollapsed.delete(a.path);
     $('movDialog').close();
     await reload();
