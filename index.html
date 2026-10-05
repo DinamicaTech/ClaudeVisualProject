@@ -362,25 +362,25 @@
 <dialog id="ghDialog">
   <div class="dhead"><span class="t">GitHub</span><button data-close type="button">Close</button></div>
   <div class="dbody">
-    <form id="ghForm">
+    <div id="ghForm">
       <h3>Open a repository</h3>
       <label for="ghRepo">Repository</label>
       <input id="ghRepo" placeholder="owner/name, or its link on github.com" autocomplete="off" spellcheck="false">
       <label for="ghDocs">Docs folder</label>
       <input id="ghDocs" placeholder="docs (leave it empty to use docs/)" autocomplete="off" spellcheck="false">
       <p id="ghError" hidden></p>
-      <p><button class="primary" type="submit" id="ghSubmit">Open</button></p>
-    </form>
-    <form id="ghTokenForm">
+      <p><button class="primary" type="button" id="ghSubmit">Open</button></p>
+    </div>
+    <div id="ghTokenForm">
       <h3>Token</h3>
       <p id="ghTokenState"></p>
       <label for="ghToken">Personal access token</label>
       <input id="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
-      <p><button type="submit">Save token</button> <button type="button" id="ghForget">Forget token</button></p>
+      <p><button type="button" id="ghSave">Save token</button> <button type="button" id="ghForget">Forget token</button></p>
       <p class="empty-note">Without a token the page reads public repositories only, and Rename and Move copy a prompt for a thread instead of writing.
       With a token it also reads private repositories and commits Rename, Move, the global rules and the node index directly to the default branch.
       The token is kept only in this browser and sent only to api.github.com. Use a fine-grained token limited to your project repositories, with the permission "Contents: read and write".</p>
-    </form>
+    </div>
   </div>
 </dialog>
 
@@ -3266,8 +3266,11 @@ $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll()
 for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
 $('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
 $('openGhBtn').onclick = $('welcomeGhBtn').onclick = $('ghBtn').onclick = () => openGitHubDialog();
-$('ghForm').onsubmit = e => { e.preventDefault(); openFromGitHub(); };
-$('ghTokenForm').onsubmit = e => { e.preventDefault(); if ($('ghToken').value.trim()) saveGhToken($('ghToken').value); };
+// Plain buttons, not form submits: a page shown inside a sandboxed frame (a preview) may block form submission.
+$('ghSubmit').onclick = () => openFromGitHub();
+$('ghSave').onclick = () => $('ghToken').value.trim() ? saveGhToken($('ghToken').value) : $('ghToken').focus();
+for (const id of ['ghRepo', 'ghDocs']) $(id).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); openFromGitHub(); } };
+$('ghToken').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('ghSave').click(); } };
 $('ghForget').onclick = () => saveGhToken('');
 $('exportBtn').onclick = () => exportHtml();
 
