@@ -121,6 +121,9 @@
   .node.idea .tag { color: var(--idea); background: var(--idea-soft); border-style: solid; }   /* an idea under debate in the lab, not a pending task */
   .node .tag.busy { color: var(--accent); background: var(--accent-soft); border-style: solid; }   /* open work: a branch or pull request changes its md */
   .node.placeholder .card { border-style: dashed; }
+  .node.wip .card { border: 1.5px dashed var(--accent); }   /* a node that exists only in an open branch */
+  .row.wip .title { font-style: italic; }
+  .banner.wip { background: var(--accent-soft); color: var(--text); }
   .node.placeholder .t { font-style: italic; color: var(--muted); }
   .node.obsolete .card, .node.obsolete-inherited .card { opacity: .5; filter: grayscale(1); }
   .node.obsolete .t { text-decoration: line-through; }
@@ -259,6 +262,9 @@
   <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) left by a requirements load; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
+  </label>
+  <label id="wipToggleLabel" hidden title="Show the nodes that open branches create and that are not on the default branch yet (dashed, tagged new)">
+    <input type="checkbox" id="wipToggle" checked> Work in progress
   </label>
   <label id="editToggleLabel" hidden title="Drag a card onto another one to move it (with its descendants) under that node">
     <input type="checkbox" id="editToggle"> Tree edit mode
@@ -406,6 +412,9 @@ const PAGE_TEMPLATE = document.documentElement.cloneNode(true);
 const state = {
   dir: null,          // FileSystemDirectoryHandle of the docs folder
   gh: null,           // { owner, repo, branch, docs } when the project is read from GitHub (build/github)
+  mainFiles: [],      // the md files of the project as { path, text } (on GitHub: its default branch)
+  wipFiles: [],       // md files that open branches create, not on the default branch: { path, text, item }
+  showWip: true,      // show those as nodes (viewer/map/nodos-ocupados)
   snapshot: null,     // { name, generated, files, openWork? } when the md files are embedded in the page
   indexText: null,    // text of the node index (.index.md) as read from the folder, or null if it has none
   openWork: null,     // parsed .open-work.md ({ updated, items }), or null when the folder has none
@@ -598,7 +607,9 @@ async function readFolder(dir) {
 async function reload() {
   try {
     const d = state.snapshot ? { files: state.snapshot.files, openWork: state.snapshot.openWork, indexText: null } : await readDocs();
-    state.nodes = buildModel(d.files, state.rootName);
+    state.mainFiles = d.files;
+    state.wipFiles = d.wipFiles || [];
+    state.nodes = buildNodes();
     state.openWork = parseOpenWork(d.openWork);
     state.indexText = d.indexText;
   } catch (e) {
@@ -641,7 +652,7 @@ function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
       selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
-      draftSort: state.draftSort, logKind: state.logKind, showReplaced: state.showReplaced,
+      draftSort: state.draftSort, logKind: state.logKind, showReplaced: state.showReplaced, showWip: state.showWip,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -662,6 +673,7 @@ function restoreViewState() {
       if (v.draftSort && v.draftSort.key) state.draftSort = v.draftSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
       state.showReplaced = v.showReplaced === true;
+      state.showWip = v.showWip !== false;
       state.zoom = v.zoom || '';
     }
   } catch (e) { /* ignore */ }
@@ -842,7 +854,31 @@ async function ghRead(g) {
   const s = await ghState(g);
   const files = await mapLimit(s.entries.filter(e => isDocMd(e.path)), 8, async e => ({ path: e.path, text: await ghBlob(g, s.head, e) }));
   const hidden = async name => { const e = s.entries.find(x => x.path === name); return e ? ghBlob(g, s.head, e) : null; };
-  return { ...s, files, openWork: await hidden(OPEN_WORK_FILE), indexText: await hidden(INDEX_FILE) };
+  const openWork = await hidden(OPEN_WORK_FILE);
+  return { ...s, files, openWork, indexText: await hidden(INDEX_FILE), wipFiles: await ghWipFiles(g, s, openWork) };
+}
+
+// A file of the docs folder as branch `ref` has it, or null if that branch does not have it.
+async function branchFile(g, ref, path) {
+  return ghToken()
+    ? ghFetch(`${ghRepoApi(g)}/contents/${encPath(ghPath(g, path))}?ref=${encodeURIComponent(ref)}`, { raw: true })
+        .catch(e => { if (e.status === 404) return null; throw e; })
+    : rawFile(g, ref, path, true);
+}
+
+// New nodes of open work (viewer/map/nodos-ocupados): the md files that open branches create and that the
+// default branch does not have yet, read from their branch. If two branches create the same file, the first one listed wins.
+async function ghWipFiles(g, s, openWorkText) {
+  const work = parseOpenWork(openWorkText);
+  if (!work) return [];
+  const have = new Set(s.entries.map(e => e.path)), seen = new Set(), wanted = [];
+  for (const item of work.items) for (const path of item.files) {
+    if (have.has(path) || seen.has(path) || !isDocMd(path)) continue;
+    seen.add(path);
+    wanted.push({ path, item });
+  }
+  const read = await mapLimit(wanted, 6, async w => ({ ...w, text: await branchFile(g, w.item.branch, w.path).catch(() => null) }));
+  return read.filter(w => w.text != null);
 }
 
 // The md files of the open project, with its open work and node index: from GitHub, or from the folder.
@@ -850,6 +886,22 @@ async function readDocs() {
   if (state.gh) return ghRead(state.gh);
   return { files: await readFolder(state.dir), openWork: await readOpenWork(state.dir), indexText: await readTextFile(state.dir, INDEX_FILE) };
 }
+
+// The nodes shown: the project's md files plus, when "Work in progress" is on, the new ones of open branches,
+// marked n.wip (the open work item). A folder that only holds such nodes is marked too.
+function buildNodes() {
+  const wip = state.showWip ? state.wipFiles : [];
+  const nodes = buildModel([...state.mainFiles, ...wip.map(w => ({ path: w.path, text: w.text }))], state.rootName);
+  if (!wip.length) return nodes;
+  const byFile = new Map(wip.map(w => [w.path, w.item]));
+  const all = [...nodes.values()].sort((a, b) => b.path.split('/').length - a.path.split('/').length);
+  for (const n of all) {
+    if (n.file) { if (byFile.has(n.file)) n.wip = byFile.get(n.file); }
+    else if (n.path !== '' && n.children.length && n.children.every(c => c.wip)) n.wip = n.children[0].wip;
+  }
+  return nodes;
+}
+const mainNodes = () => [...state.nodes.values()].filter(n => !n.wip);
 
 // One commit on the default branch with every change, on top of `base` (the ghRead the changes were planned on).
 // ops, with paths relative to the docs folder: { path, text } writes a file, { path, sha, mode } puts an
@@ -928,10 +980,7 @@ function writeTarget(note, submit, verb, localNote) {
 async function showWip(n, branch) {
   const g = state.gh;
   try {
-    const text = ghToken()
-      ? await ghFetch(`${ghRepoApi(g)}/contents/${encPath(ghPath(g, n.file))}?ref=${encodeURIComponent(branch)}`, { raw: true })
-          .catch(e => { if (e.status === 404) return null; throw e; })
-      : await rawFile(g, branch, n.file, true);
+    const text = await branchFile(g, branch, n.file);
     if (text == null) return toast(`${repoPath(n)} is not in branch ${branch}: that work moves or deletes it.`);
     showDoc(`${repoPath(n)} · in progress on ${branch}`, n, text);
   } catch (e) {
@@ -1733,7 +1782,10 @@ async function copyText(text, what, hint = 'Paste it in a new thread.') {
   }
 }
 
-function copyPack(n) { return copyText(contextPack(n), `Context pack for "${n.title}"`); }
+function copyPack(n) {
+  if (n.wip) return toast(`"${n.title}" exists only in ${workLabel(n.wip)}: continue it from its thread (Open thread).`);
+  return copyText(contextPack(n), `Context pack for "${n.title}"`);
+}
 
 // ---------------------------------------------------------------------------
 // Markdown rendering (small subset, enough for project docs)
@@ -1858,6 +1910,8 @@ function renderAll() {
   $('refsToggleLabel').hidden = !$('list').hidden;
   if (state.snapshot) state.editMode = false;
   $('editToggleLabel').hidden = state.view !== 'map' || !!state.snapshot;
+  $('wipToggleLabel').hidden = !state.gh || !['map', 'tree'].includes(state.view);
+  $('wipToggle').checked = state.showWip;
   $('editToggleLabel').classList.toggle('on', state.editMode);
   $('editToggle').checked = state.editMode;
   $('editLegend').hidden = !state.editMode;
@@ -1892,6 +1946,7 @@ function addRow(container, n, depth) {
   const row = document.createElement('div');
   row.className = 'row';
   if (n.placeholder) row.classList.add('placeholder');
+  if (n.wip) row.classList.add('wip');
   if (n.status === 'obsolete') row.classList.add('obsolete');
   else if (n.obsoleteBy) row.classList.add('obsolete-inherited');
   if (n.path === state.selected) row.classList.add('selected');
@@ -1904,7 +1959,8 @@ function addRow(container, n, depth) {
     `<span class="twisty">${expandable ? (open ? '▼' : '▶') : ''}</span>` +
     `<span class="title">${esc(n.title)}</span>` +
     (n.status === 'draft' || n.status === 'idea' ? `<span class="badge ${n.status}">${n.status}</span>` : '') +
-    (openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">open</span>` : '') +
+    (n.wip ? `<span class="badge busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">new</span>`
+      : openWorkOf(n).length ? `<span class="badge busy" title="Open work: ${esc(openWorkOf(n).map(workLabel).join(', '))}">open</span>` : '') +
     (n.warnings.length ? `<span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '');
   container.appendChild(row);
   if (!open) return;
@@ -2043,7 +2099,7 @@ function renderMap() {
     }
     const n = it.node;
     const cls = ['node', 'd' + Math.min(it.depth, 2), n === sel && 'selected', anc.has(n) && 'anc', deps.has(n) && 'isdep', users.has(n) && 'isdependent',
-      n.placeholder && 'placeholder', n.status === 'draft' && 'draft', n.status === 'idea' && 'idea', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
+      n.placeholder && 'placeholder', n.wip && 'wip', n.status === 'draft' && 'draft', n.status === 'idea' && 'idea', n.status === 'obsolete' ? 'obsolete' : n.obsoleteBy && 'obsolete-inherited',
     ].filter(Boolean).join(' ');
     const summary = it.depth <= 1 && n.summary ? plain(n.summary.split('\n')[0]) : '';
     const busy = openWorkOf(n);
@@ -2054,7 +2110,8 @@ function renderMap() {
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
       `<foreignObject width="${W}" height="${it.h}"><div xmlns="http://www.w3.org/1999/xhtml" class="card" style="--c:${mapColor(n)}">` +
       `<div class="t">${esc(n.title)}${n.status !== 'stable' ? `<span class="tag">${n.status}</span>` : ''}` +
-      `${busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
+      `${n.wip ? `<span class="tag busy" title="New in ${esc(workLabel(n.wip))}, not on the default branch yet">new</span>`
+        : busy.length ? `<span class="tag busy" title="Open work: ${esc(busy.map(workLabel).join(', '))}">open</span>` : ''}</div>` +
       `<div class="p">${esc(n.path || docsPrefix())}</div>` +
       (summary ? `<div class="s">${esc(summary)}</div>` : '') +
       `<div class="meta">${questionCount(n) ? `<span class="qb" title="Open questions to resolve with the owner (question: lines in Requirements)">?${questionCount(n)}</span>` : ''}` +
@@ -2198,7 +2255,7 @@ function centerMapOn(path) {
 // to a draft that another node took over ("Takes over the draft ...").
 // ---------------------------------------------------------------------------
 
-const zoomNodes = () => [...state.nodes.values()].filter(n => !state.zoom || inZoom(n));
+const zoomNodes = () => mainNodes().filter(n => !state.zoom || inZoom(n));   // Drafts, Questions and Log: the default branch only
 const areaOf = n => { let a = n; while (a.parent && a.parent.path !== '') a = a.parent; return a.path === '' ? null : a; };
 const datesOf = n => [...n.requirements, ...n.decisions].map(d => d.when).filter(Boolean).sort();
 
@@ -2459,12 +2516,15 @@ function renderCard() {
     (n.status !== 'stable' ? `<span class="status ${n.status}">${n.status}</span>` : '') + `</h1>`;
   h += `<div class="path">${esc(n.file ? repoPath(n) : (docsPrefix() + n.path + '/'))}</div>`;
   h += '<div class="actions">' +
-    '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
-    '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>' +
+    (n.wip ? '' : '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
+      '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>') +
     openThreadButton(n) +
-    (state.snapshot ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
+    (state.snapshot || n.wip ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
+  if (n.wip) h += '<div class="banner wip">New in ' +
+    (n.wip.pr && isLink(n.wip.pr.url) ? `<a href="${esc(n.wip.pr.url)}" target="_blank" rel="noopener">${esc(workLabel(n.wip))}</a>` : esc(workLabel(n.wip))) +
+    `: it is not on ${esc(state.gh ? state.gh.branch : 'the default branch')} yet. Shown as that branch leaves it, read-only.</div>`;
   if (n.obsoleteBy) {
     const r = replacementOf(n, state.nodes);
     h += '<div class="banner">' +
@@ -2514,10 +2574,12 @@ function renderCard() {
 
   card.innerHTML = h;
   card.scrollTop = 0;
-  $('copyPackBtn').onclick = () => copyPack(n);
-  $('subTaskBtn').onclick = () => openSubTask(n);
+  if (!n.wip) {
+    $('copyPackBtn').onclick = () => copyPack(n);
+    $('subTaskBtn').onclick = () => openSubTask(n);
+  }
   $('openThreadBtn').onclick = () => openLastThread(n);
-  if (!state.snapshot) $('renameBtn').onclick = () => openRename(n);
+  if (!state.snapshot && !n.wip) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
   for (const b of card.querySelectorAll('[data-wip]')) b.onclick = () => showWip(n, b.dataset.wip);
 }
@@ -2526,6 +2588,7 @@ function renderCard() {
 // and otherwise its last `threads` entry (the most recent chat), in a new tab.
 // Earlier threads stay listed in the card's Threads section.
 function threadToOpen(n) {
+  if (n.wip) return isLink(n.wip.thread) ? { title: workLabel(n.wip), link: n.wip.thread, open: true } : null;
   const w = openWorkOf(n).filter(i => isLink(i.thread)).pop();
   if (w) return { title: workLabel(w), link: w.thread, open: true };
   return n.threads[n.threads.length - 1];
@@ -2802,7 +2865,7 @@ function renameProblem(n, title, newPath) {
 }
 
 function currentFiles() {
-  return [...state.nodes.values()].filter(x => x.file).map(x => ({ path: x.file, text: x.text }));
+  return mainNodes().filter(x => x.file).map(x => ({ path: x.file, text: x.text }));
 }
 
 function updateRenamePreview(n) {
@@ -2932,6 +2995,7 @@ const isUnder = (n, a) => { for (let x = n; x; x = x.parent) if (x === a) return
 
 function moveTargetProblem(n, t) {
   if (!n || !t) return 'That node no longer exists. Press Reload.';
+  if (n.wip || t.wip) return 'Nodes that exist only in an open branch cannot be moved, or receive others, from the page.';
   if (n.path === '') return 'The root cannot be moved.';
   if (isUnder(t, n)) return 'A node cannot be moved under itself or one of its descendants.';
   if (t === n.parent) return `"${n.title}" is already under "${t.title}".`;
@@ -3113,7 +3177,7 @@ async function doMove() {
 document.addEventListener('keydown', e => {
   if (e.key !== 'F2' || state.snapshot || $('app').hidden || document.querySelector('dialog[open]')) return;
   const n = state.nodes.get(state.selected);
-  if (n) { e.preventDefault(); openRename(n); }
+  if (n && !n.wip) { e.preventDefault(); openRename(n); }
 });
 
 // ---------------------------------------------------------------------------
@@ -3138,7 +3202,8 @@ function renderRulesButton() {
 function indexStatus() {
   if (state.snapshot || (state.gh && !ghToken())) return 'current';   // without a token, the repository's CVP docs action keeps it
   if (state.indexText == null) return 'missing';
-  return state.indexText.replace(/\r\n?/g, '\n') === nodeIndex(state.nodes) ? 'current' : 'outdated';
+  const main = state.wipFiles.length && state.showWip ? buildModel([...state.mainFiles], state.rootName) : state.nodes;
+  return state.indexText.replace(/\r\n?/g, '\n') === nodeIndex(main) ? 'current' : 'outdated';
 }
 function renderIndexButton() {
   const st = indexStatus(), b = $('indexBtn');
@@ -3233,7 +3298,7 @@ async function doUpdateRules() {
 // ---------------------------------------------------------------------------
 
 function renderWarningCount() {
-  const withWarnings = [...state.nodes.values()].filter(n => n.warnings.length);
+  const withWarnings = mainNodes().filter(n => n.warnings.length);
   const total = withWarnings.reduce((s, n) => s + n.warnings.length, 0);
   $('warnBtn').hidden = total === 0;
   $('warnBtn').textContent = `⚠ ${total} warning${total === 1 ? '' : 's'}`;
@@ -3265,6 +3330,13 @@ $('newProjectBtn').onclick = $('welcomeNewBtn').onclick = () => copyText(newProj
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
 $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };
+$('wipToggle').onchange = e => {
+  state.showWip = e.target.checked;
+  state.nodes = buildNodes();
+  if (!state.nodes.has(state.selected)) state.selected = '';
+  if (!state.nodes.has(state.zoom)) state.zoom = '';
+  renderAll();
+};
 for (const b of document.querySelectorAll('#viewSeg button')) b.onclick = () => { state.view = b.dataset.view; renderAll(); };
 $('openBtn').onclick = $('welcomeOpenBtn').onclick = () => pickFolder();
 $('openGhBtn').onclick = $('welcomeGhBtn').onclick = $('ghBtn').onclick = () => openGitHubDialog();

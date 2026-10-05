@@ -21,3 +21,4 @@ Responde a "¿qué ha cambiado?" sin abrir nodos, y muestra qué pasó con un dr
 - 2026-10-03 07:50 · Derived from context-pack/routing: poder consultar qué pasó con un draft que ha pasado a tarea en otro nodo.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: atenuar las decisiones sustituidas.
 - 2026-10-03 08:47 · Derived from format/decisiones-sustituidas: ocultar por defecto las decisiones sustituidas, con un interruptor para verlas.
+- 2026-10-05 09:17 · Derived from viewer/map/nodos-ocupados: los nodos nuevos de ramas sin fusionar no se cuentan aquí; solo la rama principal.
