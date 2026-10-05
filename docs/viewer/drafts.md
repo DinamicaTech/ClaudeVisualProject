@@ -21,3 +21,4 @@ Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de conte
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no mezclar las ideas con los drafts.
 - 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]
 - 2026-10-05 09:17 · Derived from viewer/map/nodos-ocupados: los nodos nuevos de ramas sin fusionar no se cuentan aquí; solo la rama principal.
+- 2026-10-05 09:56 · Derived from context-pack/ideas: la vista Questions y el "?N" del mapa cuentan también las preguntas de las ideas (status: idea).
