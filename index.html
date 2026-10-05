@@ -259,7 +259,7 @@
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
-  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) left by a requirements load; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <label id="refsToggleLabel" hidden title="Show each dependency as a repeated reference entry under the node that depends on it">
     <input type="checkbox" id="refsToggle" checked> References
   </label>
@@ -1424,7 +1424,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 6;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 7;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1473,7 +1473,8 @@ const CVP_RULES = [
   'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
   'An idea stays an idea until the owner says to turn it into a draft or to execute it. Then route it to its functional node (see Routing), ' +
   'set it to `status: draft` (or work on it as a task), move its file there, update every reference to its old path in the docs and add the decision "Leaves the lab: <draft or executed>". ' +
-  'A discarded idea stays in the lab with a decision that says so.',
+  'A discarded idea stays in the lab with a decision that says so. ' +
+  'Questions for the owner while debating an idea go as "question:" lines in its Requirements, like a draft\'s (see Drafts): the page lists them with the other open questions.',
   '**Requirements load.** A task that starts with "Load requirements:" brings a block of requirements to spread over the tree (in a new project, an empty tree). ' +
   'The block may be pasted text or attached files: read every attached file as part of it, without being asked. It is not routed as one task; instead:\n' +
   '1. Number each sentence of the block that asks for something as R1, R2…, word for word (in a long document, number each paragraph or section instead), and propose the node each one belongs to: an existing node, or a new one with its full path.\n' +
@@ -1600,8 +1601,10 @@ function draftTask(n) {
   return (marked.length ? marked : rest).map(t => t.replace(/\s*\n\s*/g, ' '));
 }
 // Open questions a requirements load left in a draft: its "question:" lines, to resolve before the task.
+// Open questions live in drafts and in ideas of the lab (context-pack/ideas).
+const asksQuestions = n => n.status === 'draft' || n.status === 'idea';
 function draftQuestions(n) {
-  if (n.status !== 'draft') return [];
+  if (!asksQuestions(n)) return [];
   return n.requirements.filter(r => /^question:/i.test(r.text)).map(r => r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' '));
 }
 // Number of open questions of a node, shown as "?N" on its map card and in the Drafts view.
@@ -2355,7 +2358,7 @@ function renderQuestions() {
   const scroll = list.scrollTop;
   const rows = [];
   const walk = n => {
-    if ((!state.zoom || inZoom(n)) && n.status === 'draft')
+    if ((!state.zoom || inZoom(n)) && asksQuestions(n) && !n.wip)
       for (const r of n.requirements) if (/^question:/i.test(r.text)) rows.push({ n, r });
     n.children.forEach(walk);
   };
@@ -2365,7 +2368,7 @@ function renderQuestions() {
   let h = `<div class="lhead"><strong>Questions</strong><span class="count">${rows.length} open question${rows.length === 1 ? '' : 's'}` +
     `${state.zoom ? ' in this branch' : ''} · tick the ones to answer, pick or write the answer · double-click a row to open its thread</span>` +
     (rows.length ? `<button id="qCopy" class="primary"${chosen.length ? '' : ' disabled'} title="Copy a prompt for one new thread that records these answers in their nodes">Copy answers prompt (${chosen.length})</button>` : '') + '</div>';
-  if (!rows.length) h += '<p class="empty-note">No open questions. A requirements load leaves the questions that do not change the tree as <code>question:</code> lines in the Requirements of their draft.</p>';
+  if (!rows.length) h += '<p class="empty-note">No open questions. Threads leave their questions for the owner as <code>question:</code> lines in the Requirements of a draft or an idea.</p>';
   else {
     h += `<table class="qtable"><thead><tr><th><input type="checkbox" id="qAll" title="Tick or untick all"${rows.every(x => x.a.on) ? ' checked' : ''}></th><th>#</th><th>Question</th><th>Answer</th><th>Node</th><th>Since</th><th>Thread</th></tr></thead><tbody>`;
     h += rows.map(({ n, r, a }, i) => {

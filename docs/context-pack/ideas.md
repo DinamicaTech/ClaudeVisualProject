@@ -23,6 +23,7 @@ En el visor la idea lleva una etiqueta IDEA ámbar y no sale en la vista Drafts.
 - 2026-10-03 14:45 · Visor: la tarjeta de una idea es normal (el gris es de los drafts) con la etiqueta IDEA en ámbar, y lo mismo en la vista Project y en la ficha. No sale en la vista Drafts y no hay pestaña Ideas: Z sobre el lab las muestra todas. Aceptado por Ronald (14:35).
 - 2026-10-03 14:45 · Hecho en `index.html` (prompts y visor), en los nodos `context-pack`, `context-pack/routing`, `creative-lab`, `format`, `model`, `viewer/map`, `viewer/tree`, `viewer/node-card` y `viewer/drafts`, y en AGENTS.md.
 - 2026-10-03 14:42 · Validado por Ronald: el nodo pasa a estable.
+- 2026-10-05 09:56 · Las preguntas al propietario mientras se debate una idea van como líneas "question:" en sus Requirements, como en un draft, y la página las cuenta: vista Questions y "?N" en el mapa. Reglas versión 7. Motivo: las 11 preguntas de la idea Multijugador de Killer Flies no aparecían porque la página solo leía las de los drafts. Acordado con Ronald (09:56).
 
 ## Requirements
 - 2026-10-03 10:42 · Es correcto que lo haga si pasamos una idea a 'Draft' o la ejecutamos.
@@ -34,3 +35,4 @@ En el visor la idea lleva una etiqueta IDEA ámbar y no sale en la vista Drafts.
 - 2026-10-03 14:35 · 3. Ok [salida del lab: el hilo la encamina, cambia el estado y mueve el fichero]
 - 2026-10-03 14:35 · 4. Ok [tarjeta normal con etiqueta IDEA ámbar; sin pestaña Ideas]
 - 2026-10-03 14:36 · B1 [doble clic en una idea: "Task" con su línea `idea:`, para seguir debatiéndola]
+- 2026-10-05 09:53 · Ok, ya tengo Killer Flies vinculada a Git Hub, pero siguen sin aparecerme las preguntas del hilo 'Multijugador'
