@@ -275,6 +275,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
   <span class="folder" id="folderName"></span>
   <span id="openWorkNote" hidden></span>
@@ -285,7 +286,6 @@
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <button id="ghBtn" hidden></button>
   <button id="reloadBtn" hidden title="Read the docs again (same as F5)">Reload</button>
   <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
