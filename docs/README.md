@@ -25,10 +25,12 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-03 07:50 · Los pendientes ya no van en una hoja de ruta: cada uno es un nodo `draft` en su sitio funcional, la vista `viewer/drafts` los reúne y `viewer/log` registra decisiones y requisitos por fecha. Una tarea arrancada en cualquier nodo se lleva a su nodo responsable (`context-pack/routing`).
 - 2026-10-03 13:50 · Nuevo subproyecto `creative-lab`: la sala de ideas, donde se debaten mejoras y desarrollos antes de pasarlos a draft o ejecutarlos.
 - 2026-10-03 14:58 · Nuevo nodo `global-rules` bajo la raíz: las reglas que siguen todos los hilos, a las que apuntan los prompts (ver `context-pack/reglas-del-proyecto`).
+- 2026-10-06 11:35 · Sección `## Overview`: la portada del proyecto, que enseña la vista Overview (`viewer/overview`).
 
 ## Requirements
 - 2026-10-03 13:50 · Derived from creative-lab: listar `creative-lab` entre los subproyectos.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: listar `global-rules` entre los subproyectos.
+- 2026-10-06 11:35 · Derived from viewer/overview: escribir la sección `## Overview` de CVP.
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
@@ -48,3 +50,10 @@ Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
 - `global-rules`: las reglas que siguen todos los hilos; los prompts apuntan a ellas.
 - `creative-lab`: la sala de ideas; cada idea se debate en un nodo hijo antes de pasar a draft.
 - `roadmap/`: obsoleto; los pendientes son nodos `draft` en su sitio (ver `viewer/drafts`).
+
+## Overview
+Claude Visual Project (CVP) convierte la carpeta de docs de un proyecto desarrollado con IA en un mapa que se recorre con el ratón: cada caja es un nodo (una parte funcional del proyecto) con su resumen, sus decisiones fechadas y los requisitos del propietario con sus propias palabras.
+
+Desde el mapa se arranca el trabajo: el doble clic sobre un nodo copia el prompt que abre un hilo nuevo con el contexto justo, y las vistas Drafts, Questions y Log reúnen lo pendiente, las preguntas abiertas y la historia de las decisiones.
+
+Es una sola página HTML, sin servidor ni instalación, que lee los md de una carpeta local o directamente de GitHub. No depende de ningún asistente: solo de una convención de ficheros md.

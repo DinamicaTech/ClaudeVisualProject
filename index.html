@@ -90,6 +90,20 @@
   #list .entry .body { min-width: 0; }
   #list .entry .who { font-weight: 600; margin-right: 6px; }
   #list .entry .who .p { font: 11px var(--mono); color: var(--muted); font-weight: 400; margin-left: 4px; }
+  /* Overview (viewer/overview): the project's cover page, full width */
+  #overview { flex: 1; overflow: auto; background: var(--panel); }
+  #overview .ovbar { position: sticky; top: 0; z-index: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 8px 18px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; color: var(--muted); }
+  #overview .ovpage { max-width: 960px; margin: 0 auto; padding: 28px 28px 60px; }
+  #overview h1 { font-size: 28px; margin: 0; }
+  #overview .sub { color: var(--muted); font-size: 16px; margin: 4px 0 0; }
+  #overview .sub:empty { display: none; }
+  #overview .ovtext { font-size: 15px; margin-top: 18px; }
+  #overview .fig { display: block; margin: 18px 0; }
+  #overview .fig img { display: block; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+  #overview .fig .cap { display: flex; gap: 10px; align-items: center; margin-top: 6px; font: 12px var(--mono); color: var(--muted); }
+  #overview .fig .cap button { font: 12px system-ui, sans-serif; padding: 1px 8px; }
+  #overview .fig.missing .note { color: var(--error); font-size: 13px; }
   #map { position: relative; flex: 0 0 62%; min-width: 300px; border-right: 1px solid var(--line); background: var(--panel); overflow: hidden; }
   #mapSvg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #mapSvg.dragging { cursor: grabbing; }
@@ -271,7 +285,7 @@
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
   <button id="warnBtn" hidden></button>
-  <div class="seg" id="viewSeg" hidden><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <button id="ghBtn" hidden></button>
   <button id="reloadBtn" hidden title="Read the docs again (same as F5)">Reload</button>
   <button id="exportBtn" hidden title="Download one HTML file with these docs inside, to open in any browser or publish (for example on GitHub Pages)">Export HTML</button>
@@ -299,7 +313,9 @@
     <div class="legend" id="mapLegend">◆ decisions in force · ?N open questions · <span class="ld">↗ depends on (click to jump)</span> · selected node: <span class="ld">green</span> what it depends on, <span class="lp">amber</span> what uses it · "N nodes": inactive nodes stacked, click to spread · wheel to zoom, drag to move · Z: zoom to selected</div>
   </div>
   <div id="list" hidden></div>
+  <div id="overview" hidden></div>
   <div id="card"></div>
+  <input type="file" id="ovFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
 </main>
 
 <div id="welcome">
@@ -438,17 +454,19 @@ const state = {
   selected: null,     // selected node path
   expanded: new Set(),
   showRefs: true,
-  view: 'map',        // 'map' (Tree), 'tree' (Project), 'drafts', 'questions' or 'log'
+  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'drafts', 'questions' or 'log'
   draftSort: { key: 'when', dir: -1 },
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
   editMode: false,    // Tree edit mode: cards can be dragged onto a new parent (not kept across F5)
+  images: new Map(),  // images of the Overview (viewer/overview): docs-relative path -> { file } (folder) or { sha } (GitHub)
+  ghHead: '',         // commit of the default branch the GitHub project was read at
 };
 
 const $ = id => document.getElementById(id);
 const viewCtl = $('viewCtl');   // the view switches: inside the map or on top of the Project rows
-const VIEWS = ['map', 'tree', 'drafts', 'questions', 'log'];
+const VIEWS = ['overview', 'map', 'tree', 'drafts', 'questions', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -623,6 +641,10 @@ async function reload() {
   try {
     const d = state.snapshot ? { files: state.snapshot.files, openWork: state.snapshot.openWork, indexText: null } : await readDocs();
     state.mainFiles = d.files;
+    state.images = state.snapshot ? new Map(Object.keys(state.snapshot.images || {}).map(p => [p, {}]))
+      : d.entries ? new Map(d.entries.filter(e => isOverviewImage(e.path)).map(e => [e.path, { sha: e.sha }]))
+      : d.images;
+    state.ghHead = d.head || '';
     state.wipFiles = d.wipFiles || [];
     state.nodes = buildNodes();
     state.openWork = parseOpenWork(d.openWork);
@@ -675,7 +697,7 @@ function restoreViewState() {
   state.selected = '';
   state.expanded = new Set();
   state.showRefs = true;
-  state.view = 'map';
+  state.view = 'overview';   // a project opened for the first time starts on its cover page
   state.zoom = '';
   mapView = null;
   try {
@@ -684,7 +706,7 @@ function restoreViewState() {
       state.selected = v.selected ?? '';
       state.expanded = new Set(v.expanded || []);
       state.showRefs = v.showRefs !== false;
-      state.view = VIEWS.includes(v.view) ? v.view : 'map';
+      state.view = VIEWS.includes(v.view) ? v.view : 'overview';
       if (v.draftSort && v.draftSort.key) state.draftSort = v.draftSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
       state.showReplaced = v.showReplaced === true;
@@ -798,15 +820,15 @@ const ghRepoApi = g => `/repos/${encodeURIComponent(g.owner)}/${encodeURICompone
 const ghLabel = g => `${g.owner}/${g.repo}`;
 const ghPath = (g, p) => (g.docs ? g.docs + '/' : '') + p;   // docs-relative path -> repository path
 
-async function ghFetch(path, { method = 'GET', body = null, raw = false } = {}) {
-  const headers = { Accept: raw ? 'application/vnd.github.raw' : 'application/vnd.github+json' };
+async function ghFetch(path, { method = 'GET', body = null, raw = false, bin = false } = {}) {
+  const headers = { Accept: raw || bin ? 'application/vnd.github.raw' : 'application/vnd.github+json' };
   const token = ghToken();
   if (token) headers.Authorization = 'Bearer ' + token;
   if (body) headers['Content-Type'] = 'application/json';
   let r;
   try { r = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' }); }
   catch (e) { throw new Error('GitHub cannot be reached. Check the connection.'); }
-  if (r.ok) return raw ? r.text() : r.json();
+  if (r.ok) return bin ? r.arrayBuffer() : raw ? r.text() : r.json();
   let msg = '';
   try { msg = (await r.json()).message || ''; } catch (e) { /* not json */ }
   const err = new Error(ghErrorText(r, msg));
@@ -836,11 +858,12 @@ async function ghState(g) {
 }
 
 // Without a token files come from raw.githubusercontent.com, which does not count against the API's hourly limit.
+const rawUrl = (g, ref, path) =>
+  `https://raw.githubusercontent.com/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/${encPath(ref)}/${encPath(ghPath(g, path))}`;
 async function rawFile(g, ref, path, fresh = false) {
   let r;
   try {
-    r = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/${encPath(ref)}/${encPath(ghPath(g, path))}`,
-      fresh ? { cache: 'no-store' } : {});
+    r = await fetch(rawUrl(g, ref, path), fresh ? { cache: 'no-store' } : {});
   } catch (e) { throw new Error('GitHub cannot be reached. Check the connection.'); }
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`GitHub answered ${r.status} for ${ghPath(g, path)}.`);
@@ -902,7 +925,8 @@ async function ghWipFiles(g, s, openWorkText) {
 // The md files of the open project, with its open work and node index: from GitHub, or from the folder.
 async function readDocs() {
   if (state.gh) return ghRead(state.gh);
-  return { files: await readFolder(state.dir), openWork: await readOpenWork(state.dir), indexText: await readTextFile(state.dir, INDEX_FILE) };
+  return { files: await readFolder(state.dir), openWork: await readOpenWork(state.dir), indexText: await readTextFile(state.dir, INDEX_FILE),
+    images: await readOverviewImages(state.dir) };
 }
 
 // The nodes shown: the project's md files plus, when "Work in progress" is on, the new ones of open branches,
@@ -1083,7 +1107,7 @@ async function saveGhToken(t) {
 // ---------------------------------------------------------------------------
 // Standalone HTML (snapshot): the md files embedded in a copy of this page
 // ---------------------------------------------------------------------------
-// Same format as tools/build-html.mjs: { name, generated, files: [{ path, text }] } as JSON
+// Same format as tools/build-html.mjs: { name, generated, files: [{ path, text }], openWork?, images? } as JSON
 // in the #cvpSnapshot script, with "<" escaped so no md text can close the script.
 
 const snapshotJson = data => JSON.stringify(data).replace(/</g, '\\u003c');
@@ -1110,16 +1134,19 @@ function nowStamp() {
 
 async function exportHtml() {
   let files, openWork;
+  const images = {};   // the Overview images (viewer/overview), embedded as data URLs
   try {
     const d = await readDocs();
     files = d.files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
     openWork = d.openWork;
+    for (const p of [...state.images.keys()].sort()) images[p] = await blobToDataUrl(await imageBlob(p));
   } catch (e) {
     toast('Could not read the docs: ' + (e && e.message || e));
     return;
   }
   const page = PAGE_TEMPLATE.cloneNode(true);
-  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files, ...(openWork ? { openWork } : {}) });
+  page.querySelector('#cvpSnapshot').textContent = snapshotJson({ name: state.rootName, generated: nowStamp(), files,
+    ...(openWork ? { openWork } : {}), ...(Object.keys(images).length ? { images } : {}) });
   const blob = new Blob(['<!doctype html>\n' + page.outerHTML + '\n'], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1830,6 +1857,14 @@ function inline(src) {
   const codes = [];
   let s = src.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
   s = esc(s);
+  // Images: only those of the Overview folder (viewer/overview), filled in by fillImages; any other shows its text.
+  const imgs = [];
+  s = s.replace(IMG_MD, (_, alt, href) => {
+    const p = resolveImage(href.replace(/&amp;/g, '&'));
+    if (!p) return alt;
+    imgs.push(`<img data-img="${esc(p)}" alt="${alt}">`);
+    return `\u0001${imgs.length - 1}\u0001`;
+  });
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, href) => {
     const raw = href.replace(/&amp;/g, '&');
     const node = resolveLink(raw);
@@ -1840,7 +1875,7 @@ function inline(src) {
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\w)/g, '$1<em>$2</em>');
   s = s.replace(/(^|[^\w])_([^_\s][^_]*?)_(?!\w)/g, '$1<em>$2</em>');
-  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[+i])}</code>`);
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[+i])}</code>`).replace(/\u0001(\d+)\u0001/g, (_, i) => imgs[+i]);
 }
 
 const LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
@@ -1922,6 +1957,275 @@ function withBase(n, fn) {
 }
 
 // ---------------------------------------------------------------------------
+// Overview (viewer/overview): the project's cover page. It shows the "## Overview" section of the root node
+// (text and images; above its images, the root's Summary when the section is missing or has no text) and,
+// for a project read from GitHub, the repository description as subtitle. Images live only in the folder
+// OVERVIEW_DIR of the docs folder (no md there, so it is no node); the view adds, replaces and deletes them,
+// in a folder on disk or on GitHub with a token. A snapshot carries them as data URLs and only shows them.
+// ---------------------------------------------------------------------------
+
+const OVERVIEW_DIR = 'overview';
+const IMAGE_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+const IMG_MD = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+const BIG_IMAGE = 2 * 1024 * 1024;   // above this, adding asks first: a snapshot grows by that much
+const imageExt = name => ((name.match(/\.([a-z0-9]+)$/i) || [])[1] || '').toLowerCase();
+const isOverviewImage = p => p.startsWith(OVERVIEW_DIR + '/') && !p.slice(OVERVIEW_DIR.length + 1).includes('/') && !!IMAGE_TYPES[imageExt(p)];
+
+// Docs-relative path of an image link written in the md being rendered, or null if it is not an Overview image.
+function resolveImage(href) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('/')) return null;
+  let path = href.split(/[?#]/)[0];
+  try { path = decodeURIComponent(path); } catch (e) { /* keep it as written */ }
+  const parts = mdBaseDir ? mdBaseDir.split('/') : [];
+  for (const seg of path.split('/')) { if (seg === '..') parts.pop(); else if (seg && seg !== '.') parts.push(seg); }
+  const p = parts.join('/');
+  return isOverviewImage(p) ? p : null;
+}
+
+// The images of the Overview folder on disk: path -> { file }.
+async function readOverviewImages(dir) {
+  const images = new Map();
+  const name = await entryExists(dir, OVERVIEW_DIR);
+  if (name !== OVERVIEW_DIR) return images;
+  for await (const [f, entry] of (await dir.getDirectoryHandle(name)).entries()) {
+    const p = OVERVIEW_DIR + '/' + f;
+    if (entry.kind === 'file' && isOverviewImage(p)) images.set(p, { file: await entry.getFile() });
+  }
+  return images;
+}
+
+// The bytes of an Overview image of the open project, as a Blob.
+async function imageBlob(path) {
+  const im = state.images.get(path);
+  if (!im) throw new Error(`${path} not found.`);
+  if (im.file) return im.file;
+  const type = IMAGE_TYPES[imageExt(path)];
+  if (ghToken()) return new Blob([await ghFetch(`${ghRepoApi(state.gh)}/git/blobs/${im.sha}`, { bin: true })], { type });
+  let r;
+  try { r = await fetch(rawUrl(state.gh, state.ghHead, path)); } catch (e) { throw new Error('GitHub cannot be reached. Check the connection.'); }
+  if (!r.ok) throw new Error(`GitHub answered ${r.status} for ${ghPath(state.gh, path)}.`);
+  return new Blob([await r.arrayBuffer()], { type });
+}
+const blobToDataUrl = b => new Promise((resolve, reject) => {
+  const fr = new FileReader();
+  fr.onload = () => resolve(fr.result);
+  fr.onerror = () => reject(fr.error);
+  fr.readAsDataURL(b);
+});
+
+// What an <img> shows for an Overview image: the snapshot's data URL, GitHub's own address for a public
+// repository read without a token, or an object URL of its bytes (one per version of the file).
+const imageUrls = new Map();   // version key -> object URL
+async function imageSrc(path) {
+  if (state.snapshot) return (state.snapshot.images || {})[path] || null;
+  const im = state.images.get(path);
+  if (!im) return null;
+  if (state.gh && !ghToken()) return rawUrl(state.gh, state.ghHead, path);
+  const key = im.sha ? 'sha:' + im.sha : `file:${path}:${im.file.lastModified}:${im.file.size}`;
+  if (!imageUrls.has(key)) imageUrls.set(key, URL.createObjectURL(await imageBlob(path)));
+  return imageUrls.get(key);
+}
+
+// The body of the root's "## Overview" section: the md's lines and the [start, end) range after its heading.
+function overviewSection(text) {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  let fence = null, start = -1;
+  for (let k = 0; k < lines.length; k++) {
+    const f = lines[k].match(/^\s*(```|~~~)/);
+    if (f) { fence = !fence ? f[1] : lines[k].trim().startsWith(fence) ? null : fence; continue; }
+    if (fence || !/^##\s/.test(lines[k])) continue;
+    if (start >= 0) return { lines, start, end: k };
+    if (/^##\s+overview\s*#*\s*$/i.test(lines[k])) start = k + 1;
+  }
+  return start >= 0 ? { lines, start, end: lines.length } : null;
+}
+const eolOf = text => text.includes('\r\n') ? '\r\n' : '\n';
+
+// The root md with an image line added at the end of its Overview section (created at the end of the file if missing).
+function addImageLine(text, line) {
+  const sec = overviewSection(text);
+  const lines = sec ? sec.lines : text.replace(/\r\n?/g, '\n').split('\n');
+  if (!sec) {
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    lines.push('', '## Overview', '', line, '');
+  } else {
+    let k = sec.end;
+    while (k > sec.start && !lines[k - 1].trim()) k--;
+    lines.splice(k, 0, '', line);
+    if (k + 2 < lines.length && lines[k + 2].trim()) lines.splice(k + 2, 0, '');
+  }
+  return lines.join(eolOf(text));
+}
+
+// The root md without the image links to `path` in its Overview section; a line left empty goes too.
+function removeImageLines(text, path) {
+  const sec = overviewSection(text);
+  if (!sec) return text;
+  const lines = sec.lines, out = lines.slice(0, sec.start);
+  for (let k = sec.start; k < sec.end; k++) {
+    const l = lines[k].replace(IMG_MD, (m, alt, href) => resolveImage(href) === path ? '' : m);
+    if (l === lines[k] || l.trim()) { out.push(l === lines[k] ? l : l.replace(/\s+$/, '')); continue; }
+    if (!(out.length && !out[out.length - 1].trim()) || k + 1 >= sec.end || lines[k + 1].trim()) continue;
+    out.pop();   // the removed line sat between two blank lines: keep one of them
+  }
+  return [...out, ...lines.slice(sec.end)].join(eolOf(text));
+}
+
+// The page can change the Overview images in a folder on disk, or on GitHub with a token.
+const overviewWritable = () => !state.snapshot && (!state.gh || !!ghToken()) && !!(state.nodes.get('') || {}).file;
+const overviewBlocked = () => { const r = state.nodes.get(''); return !!(r && r.file && openWorkCheck([{ path: r.file }]).blocked); };
+
+// The repository description (subtitle), read once per browser session: one more GitHub request.
+async function ghDescription(g) {
+  const key = 'cvp:ghdesc:' + ghLabel(g);
+  try { const v = sessionStorage.getItem(key); if (v !== null) return v; } catch (e) { /* storage unavailable */ }
+  const d = (await ghFetch(ghRepoApi(g))).description || '';
+  try { sessionStorage.setItem(key, d); } catch (e) { /* storage unavailable */ }
+  return d;
+}
+let ghDesc = { repo: '', text: '' };
+
+function renderOverview() {
+  const box = $('overview'), root = state.nodes.get('');
+  const sec = root.text != null ? overviewSection(root.text) : null;
+  const body = sec ? sec.lines.slice(sec.start, sec.end).join('\n').trim() : '';
+  const hasText = body.replace(IMG_MD, '').trim() !== '';
+  let bar = '';
+  if (overviewWritable()) {
+    const blocked = overviewBlocked();
+    bar = `<button id="ovAdd"${blocked ? ' disabled' : ''}>Add image</button>` + (blocked
+      ? `<span>Open work changes ${esc(docsPrefix() + root.file)}: adding or deleting images waits until it is merged or closed.</span>`
+      : `<span>or paste a screenshot (Ctrl+V). Images are kept in <code>${esc(docsPrefix() + OVERVIEW_DIR)}/</code>` +
+        (state.gh ? ` and committed to ${esc(state.gh.branch)} on GitHub.` : '; commit them in git.') + '</span>');
+  } else if (state.gh && !state.snapshot) bar = '<span>Add a GitHub token (GitHub button) to add, replace or delete images.</span>';
+  let h = bar ? `<div class="ovbar">${bar}</div>` : '';
+  h += `<div class="ovpage"><h1>${esc(root.title)}</h1>`;
+  if (state.gh) h += `<p class="sub" id="ovSub">${esc(ghDesc.repo === ghLabel(state.gh) ? ghDesc.text : '')}</p>`;
+  h += '<div class="ovtext md">';
+  if (!hasText) h += root.summary ? withBase(root, () => renderMarkdown(root.summary))
+    : '<p class="empty-note">No overview yet: write a "## Overview" section in the root node, or its Summary.</p>';
+  if (body) h += withBase(root, () => renderMarkdown(body));
+  box.innerHTML = h + '</div></div>';
+  fillImages(box);
+  if (state.gh && ghDesc.repo !== ghLabel(state.gh)) {
+    const g = state.gh, repo = ghLabel(g);
+    ghDesc = { repo, text: '' };
+    ghDescription(g).then(t => { if (ghDesc.repo === repo) { ghDesc.text = t; const el = $('ovSub'); if (el) el.textContent = t; } }).catch(() => {});
+  }
+}
+
+// Each image of the view, under its file name and, where the page can write, its Replace and Delete buttons.
+function fillImages(box) {
+  const writable = overviewWritable(), blocked = writable && overviewBlocked();
+  for (const img of box.querySelectorAll('img[data-img]')) {
+    const path = img.dataset.img, fig = document.createElement('span');
+    fig.className = 'fig';
+    img.replaceWith(fig);
+    if (!state.images.has(path)) {
+      fig.classList.add('missing');
+      fig.innerHTML = `<span class="note">Image not found: ${esc(docsPrefix() + path)}</span>`;
+    } else {
+      fig.append(img);
+      imageSrc(path).then(src => { if (src) img.src = src; }).catch(e => { img.alt = `${img.alt} (${e && e.message || e})`; });
+    }
+    if (!writable) continue;
+    const cap = document.createElement('span');
+    cap.className = 'cap';
+    cap.innerHTML = `<span>${esc(path.slice(OVERVIEW_DIR.length + 1))}</span>` +
+      (state.images.has(path) ? '<button data-ov="replace" title="Upload a new image with the same file name; the text does not change">Replace</button>' : '') +
+      `<button data-ov="delete"${blocked ? ' disabled' : ''} title="Delete the image file and its line in the Overview">Delete</button>`;
+    for (const b of cap.querySelectorAll('button')) b.onclick = () => b.dataset.ov === 'replace' ? pickImage(f => changeOverview('replace', path, f)) : changeOverview('delete', path);
+    fig.append(cap);
+  }
+  const add = $('ovAdd');
+  if (add) add.onclick = () => pickImage(f => changeOverview('add', null, f));
+}
+
+function pickImage(then) {
+  const input = $('ovFile');
+  input.value = '';
+  input.onchange = () => { if (input.files[0]) then(input.files[0]); };
+  input.click();
+}
+
+// A free file name in the Overview folder for an image named `name`.
+function imageName(name, taken) {
+  const ext = imageExt(name) || 'png';
+  const base = name.replace(/\.[^.]*$/, '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'image';
+  const used = new Set([...taken].map(p => p.toLowerCase()));
+  let n = `${base}.${ext}`;
+  for (let k = 2; used.has(`${OVERVIEW_DIR}/${n}`); k++) n = `${base}-${k}.${ext}`;
+  return n;
+}
+
+// Add an image (new file and its line at the end of the Overview section), replace one (same file name,
+// the md does not change) or delete one (file and line). One commit on GitHub, or written to the folder.
+async function changeOverview(kind, path, file) {
+  const root = state.nodes.get(''), rootFile = root.file;
+  if (file) {
+    const ext = imageExt(file.name) || Object.keys(IMAGE_TYPES).find(e => IMAGE_TYPES[e] === file.type);
+    if (!IMAGE_TYPES[ext]) return toast('Use a PNG, JPEG, GIF or WebP image.');
+    if (!imageExt(file.name)) file = new File([file], `image.${ext}`, { type: file.type });
+    if (file.size > BIG_IMAGE && !confirm(`This image is ${(file.size / 1048576).toFixed(1)} MB. Exported HTML files grow by that much. Use it anyway?`)) return;
+  }
+  if (kind === 'delete' && !confirm(`Delete ${docsPrefix() + path} and its line in the Overview?` +
+    (state.gh ? ' The previous version stays in the history of GitHub.' : ''))) return;
+  try {
+    if (!state.gh && await state.dir.requestPermission({ mode: 'readwrite' }) !== 'granted')
+      return toast('The browser did not grant permission to write to the folder.');
+    toast(kind === 'add' ? 'Adding the image…' : kind === 'replace' ? 'Replacing the image…' : 'Deleting the image…');
+    // Plan from what is on GitHub (or on disk) now, not from what was loaded.
+    const d = state.gh ? await ghRead(state.gh) : null;
+    if (d) state.openWork = parseOpenWork(d.openWork);
+    if (kind !== 'replace' && openWorkCheck([{ path: rootFile }]).blocked) {
+      renderAll();
+      return toast(`Open work changes ${docsPrefix() + rootFile}: wait until it is merged or closed.`);
+    }
+    const taken = d ? d.entries.map(e => e.path) : [...(await readOverviewImages(state.dir)).keys()];
+    const text = d ? (d.files.find(f => f.path === rootFile) || {}).text : await readTextFile(await dirAt(parentPathOf(rootFile) || '', false), lastSegment(rootFile));
+    if (text == null) return toast(`${docsPrefix() + rootFile} could not be read. Press Reload.`);
+    if (kind === 'replace' && !taken.includes(path)) return toast(`${docsPrefix() + path} no longer exists. Press Reload.`);
+    const target = kind === 'add' ? `${OVERVIEW_DIR}/${imageName(file.name, taken)}` : path;
+    const newText = kind === 'add' ? addImageLine(text, `![${lastSegment(target).replace(/\.[^.]*$/, '')}](${target})`)
+      : kind === 'delete' ? withBase(root, () => removeImageLines(text, path)) : text;
+    if (d) {
+      const ops = [];
+      if (file) {
+        const content = (await blobToDataUrl(file)).replace(/^[^,]*,/, '');
+        const blob = await ghFetch(`${ghRepoApi(state.gh)}/git/blobs`, { method: 'POST', body: { content, encoding: 'base64' } });
+        ops.push({ path: target, sha: blob.sha });
+      } else if (taken.includes(path)) ops.push({ path, del: true });
+      if (newText !== text) ops.push({ path: rootFile, text: newText });
+      if (!ops.length) return toast('Nothing to change. Press Reload.');
+      await ghCommit(d, [...ops, ...indexOps(d, ops)],
+        `${kind === 'add' ? 'Add' : kind === 'replace' ? 'Replace' : 'Delete'} the Overview image ${target}, from Claude Visual Project`);
+    } else {
+      if (file) await writeFileAt(target, file);
+      else if (taken.includes(path)) await (await dirAt(OVERVIEW_DIR, false)).removeEntry(lastSegment(path));
+      if (newText !== text) await writeFileAt(rootFile, newText);
+      await refreshIndex();
+    }
+    await reload();
+    toast((kind === 'add' ? 'Image added' : kind === 'replace' ? 'Image replaced' : 'Image deleted') +
+      (state.gh ? ` and committed to ${state.gh.branch} on GitHub.` : ' on disk; commit it in git.'));
+  } catch (e) {
+    toast('Could not change the image: ' + (e && e.message || e));
+  }
+}
+
+// A screenshot pasted on the Overview view is added as an image.
+document.addEventListener('paste', e => {
+  if (state.view !== 'overview' || $('app').hidden || document.querySelector('dialog[open]') || !overviewWritable() || overviewBlocked()) return;
+  if (e.target.closest && e.target.closest('input, textarea, [contenteditable]')) return;
+  const f = [...(e.clipboardData && e.clipboardData.files || [])].find(x => x.type.startsWith('image/'));
+  if (!f) return;
+  e.preventDefault();
+  const ext = Object.keys(IMAGE_TYPES).find(x => IMAGE_TYPES[x] === f.type) || 'png';
+  changeOverview('add', null, new File([f], `screenshot-${nowStamp().replace(/\D/g, '')}.${ext}`, { type: f.type }));
+});
+
+// ---------------------------------------------------------------------------
 // Tree
 // ---------------------------------------------------------------------------
 
@@ -1930,6 +2234,8 @@ function renderAll() {
   $('map').hidden = state.view !== 'map';
   if (state.view === 'map') $('map').prepend(viewCtl);
   $('list').hidden = !['drafts', 'questions', 'log'].includes(state.view);
+  $('overview').hidden = state.view !== 'overview';
+  $('card').hidden = state.view === 'overview';
   $('refsToggleLabel').hidden = !$('list').hidden;
   if (state.snapshot) state.editMode = false;
   $('editToggleLabel').hidden = state.view !== 'map' || !!state.snapshot;
@@ -1944,6 +2250,7 @@ function renderAll() {
   else if (state.view === 'drafts') renderDrafts();
   else if (state.view === 'questions') renderQuestions();
   else if (state.view === 'log') renderLog();
+  else if (state.view === 'overview') renderOverview();
   else renderMap();
   const z = state.zoom && state.nodes.get(state.zoom);
   $('zoomBtn').hidden = !z;
@@ -2013,7 +2320,7 @@ function select(path, reveal) {
   renderAll();
   if (!reveal) return;
   if (state.view === 'map') return centerMapOn(path);
-  if (['drafts', 'questions', 'log'].includes(state.view)) return;
+  if (['drafts', 'questions', 'log', 'overview'].includes(state.view)) return;
   const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
   if (row) row.scrollIntoView({ block: 'nearest' });
 }
@@ -2034,7 +2341,7 @@ function setZoom(path, render = true) {
 }
 document.addEventListener('keydown', e => {
   if ($('app').hidden || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
-  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.target.closest('input, textarea, select, [contenteditable]') || state.view === 'overview') return;
   if (e.key === 'Escape' && state.zoom) return setZoom('');
   if (e.key !== 'z' && e.key !== 'Z') return;
   e.preventDefault();
@@ -2717,6 +3024,7 @@ document.addEventListener('click', e => {
   if (!el) return;
   e.preventDefault();
   el.closest('dialog')?.close();
+  if (state.view === 'overview') state.view = 'map';   // a node link on the cover page opens the node in the Tree
   select(el.dataset.node, true);
   if (el.dataset.dec) {
     const li = [...$('card').querySelectorAll('.decisions:not(.reqs) li')]
