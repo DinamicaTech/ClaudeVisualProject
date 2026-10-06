@@ -1,6 +1,5 @@
 ---
 title: Pestaña Overview
-status: draft
 depends_on: [viewer, build/github, build/html-autonomo]
 threads:
   - Pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL6pGuKTocW1pSRkWKhGwA7T
@@ -12,6 +11,7 @@ El contenido sale de la sección `## Overview` del nodo raíz (texto libre e im�
 Las imágenes se añaden ("Add image" o Ctrl+V), reemplazan y borran desde la vista, en carpeta local y en GitHub con token; el HTML autónomo las lleva incrustadas.
 
 ## Decisions
+- 2026-10-06 14:49 · Validado por Ronald (14:49): pasa a stable.
 - 2026-10-06 11:35 · Construida en `index.html`. La vista ocupa todo el ancho (sin ficha) y muestra el título de la raíz, el subtítulo de GitHub, el Summary de la raíz si la sección `## Overview` falta o solo tiene imágenes, y la sección. Es la vista con la que se abre por primera vez un proyecto o una instantánea; después se abre la última vista usada. Elegido por Ronald (11:28, opciones 1A y 2A).
 - 2026-10-06 11:35 · Cada imagen es una línea de imagen markdown que apunta a `overview/<fichero>`; "Add image" la añade al final de la sección (crea la sección al final del md si falta). El nombre del fichero sale del original en minúsculas con guiones, con sufijo `-2`, `-3`… si ya existe; una captura pegada con Ctrl+V se llama `screenshot-<fecha y hora>`. Formatos: PNG, JPEG, GIF y WebP; por encima de 2 MB pide confirmación. "Replace" conserva el nombre aunque cambie el formato. "Delete" pide confirmación. Ctrl+V en la vista añade la imagen del portapapeles (opción 3A).
 - 2026-10-06 11:35 · El texto de la sección no se edita desde la página: lo escribe un hilo o se edita a mano (opción 4A).
