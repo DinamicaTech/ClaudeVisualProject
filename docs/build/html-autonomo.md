@@ -3,11 +3,13 @@ title: HTML autónomo
 depends_on: [viewer/rename]
 threads:
   - HTML autónomo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMiQxnTw7yEJ8rD8AKLa4Rb
+  - Demo publicada | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHR3uJTnX8FBEQoRiVpPWQT
 ---
 ## Summary
 Genera un único HTML autónomo (una "instantánea") con los md dentro, para publicarlo (p. ej. en GitHub Pages) o abrirlo en navegadores que no pueden leer una carpeta local.
 Se genera con el botón "Export HTML" de la página (Chrome o Edge, sin instalar nada) o con el comando `node tools/build-html.mjs docs`; los dos dan el mismo fichero.
 La instantánea se abre en cualquier navegador moderno con todas las vistas, la ficha y el doble clic; no refleja cambios posteriores en los md (hay que volver a generarla) y no permite renombrar.
+La demo pública de CVP es una instantánea de Killer Flies servida con GitHub Pages desde este repositorio (`demo/index.html`).
 
 ## Decisions
 - 2026-10-03 07:50 · Pendiente. Trasladado desde la hoja de ruta (`roadmap`) a su sitio funcional.
@@ -20,9 +22,12 @@ La instantánea se abre en cualquier navegador moderno con todas las vistas, la 
 - 2026-10-03 14:58 · En la instantánea se ocultan "Open folder", "Reload", "Export HTML", "Rename" (y F2) y el botón de reglas globales ("Update rules"); la cabecera muestra "snapshot of <fecha y hora>" de la generación. Sus prompts apuntan a `global-rules` o repiten las reglas igual que la página, porque ese nodo va dentro como un md más.
 - 2026-10-03 15:18 · La instantánea incluye también `.open-work.md` si la carpeta lo tiene (campo `openWork` del bloque de datos), y muestra el trabajo abierto tal como estaba al generarla.
 - 2026-10-06 11:35 · La instantánea incluye las imágenes de la portada (`docs/overview/`) como data URL (campo `images` del bloque de datos), con "Export HTML" y con `build-html.mjs`; solo las muestra. El fichero crece con cada imagen.
+- 2026-10-06 15:45 · Demo pública: una instantánea de Killer Flies en `demo/index.html`, servida con GitHub Pages desde `main` (raíz, con `.nojekyll`) en https://dinamicatech.github.io/ClaudeVisualProject/demo/ y enlazada desde el README. En la copia publicada se quita la lista `threads` de cada md, porque enlaza a conversaciones privadas que un visitante no puede abrir; el resto queda igual. No se regenera sola: para ponerla al día se exporta otra instantánea y se sustituye el fichero. Acordado por Ronald a las 15:41.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Añadir un comando que genere un HTML autónomo con los md dentro, para publicarlo en GitHub Pages o abrirlo en navegadores que no pueden leer una carpeta local.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: ocultar "Update rules" en la instantánea.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: incluir el trabajo abierto en la instantánea.
 - 2026-10-06 11:35 · Derived from viewer/overview: Export HTML y `build-html.mjs` incrustan las imágenes de `docs/overview/`.
+- 2026-10-06 15:36 · Puedes subir este HTML con la demo de Killer Flies a GitHub de forma que luego lo podamos enlazar a la explicación del proyecto de forma que los usuarios puedan ver una 'live-demo' bastante aparente ?
+- 2026-10-06 15:41 · Ok, quita los enlaces que den error
