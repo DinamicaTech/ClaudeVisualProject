@@ -16,6 +16,7 @@ Sale del lab cuando se decide: pasa a draft o se ejecuta, y entonces se mueve a 
 - 2026-10-03 13:46 · Validado por Ronald: el nodo pasa a estable. El draft `context-pack/ideas` sigue pendiente.
 - 2026-10-03 14:16 · Primera idea debatida aquí: "Abrir la conversación del nodo". Ronald la aprobó y salió del lab como draft `viewer/node-card/abrir-conversacion`.
 - 2026-10-03 14:45 · Cada idea es un nodo hijo del lab con `status: idea`, estado previo a draft (opción a de Ronald, 13:42), creado con el prefijo `idea:` según `context-pack/ideas`. Al pasarla a draft o ejecutarla, el hilo la encamina y mueve su fichero a su sitio funcional.
+- 2026-10-06 11:17 · Idea "Pestaña Overview" debatida aquí (`creative-lab/overview`); Ronald la pasó a draft `viewer/overview`.
 
 ## Requirements
 - 2026-10-03 10:37 · Esta rama aglutinará diferentes prompts destinados a debatir ideas de mejoras y nuevos desarrollos relacionados con este proyecto, una especie de 'brain storming room'.
