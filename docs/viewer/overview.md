@@ -1,6 +1,6 @@
 ---
 title: Pestaña Overview
-status: idea
+status: draft
 depends_on: [viewer, build/github, build/html-autonomo]
 threads:
   - Pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL6pGuKTocW1pSRkWKhGwA7T
@@ -10,6 +10,8 @@ Una pestaña "Overview", a la izquierda de "Tree", que presenta el proyecto: una
 El contenido sale de una sección `## Overview` del nodo raíz (texto libre con imágenes guardadas dentro de la carpeta de docs), y si no existe se enseña el Summary de la raíz. En modo GitHub, la descripción del repositorio puede salir como subtítulo.
 
 ## Decisions
+- 2026-10-06 11:17 · Leaves the lab: draft. Debatida como idea en `creative-lab/overview`; Ronald la pasa a draft en el visor, su nodo funcional.
+- 2026-10-06 11:17 · Imágenes mantenidas desde la pestaña: "Add image" las sube a `docs/overview/` y añade su línea a la sección; "Replace" sube la nueva con el mismo nombre; "Delete" borra el fichero y su línea. Escriben en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. Aceptado por Ronald.
 - 2026-10-06 11:05 · El contenido de la pestaña sale de una sección `## Overview` del nodo raíz; si falta, se enseña su Summary. Elegido por Ronald (opción c).
 - 2026-10-06 11:14 · Las capturas viven solo en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos); ni otras carpetas ni direcciones web. Si el repositorio es privado, solo las ve quien tiene acceso, y es lo esperado. Se suben con un botón desde CVP. Elegido por Ronald.
 - 2026-10-06 11:12 · [replaced by 2026-10-06 11:14] Las capturas viven en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos), con la opción de enlazarlas desde otra carpeta. Se suben con un botón desde CVP. Elegido por Ronald.
@@ -34,11 +36,14 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 - 2026-10-06 11:12 · 2) Lo ideal es un botón desde CVP, lo que no me queda claro es el mantenimiento (cómo elimino una imagen para, por ejemplo, actualizarla con una versión más reciente)
 - 2026-10-06 11:12 · answer: ¿Dónde viven las capturas? → en `docs/overview/` por defecto, con la opción de enlazarlas desde otra carpeta.
 - 2026-10-06 11:12 · answer: ¿Cómo se suben? → con un botón desde CVP; queda por definir cómo se reemplaza o elimina una imagen.
-- 2026-10-06 11:15 · question: ¿Cómo se mantienen las imágenes? Propuesta: en la pestaña Overview, cada imagen lleva "Replace" (sube la nueva con el mismo nombre, así los enlaces no cambian) y "Delete" (borra el fichero y su línea en la sección), y "Add image" añade una al final. Funciona en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. La versión anterior queda en el historial de git. Recomendación: así.
+- 2026-10-06 11:15 · [answered 2026-10-06 11:17] question: ¿Cómo se mantienen las imágenes? Propuesta: en la pestaña Overview, cada imagen lleva "Replace" (sube la nueva con el mismo nombre, así los enlaces no cambian) y "Delete" (borra el fichero y su línea en la sección), y "Add image" añade una al final. Funciona en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. La versión anterior queda en el historial de git. Recomendación: así.
 - 2026-10-06 11:15 · [answered 2026-10-06 11:14] question: "Otra carpeta": ¿una carpeta del mismo repositorio o también una dirección web (https://…) de fuera, p. ej. un repositorio público solo de capturas? Recomendación: las dos; una dirección web se ve sin token aunque el proyecto sea privado, pero el botón solo sube dentro del repositorio.
 - 2026-10-06 11:14 · El problema es si el repo es privado, podemos subir una imagen porque tenemos el token, pero un usuario no autorizado no podrá ver las imagenes .... que ahora que lo pienso, tampoco es realmente un problema, si es privado es por algo.
 - 2026-10-06 11:14 · Por lo tanto, imágenes solo en docs/overview
 - 2026-10-06 11:14 · answer: "Otra carpeta" → ninguna: imágenes solo en `docs/overview/`.
+- 2026-10-06 11:17 · Sí, ok con el mantenimiento y pasarlo a draft
+- 2026-10-06 11:17 · answer: ¿Cómo se mantienen las imágenes? → como se propone: "Replace", "Delete" y "Add image" en la pestaña Overview.
+- 2026-10-06 11:17 · draft: Añadir una vista "Overview" a la izquierda de "Tree" en el selector de vistas, que presenta el proyecto con la sección `## Overview` del nodo raíz (texto e imágenes; si falta, su Summary) y, en modo GitHub, la descripción del repositorio como subtítulo. Las imágenes viven solo en `docs/overview/` y se gestionan desde la vista con "Add image", "Replace" (mismo nombre, el texto no cambia) y "Delete" (borra el fichero y su línea), en modo GitHub con token y en carpeta local; el HTML autónomo las lleva incrustadas y solo las muestra.
 
 ## Notas del debate
 - Hoy la página no muestra imágenes dentro de un nodo; habría que añadirlo para esta pestaña.
