@@ -5,7 +5,7 @@
 //
 //   node tools/build-html.mjs [docs folder] [--out file]   (defaults: docs, <project-title>.html)
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -35,9 +35,17 @@ const generated = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} $
 // The open work list (.open-work.md), when the folder has one, goes in too.
 const workFile = join(docs, '.open-work.md');
 const openWork = existsSync(workFile) ? { openWork: readFileSync(workFile, 'utf8') } : {};
-const json = JSON.stringify({ name, generated, files, ...openWork }).replace(/</g, '\\u003c');
+// The Overview images (viewer/overview), the image files of <docs>/overview, go in as data URLs.
+const TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+const ovDir = join(docs, 'overview'), images = {};
+if (existsSync(ovDir)) for (const f of readdirSync(ovDir).sort()) {
+  const type = TYPES[(f.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase()];
+  if (type && statSync(join(ovDir, f)).isFile()) images['overview/' + f] = `data:${type};base64,${readFileSync(join(ovDir, f)).toString('base64')}`;
+}
+const extra = { ...openWork, ...(Object.keys(images).length ? { images } : {}) };
+const json = JSON.stringify({ name, generated, files, ...extra }).replace(/</g, '\\u003c');
 const slug = title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
 const target = resolve(out || slug + '.html');
 writeFileSync(target, page.replace(SLOT, () => SLOT.replace('></', '>' + json + '</')));
-console.log(`Wrote ${target} (${files.length} md files).`);
+console.log(`Wrote ${target} (${files.length} md files, ${Object.keys(images).length} images).`);

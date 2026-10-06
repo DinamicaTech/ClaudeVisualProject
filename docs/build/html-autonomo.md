@@ -19,8 +19,10 @@ La instantánea se abre en cualquier navegador moderno con todas las vistas, la 
 - 2026-10-03 08:43 · Validado por Ronald a las 08:42 en la instantánea: pasa a stable.
 - 2026-10-03 14:58 · En la instantánea se ocultan "Open folder", "Reload", "Export HTML", "Rename" (y F2) y el botón de reglas globales ("Update rules"); la cabecera muestra "snapshot of <fecha y hora>" de la generación. Sus prompts apuntan a `global-rules` o repiten las reglas igual que la página, porque ese nodo va dentro como un md más.
 - 2026-10-03 15:18 · La instantánea incluye también `.open-work.md` si la carpeta lo tiene (campo `openWork` del bloque de datos), y muestra el trabajo abierto tal como estaba al generarla.
+- 2026-10-06 11:35 · La instantánea incluye las imágenes de la portada (`docs/overview/`) como data URL (campo `images` del bloque de datos), con "Export HTML" y con `build-html.mjs`; solo las muestra. El fichero crece con cada imagen.
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Añadir un comando que genere un HTML autónomo con los md dentro, para publicarlo en GitHub Pages o abrirlo en navegadores que no pueden leer una carpeta local.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: ocultar "Update rules" en la instantánea.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: incluir el trabajo abierto en la instantánea.
+- 2026-10-06 11:35 · Derived from viewer/overview: Export HTML y `build-html.mjs` incrustan las imágenes de `docs/overview/`.

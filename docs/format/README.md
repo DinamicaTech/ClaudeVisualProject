@@ -32,6 +32,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-03 15:30 · Campo opcional de cabecera `docs_path`, solo en el nodo raíz: la ruta de la carpeta de docs desde la raíz del repositorio, sin barra final (`docs_path: documentacion/specs`). Sin el campo, la carpeta se supone en la raíz del repositorio. En cualquier otro nodo se ignora y da un aviso de formato. Ver `context-pack/carpeta-de-docs`.
 - 2026-10-03 16:12 · En un nodo `draft`, una línea de Requirements que empieza por `question:` (tras la fecha) es una duda abierta sobre su tarea, con sus opciones y una recomendación; la deja una carga de requisitos y se resuelve antes de hacer la tarea (ver `context-pack/carga-de-requisitos`).
 - 2026-10-03 16:12 · `.requirements-load.md` en la raíz de la carpeta de docs es el fichero de trabajo de una carga de requisitos en curso, no un nodo; se borra al terminarla. Como todo fichero que empieza por punto, la página lo ignora.
+- 2026-10-06 11:35 · Sección opcional `## Overview` en el nodo raíz, tras los bloques fijos: la portada del proyecto (`viewer/overview`), texto libre e imágenes. La carpeta `overview/` de la raíz de docs guarda sus imágenes (PNG, JPEG, GIF, WebP); no tiene md, así que no es un nodo ni da avisos.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: el significado de `draft` como pendiente o sin validar, y su paso a `stable` al validar.
@@ -39,6 +40,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-03 14:45 · Derived from context-pack/ideas: añadir el estado `idea` y la línea `idea:` de Requirements.
 - 2026-10-03 15:30 · Derived from context-pack/carpeta-de-docs: campo `docs_path` en la cabecera del nodo raíz.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: `global-rules` como nodo de reglas con una sección de CVP no editable y otra del proyecto.
+- 2026-10-06 11:35 · Derived from viewer/overview: sección opcional `## Overview` en el nodo raíz; `docs/overview/` guarda sus imágenes y no es un nodo.
 
 ## Ejemplo
 ```markdown

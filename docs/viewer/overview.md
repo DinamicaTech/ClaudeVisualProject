@@ -1,15 +1,22 @@
 ---
 title: Pestaña Overview
-status: draft
 depends_on: [viewer, build/github, build/html-autonomo]
 threads:
   - Pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL6pGuKTocW1pSRkWKhGwA7T
+  - Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
 ---
 ## Summary
 Una pestaña "Overview", a la izquierda de "Tree", que presenta el proyecto: una descripción breve y una o varias capturas de cómo se ve. Es la portada para quien abre un proyecto que no conoce, o que hace tiempo que no ve.
-El contenido sale de una sección `## Overview` del nodo raíz (texto libre con imágenes guardadas dentro de la carpeta de docs), y si no existe se enseña el Summary de la raíz. En modo GitHub, la descripción del repositorio puede salir como subtítulo.
+El contenido sale de la sección `## Overview` del nodo raíz (texto libre e imágenes de `docs/overview/`); si falta o no tiene texto, se enseña el Summary de la raíz. En modo GitHub, la descripción del repositorio sale como subtítulo.
+Las imágenes se añaden ("Add image" o Ctrl+V), reemplazan y borran desde la vista, en carpeta local y en GitHub con token; el HTML autónomo las lleva incrustadas.
 
 ## Decisions
+- 2026-10-06 14:49 · Validado por Ronald (14:49): pasa a stable.
+- 2026-10-06 11:35 · Construida en `index.html`. La vista ocupa todo el ancho (sin ficha) y muestra el título de la raíz, el subtítulo de GitHub, el Summary de la raíz si la sección `## Overview` falta o solo tiene imágenes, y la sección. Es la vista con la que se abre por primera vez un proyecto o una instantánea; después se abre la última vista usada. Elegido por Ronald (11:28, opciones 1A y 2A).
+- 2026-10-06 11:35 · Cada imagen es una línea de imagen markdown que apunta a `overview/<fichero>`; "Add image" la añade al final de la sección (crea la sección al final del md si falta). El nombre del fichero sale del original en minúsculas con guiones, con sufijo `-2`, `-3`… si ya existe; una captura pegada con Ctrl+V se llama `screenshot-<fecha y hora>`. Formatos: PNG, JPEG, GIF y WebP; por encima de 2 MB pide confirmación. "Replace" conserva el nombre aunque cambie el formato. "Delete" pide confirmación. Ctrl+V en la vista añade la imagen del portapapeles (opción 3A).
+- 2026-10-06 11:35 · El texto de la sección no se edita desde la página: lo escribe un hilo o se edita a mano (opción 4A).
+- 2026-10-06 11:35 · En GitHub sin token los botones no aparecen (una imagen no cabe en un prompt) y las imágenes se ven desde GitHub, solo en repositorios públicos. Con trabajo abierto sobre el md de la raíz, "Add image" y "Delete" se bloquean, como Rename; "Replace" no toca el md y sigue disponible.
+- 2026-10-06 11:35 · La descripción del repositorio se lee una vez por sesión del navegador: una consulta más a GitHub.
 - 2026-10-06 11:17 · Leaves the lab: draft. Debatida como idea en `creative-lab/overview`; Ronald la pasa a draft en el visor, su nodo funcional.
 - 2026-10-06 11:17 · Imágenes mantenidas desde la pestaña: "Add image" las sube a `docs/overview/` y añade su línea a la sección; "Replace" sube la nueva con el mismo nombre; "Delete" borra el fichero y su línea. Escriben en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. Aceptado por Ronald.
 - 2026-10-06 11:05 · El contenido de la pestaña sale de una sección `## Overview` del nodo raíz; si falta, se enseña su Summary. Elegido por Ronald (opción c).
@@ -44,8 +51,18 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 - 2026-10-06 11:17 · Sí, ok con el mantenimiento y pasarlo a draft
 - 2026-10-06 11:17 · answer: ¿Cómo se mantienen las imágenes? → como se propone: "Replace", "Delete" y "Add image" en la pestaña Overview.
 - 2026-10-06 11:17 · draft: Añadir una vista "Overview" a la izquierda de "Tree" en el selector de vistas, que presenta el proyecto con la sección `## Overview` del nodo raíz (texto e imágenes; si falta, su Summary) y, en modo GitHub, la descripción del repositorio como subtítulo. Las imágenes viven solo en `docs/overview/` y se gestionan desde la vista con "Add image", "Replace" (mismo nombre, el texto no cambia) y "Delete" (borra el fichero y su línea), en modo GitHub con token y en carpeta local; el HTML autónomo las lleva incrustadas y solo las muestra.
+- 2026-10-06 11:28 · 1. A
+- 2026-10-06 11:28 · 2. A
+- 2026-10-06 11:28 · 3. A
+- 2026-10-06 11:28 · 4. A
+- 2026-10-06 11:28 · 5. A
+- 2026-10-06 11:28 · answer: ¿Vista por defecto? → Overview la primera vez que se abre un proyecto o una instantánea; después, la última usada.
+- 2026-10-06 11:28 · answer: ¿Overview solo con imágenes? → el Summary de la raíz encima de las imágenes.
+- 2026-10-06 11:28 · answer: ¿Pegar capturas? → sí, Ctrl+V en la vista además de elegir un fichero.
+- 2026-10-06 11:28 · answer: ¿Editar el texto desde la página? → no en esta versión.
+- 2026-10-06 11:28 · answer: ¿Overview de CVP? → este hilo escribe el `## Overview` de la raíz de CVP; las capturas las añade Ronald con el botón.
 
 ## Notas del debate
-- Hoy la página no muestra imágenes dentro de un nodo; habría que añadirlo para esta pestaña.
+- La página muestra imágenes solo si están en `docs/overview/`; cualquier otra imagen enlazada en un md se ve como su texto.
 - En modo GitHub con repositorio privado las imágenes no pueden ir como enlace directo: la página las descarga con el token, igual que los md. Sin token solo se ven en repositorios públicos.
 - El README de CVP está en inglés y orientado a instalar, no a presentar el proyecto.
