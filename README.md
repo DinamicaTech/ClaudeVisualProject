@@ -4,6 +4,8 @@
 
 Visual, navigable map of AI-developed projects. Reads the Markdown docs in your repo and shows them as a tree of nodes with cross dependencies, each with its summary and design decisions. Double-click a node to get a prompt that starts a new AI thread with the right context. Works with any assistant. Single HTML file, no install.
 
+**[Live demo](https://dinamicatech.github.io/ClaudeVisualProject/demo/)**: the map of Killer Flies, a small arcade game designed and built with this tool (a snapshot, read-only).
+
 ## Usage
 
 1. Open [`index.html`](index.html) in your browser (double-click the file). Reading a folder on disk needs Chrome or Edge.
