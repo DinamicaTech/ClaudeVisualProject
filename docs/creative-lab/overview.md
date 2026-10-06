@@ -11,6 +11,7 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 
 ## Decisions
 - 2026-10-06 11:05 · El contenido de la pestaña sale de una sección `## Overview` del nodo raíz; si falta, se enseña su Summary. Elegido por Ronald (opción c).
+- 2026-10-06 11:12 · Las capturas viven en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos), con la opción de enlazarlas desde otra carpeta. Se suben con un botón desde CVP. Elegido por Ronald.
 - 2026-10-06 11:05 · Las capturas las sube el propietario al repositorio, de modo que la página las muestra desde cualquier dispositivo (también en modo GitHub); no hay aviso de capturas viejas.
 - 2026-10-06 11:05 · El HTML autónomo lleva las capturas incrustadas.
 
@@ -26,8 +27,14 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 - 2026-10-06 11:05 · answer: ¿De dónde sale el contenido? → de una sección `## Overview` del nodo raíz.
 - 2026-10-06 11:05 · answer: ¿Quién mantiene las capturas? → las sube el propietario, al repositorio en GitHub, para que la página las muestre desde cualquier dispositivo.
 - 2026-10-06 11:05 · answer: ¿Se incrustan en el HTML autónomo? → sí.
-- 2026-10-06 11:10 · question: ¿Dónde viven las capturas? a) carpeta `docs/overview/` (se ve como una carpeta más del árbol de docs); b) carpeta oculta `docs/.overview/` (como `.index.md`, no se confunde con un nodo); c) donde quiera el propietario, enlazadas con ruta relativa desde la sección. Recomendación: c, sugiriendo `docs/.overview/` por defecto.
-- 2026-10-06 11:10 · question: ¿Cómo se suben? a) desde GitHub ("Add file > Upload files") o el clon local, como cualquier fichero; b) además, un botón en la pestaña Overview que, con token, sube una imagen pegada o elegida y la enlaza en la sección. Recomendación: a en la v1; b solo si subirlas a mano resulta pesado.
+- 2026-10-06 11:10 · [answered 2026-10-06 11:12] question: ¿Dónde viven las capturas? a) carpeta `docs/overview/` (se ve como una carpeta más del árbol de docs); b) carpeta oculta `docs/.overview/` (como `.index.md`, no se confunde con un nodo); c) donde quiera el propietario, enlazadas con ruta relativa desde la sección. Recomendación: c, sugiriendo `docs/.overview/` por defecto.
+- 2026-10-06 11:10 · [answered 2026-10-06 11:12] question: ¿Cómo se suben? a) desde GitHub ("Add file > Upload files") o el clon local, como cualquier fichero; b) además, un botón en la pestaña Overview que, con token, sube una imagen pegada o elegida y la enlaza en la sección. Recomendación: a en la v1; b solo si subirlas a mano resulta pesado.
+- 2026-10-06 11:12 · 1) Lo ideal es docs/overview (no sé si ganamos algo porque sea oculta), pero poder colgarlos de otra carpeta (sobre todo si el proyecto es privado) puede resultar útil.
+- 2026-10-06 11:12 · 2) Lo ideal es un botón desde CVP, lo que no me queda claro es el mantenimiento (cómo elimino una imagen para, por ejemplo, actualizarla con una versión más reciente)
+- 2026-10-06 11:12 · answer: ¿Dónde viven las capturas? → en `docs/overview/` por defecto, con la opción de enlazarlas desde otra carpeta.
+- 2026-10-06 11:12 · answer: ¿Cómo se suben? → con un botón desde CVP; queda por definir cómo se reemplaza o elimina una imagen.
+- 2026-10-06 11:15 · question: ¿Cómo se mantienen las imágenes? Propuesta: en la pestaña Overview, cada imagen lleva "Replace" (sube la nueva con el mismo nombre, así los enlaces no cambian) y "Delete" (borra el fichero y su línea en la sección), y "Add image" añade una al final. Funciona en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. La versión anterior queda en el historial de git. Recomendación: así.
+- 2026-10-06 11:15 · question: "Otra carpeta": ¿una carpeta del mismo repositorio o también una dirección web (https://…) de fuera, p. ej. un repositorio público solo de capturas? Recomendación: las dos; una dirección web se ve sin token aunque el proyecto sea privado, pero el botón solo sube dentro del repositorio.
 
 ## Notas del debate
 - Hoy la página no muestra imágenes dentro de un nodo; habría que añadirlo para esta pestaña.
