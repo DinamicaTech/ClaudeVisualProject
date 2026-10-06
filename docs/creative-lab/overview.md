@@ -11,7 +11,8 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 
 ## Decisions
 - 2026-10-06 11:05 · El contenido de la pestaña sale de una sección `## Overview` del nodo raíz; si falta, se enseña su Summary. Elegido por Ronald (opción c).
-- 2026-10-06 11:12 · Las capturas viven en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos), con la opción de enlazarlas desde otra carpeta. Se suben con un botón desde CVP. Elegido por Ronald.
+- 2026-10-06 11:14 · Las capturas viven solo en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos); ni otras carpetas ni direcciones web. Si el repositorio es privado, solo las ve quien tiene acceso, y es lo esperado. Se suben con un botón desde CVP. Elegido por Ronald.
+- 2026-10-06 11:12 · [replaced by 2026-10-06 11:14] Las capturas viven en `docs/overview/` (carpeta visible, sin md: no forma nodo ni da avisos), con la opción de enlazarlas desde otra carpeta. Se suben con un botón desde CVP. Elegido por Ronald.
 - 2026-10-06 11:05 · Las capturas las sube el propietario al repositorio, de modo que la página las muestra desde cualquier dispositivo (también en modo GitHub); no hay aviso de capturas viejas.
 - 2026-10-06 11:05 · El HTML autónomo lleva las capturas incrustadas.
 
@@ -34,7 +35,10 @@ El contenido sale de una sección `## Overview` del nodo raíz (texto libre con 
 - 2026-10-06 11:12 · answer: ¿Dónde viven las capturas? → en `docs/overview/` por defecto, con la opción de enlazarlas desde otra carpeta.
 - 2026-10-06 11:12 · answer: ¿Cómo se suben? → con un botón desde CVP; queda por definir cómo se reemplaza o elimina una imagen.
 - 2026-10-06 11:15 · question: ¿Cómo se mantienen las imágenes? Propuesta: en la pestaña Overview, cada imagen lleva "Replace" (sube la nueva con el mismo nombre, así los enlaces no cambian) y "Delete" (borra el fichero y su línea en la sección), y "Add image" añade una al final. Funciona en modo GitHub con token y en carpeta local; el HTML autónomo solo muestra. La versión anterior queda en el historial de git. Recomendación: así.
-- 2026-10-06 11:15 · question: "Otra carpeta": ¿una carpeta del mismo repositorio o también una dirección web (https://…) de fuera, p. ej. un repositorio público solo de capturas? Recomendación: las dos; una dirección web se ve sin token aunque el proyecto sea privado, pero el botón solo sube dentro del repositorio.
+- 2026-10-06 11:15 · [answered 2026-10-06 11:14] question: "Otra carpeta": ¿una carpeta del mismo repositorio o también una dirección web (https://…) de fuera, p. ej. un repositorio público solo de capturas? Recomendación: las dos; una dirección web se ve sin token aunque el proyecto sea privado, pero el botón solo sube dentro del repositorio.
+- 2026-10-06 11:14 · El problema es si el repo es privado, podemos subir una imagen porque tenemos el token, pero un usuario no autorizado no podrá ver las imagenes .... que ahora que lo pienso, tampoco es realmente un problema, si es privado es por algo.
+- 2026-10-06 11:14 · Por lo tanto, imágenes solo en docs/overview
+- 2026-10-06 11:14 · answer: "Otra carpeta" → ninguna: imágenes solo en `docs/overview/`.
 
 ## Notas del debate
 - Hoy la página no muestra imágenes dentro de un nodo; habría que añadirlo para esta pestaña.
