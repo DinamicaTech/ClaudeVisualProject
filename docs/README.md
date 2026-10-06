@@ -26,11 +26,15 @@ No depende de ningún asistente: solo lee ficheros md. La herramienta gestionar�
 - 2026-10-03 13:50 · Nuevo subproyecto `creative-lab`: la sala de ideas, donde se debaten mejoras y desarrollos antes de pasarlos a draft o ejecutarlos.
 - 2026-10-03 14:58 · Nuevo nodo `global-rules` bajo la raíz: las reglas que siguen todos los hilos, a las que apuntan los prompts (ver `context-pack/reglas-del-proyecto`).
 - 2026-10-06 11:35 · Sección `## Overview`: la portada del proyecto, que enseña la vista Overview (`viewer/overview`).
+- 2026-10-06 16:20 · El README público del repositorio abre con "What is CVP": la explicación de para qué sirve CVP y cómo se trabaja con él, en inglés, con la captura del mapa de Killer Flies, que también sale en el Overview. Texto de Ronald revisado con él.
+- 2026-10-06 16:20 · Icono de la página: un árbol de nodos de izquierda a derecha con los colores del mapa (ver `viewer`). Elegido por Ronald (opción A).
 
 ## Requirements
 - 2026-10-03 13:50 · Derived from creative-lab: listar `creative-lab` entre los subproyectos.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: listar `global-rules` entre los subproyectos.
 - 2026-10-06 11:35 · Derived from viewer/overview: escribir la sección `## Overview` de CVP.
+- 2026-10-06 16:16 · Puedes incorporar esta explicación (en inglés) a https://github.com/DinamicaTech/ClaudeVisualProject y añadir la imagen adjunta ?
+- 2026-10-06 16:16 · Si de paso se te ocurre algún icono que pueda identificar el producto y que pase a ser el favicon de index.html ....
 
 ## Antecedentes
 Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
@@ -57,3 +61,5 @@ Claude Visual Project (CVP) convierte la carpeta de docs de un proyecto desarrol
 Desde el mapa se arranca el trabajo: el doble clic sobre un nodo copia el prompt que abre un hilo nuevo con el contexto justo, y las vistas Drafts, Questions y Log reúnen lo pendiente, las preguntas abiertas y la historia de las decisiones.
 
 Es una sola página HTML, sin servidor ni instalación, que lee los md de una carpeta local o directamente de GitHub. No depende de ningún asistente: solo de una convención de ficheros md.
+
+![El mapa de Killer Flies en CVP](overview/killer-flies-map.jpg)
