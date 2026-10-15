@@ -1470,7 +1470,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 8;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 9;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1538,6 +1538,16 @@ const CVP_RULES = [
   '7. Requirements that come in files are kept unchanged in the repository, in the folder `sources/` at the repository root (outside the docs folder), with their original names. ' +
   'A node receives its R sentences word for word when they are short (about ten lines in all); when they are longer, its Requirements get, for each part, one dated line with a summary and the exact reference instead: ' +
   '"From sources/<file> § <section or page>: <summary>". Whoever works on that node reads the referenced part of the source.',
+  '**Working practices.**\n' +
+  '- **Impact first.** Before agreeing to a request, estimate its impact on the project: the nodes, screens and code it would change, and what it could break indirectly. If it is significant (it rewrites existing parts or touches much of the project), say so in the breakdown with its cost and risk, question it, and propose a lighter alternative if there is one. Questioning a request is better than changing a large part of the project for it.\n' +
+  '- **Regression tests.** In a project with code, every sensitive change adds or updates automated tests that cover it, and the tests run on every pull request and on a schedule, so that a change that breaks another feature is caught.\n' +
+  '- **Ask before destroying.** Ask the owner before deleting files or data, changing a data format, or breaking compatibility with what already uses the project.\n' +
+  '- **No secrets in the repository.** Never write keys, tokens, passwords or personal data in code, docs, commits or pull requests.\n' +
+  '- **Dependencies.** Do not add a library or an external service without saying why and getting the owner\'s OK.\n' +
+  '- **Acceptance criteria.** Every task and every draft states how to tell that it is done, and the thread checks it before finishing.\n' +
+  '- **Definition of done.** A task is done only when its tests pass, the docs are updated as "Updating the docs" says, and the owner has been told what to validate.\n' +
+  '- **Fields fit their content.** In a user interface, the visual size of each field (inputs, boxes, columns, buttons) fits its content: neither much wider than what it holds nor too narrow to show it.\n' +
+  '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
   'as a line `  - <short title> | <link>`.',
 ];
