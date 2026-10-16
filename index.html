@@ -1470,7 +1470,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 9;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 10;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1547,6 +1547,8 @@ const CVP_RULES = [
   '- **Acceptance criteria.** Every task and every draft states how to tell that it is done, and the thread checks it before finishing.\n' +
   '- **Definition of done.** A task is done only when its tests pass, the docs are updated as "Updating the docs" says, and the owner has been told what to validate.\n' +
   '- **Fields fit their content.** In a user interface, the visual size of each field (inputs, boxes, columns, buttons) fits its content: neither much wider than what it holds nor too narrow to show it.\n' +
+  '- **Useful tooltips.** In a user interface, whenever possible, every control has a tooltip that is useful and descriptive for the user: it says what the control does, not just its name.\n' +
+  '- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.\n' +
   '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
   'as a line `  - <short title> | <link>`.',

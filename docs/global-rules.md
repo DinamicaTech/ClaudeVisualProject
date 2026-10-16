@@ -4,6 +4,7 @@ depends_on: []
 threads:
   - Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
   - Directrices de trabajo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLSQY8JfZgrCbTmind9M6iq3
+  - Tooltips y mensajes de error | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLAAfk8SVSsKDHr6SsxwBho1
 ---
 ## Summary
 Las reglas que sigue todo hilo que trabaja sobre un nodo de este proyecto. Los prompts de la página apuntan aquí en vez de repetirlas.
@@ -22,6 +23,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-04 15:05 · En los repositorios con la Action "CVP docs", el bloque "CVP rules" se pone al día solo en la rama principal cuando CVP sube la versión de las reglas (`build/github`).
 - 2026-10-05 10:50 · Versión 8 de las CVP rules: en Drafts y en Routing, cada draft es un nodo hijo nuevo de su nodo funcional con una sola tarea, nunca un nodo existente puesto en draft; al validarse queda como nodo estable propio, y la frase del propietario se copia sin su prefijo "draft:" (ver `context-pack/routing`).
 - 2026-10-15 06:50 · Versión 9 de las CVP rules: nuevo bloque "Working practices" para todos los proyectos que usan CVP, actuales y futuros: Impact first (avisar y cuestionar una petición de impacto relevante), Regression tests, Ask before destroying, No secrets in the repository, Dependencies, Acceptance criteria, Definition of done, Fields fit their content y Hand-over. Descartadas por Ronald: verificar antes de decir "hecho", cambios pequeños y reversibles y registro de incidencias.
+- 2026-10-16 08:31 · Versión 10 de las CVP rules: en "Working practices", dos reglas nuevas para todos los proyectos: Useful tooltips (los controles llevan un tooltip útil y descriptivo siempre que sea posible) y No dead ends in errors (cada mensaje de error explica por qué ocurre y cómo arreglarlo, y si puede propone la solución). Se aplican al trabajo nuevo; las pantallas existentes no se revisan.
 
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
@@ -35,9 +37,11 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-14 17:00 · Vaya, mejor cuestionar una petición que modificar un % relevante del proyecto
 - 2026-10-15 06:37 · Añade una regla para el diseño de UI que no sé si está reflejada: El tamaño visual de los campos ha de quedar ajustado a su contenido
 - 2026-10-15 06:44 · estas reglas no son solo para CVP, son para los proyectos actuales y futuros.
+- 2026-10-16 08:29 · En el diseño de interfaz, siempre que sea posible, incluir en los controles un Tooltip que sea útil y descriptivo para el usuario.
+- 2026-10-16 08:29 · Siempre que aparezca un mensaje de error, aportar al usuario toda la información posible para que sepa porqué se produce cómo solucionarlo y, si es posible, que el propio mensaje proponga una solución. Se trata de no llevar al usuario a un callejón sin salida.
 
 ## CVP rules
-<!-- cvp-rules 9 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+<!-- cvp-rules 10 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
 These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
 
 **Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
@@ -82,6 +86,8 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - **Acceptance criteria.** Every task and every draft states how to tell that it is done, and the thread checks it before finishing.
 - **Definition of done.** A task is done only when its tests pass, the docs are updated as "Updating the docs" says, and the owner has been told what to validate.
 - **Fields fit their content.** In a user interface, the visual size of each field (inputs, boxes, columns, buttons) fits its content: neither much wider than what it holds nor too narrow to show it.
+- **Useful tooltips.** In a user interface, whenever possible, every control has a tooltip that is useful and descriptive for the user: it says what the control does, not just its name.
+- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.
 - **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.
 
 **Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - <short title> | <link>`.
