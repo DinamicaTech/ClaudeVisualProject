@@ -33,7 +33,9 @@ For a large block of requirements there is **Load requirements**: paste it (or a
 
 ### The fun part: New project
 
-1. In one message it asks for the name, the GitHub repository, the local folder, a description and the requirement files.
+Create a new, empty project in Claude, press **New project** and paste the prompt in its first thread, so that the project and all its later threads live there. Then:
+
+1. In one message it asks for the name, the GitHub repository (it creates one if you have none), an optional local folder, a description and the requirement files, and adds the repository to the Claude project.
 2. It creates the project's skeleton (rules, ideas lab…) and asks a first round of architecture questions only.
 3. With the architecture agreed, it asks the questions that can change the structure of the tree.
 4. Once they are answered, it proposes the whole tree, sharing the work out among the nodes and leaving in each one its own questions. With your OK it writes it, and you watch it grow in CVP.
