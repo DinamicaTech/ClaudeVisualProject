@@ -282,7 +282,7 @@
   <span id="openWorkNote" hidden></span>
   <button id="zoomBtn" hidden title="Showing only this node and its descendants. Click, Z or Esc to show the whole project"></button>
   <span class="spacer"></span>
-  <button id="newProjectBtn" title="Copy a prompt for a new thread that sets up a new project: its docs, global rules, lab, AGENTS.md and requirements">New project</button>
+  <button id="newProjectBtn" title="Copy a prompt that sets up a new project (its docs, global rules, lab, AGENTS.md and requirements); paste it in the first thread of a new, empty project in Claude">New project</button>
   <button id="indexBtn" hidden></button>
   <button id="loadReqBtn" hidden title="Copy a prompt for a new thread that spreads a block of requirements over the tree; paste your requirements at its end">Load requirements</button>
   <button id="rulesBtn" hidden></button>
@@ -328,7 +328,7 @@
     <span id="reopenBtns"></span>
     <button id="welcomeGhBtn">Open from GitHub</button>
     <button id="welcomeOpenBtn">Open folder</button>
-    <button id="welcomeNewBtn" title="Copy a prompt for a new thread that sets up a new project">New project</button>
+    <button id="welcomeNewBtn" title="Copy a prompt that sets up a new project; paste it in the first thread of a new, empty project in Claude">New project</button>
   </div>
 </div>
 
@@ -340,7 +340,7 @@
 <dialog id="packDialog">
   <div class="dhead"><span class="t">Context pack</span><button data-close>Close</button></div>
   <div class="dbody">
-    <p class="empty-note">The clipboard is not available. Copy the text below and paste it in a new thread.</p>
+    <p class="empty-note" id="packHint">The clipboard is not available. Copy the text below and paste it in a new thread.</p>
     <textarea id="packText" readonly></textarea>
   </div>
 </dialog>
@@ -1779,8 +1779,11 @@ function loadRequirementsPack() {
   ].join('\n');
 }
 
-// Prompt for a new thread that sets up a new project for CVP (nuevo-proyecto): name, repository, local folder,
-// description and requirement files; skeleton (root, global-rules with this page's rules, creative-lab, AGENTS.md,
+// Where the New project prompt goes: the new project's threads live in a Claude project of its own, created first.
+const NEW_PROJECT_HINT = 'Create a new, empty project in Claude, named after your project, and paste it in its first thread.';
+
+// Prompt for the first thread of a new Claude project that sets up a new project for CVP (nuevo-proyecto): name,
+// repository (created by the thread if it can), optional local folder, description and requirement files; skeleton (root, global-rules with this page's rules, creative-lab, AGENTS.md,
 // CLAUDE.md, sources/); the architecture first, then the requirements load.
 // The project open in the page, if any, is proposed as the source of the owner's personal rules.
 function newProjectPack() {
@@ -1788,12 +1791,17 @@ function newProjectPack() {
   const from = open ? `the project "${open.title}" (docs folder ${docsPrefix() || state.rootName + '/'}), the one open in the page when this prompt was copied` : null;
   return [
     'Set up a new project for Claude Visual Project (CVP): a folder of md docs, one per node, that the CVP page shows as a navigable map of the project.', '',
+    'This prompt goes in the first thread of a new, empty project in Claude created for this project, so that the setup and every later thread of the project live there. ' +
+    'If you can tell that you are running in a Claude project that already holds other repositories or threads (for example, CVP\'s own), stop and tell the owner to create a new, empty project in Claude, named after the new project, and paste this prompt in its first thread; go on here only if they say so.', '',
     'Work in these steps, in order:',
-    '1. Ask the owner, in one message, and wait for the answers: the name of the project (the title of the root node); its GitHub repository (optional); the folder on their disk where it will live; ' +
-    'a short description (the root node\'s Summary); and the files with its requirements, if any, attached to the reply. ' +
-    'The owner opens the docs in the CVP page from the GitHub repository or from a folder on their own disk, so the project must end up in one of them. If you work on the owner\'s machine, use that folder. ' +
-    'If you work in a remote or cloud environment you need the GitHub repository: if the owner gave none, ask them to create an empty one (private unless they prefer otherwise) and send you its link, since you may not be able to create it; ' +
-    'when the skeleton is pushed, the owner clones it into that folder: tell them the command (`git clone <url> <folder>`) or, if you can run commands on their machine, clone it there. ' +
+    '1. Ask the owner, in one message, and wait for the answers: the name of the project (the title of the root node); its GitHub repository, if it already exists (optional: otherwise you create it); ' +
+    'the folder on their disk where they want a copy (optional, see below); a short description (the root node\'s Summary); and the files with its requirements, if any, attached to the reply. ' +
+    'The repository: if the owner gave none, create it yourself on their GitHub account, private unless they prefer otherwise, named after the project; only if you cannot, ask them to create an empty one and send you its link. ' +
+    'Without a repository the project can only live in a folder on the owner\'s disk, which works only if you work on their machine. ' +
+    'Then add the repository to the Claude project you are running in, if you can; if you cannot, tell the owner exactly where to add it, since every later thread of the project needs it. ' +
+    'The local folder: the owner opens the docs in the CVP page straight from the GitHub repository ("Open from GitHub"; a private repository needs a GitHub token in the page) or from a folder on their own disk, so with a repository the folder is optional. ' +
+    'If you work on the owner\'s machine, use that folder. If you work in a remote or cloud environment and the owner wants a folder, clone the repository into it once the skeleton is pushed: ' +
+    'if you can run commands on their machine, do it there; otherwise tell them the command (`git clone <url> <folder>`). ' +
     'The docs folder is `docs` at the repository root unless the owner says otherwise.',
     '2. Write every doc in the language the owner writes in (headings such as "## Summary" and the front matter keys stay as they are).',
     '3. Create the skeleton, with <docs> standing for the docs folder:',
@@ -1806,15 +1814,16 @@ function newProjectPack() {
     ' (change only its `DOCS: docs` line if the docs folder is elsewhere). It keeps <docs>/.open-work.md up to date with the branches and pull requests at work, so the page marks those nodes as "open".',
     '   - If the project has a GitHub repository: `.github/workflows/cvp-docs.yml`, copied as it is from ' + CVP_DOCS_ACTION_URL +
     ' (same `DOCS: docs` line). It keeps the node index (<docs>/.index.md) and the CVP rules of <docs>/global-rules.md up to date on the default branch.',
-    '   Ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
+    '   Together with the questions of step 1, ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
     (from ? `Propose by default ${from}. ` : '') + 'If you cannot reach that repository, ask the owner where it is.',
-    '   Put the skeleton on the default branch (commit, push and merge if you used a branch), make sure the owner has it on disk (step 1) and tell them to open its docs folder in the CVP page, so they see the tree grow from now on.',
+    '   Put the skeleton on the default branch (commit, push and merge if you used a branch), clone it into the owner\'s folder if they gave one (step 1), and tell them how to open it in the CVP page ("Open from GitHub" with the repository, or "Open folder" with the docs folder), so they see the tree grow from now on.',
     '4. Architecture first. Read the requirements (the attached files, or ask the owner for them if there are none) and ask the owner only the questions of architecture that can shape the tree ' +
     '(kind of application, platform, language, database, deployment…), each with 2 to 4 options and your recommendation, in one round. ' +
     'Create the node `architecture`, child of the root, with one decision per point agreed and your reasons; points left open go as "question:" lines in its Requirements, with `status: draft`.',
     '5. Then load the requirements on the tree, following the "Requirements load" rule of the global rules: its blocking questions now only concern the tree, since the architecture is settled; ' +
     'every other question goes as a "question:" line in its node.',
-    '6. The new repository has no tool to build the node index (.index.md): with a GitHub repository the CVP docs action builds it on every push to the default branch; without one, tell the owner, when you finish, to press "Add node index" in the CVP page.', '',
+    '6. The new repository has no tool to build the node index (.index.md): with a GitHub repository the CVP docs action builds it on every push to the default branch; without one, tell the owner, when you finish, to press "Add node index" in the CVP page.',
+    '7. When you finish, tell the owner that every later thread of this project starts in this same Claude project: the prompts the CVP page copies for this project are pasted in a new thread here.', '',
     'From step 3 on, follow the CVP rules of the global rules file below, as in any project.', '',
     'Root node (<docs>/README.md):', '````markdown', '---', 'title: <project name>', 'depends_on: []', 'threads:',
     '  - New project | <link to this thread, if you can tell it>', '---',
@@ -1838,6 +1847,7 @@ async function copyText(text, what, hint = 'Paste it in a new thread.') {
     await navigator.clipboard.writeText(text);
     toast(`${what} copied. ${hint}`);
   } catch (e) {
+    $('packHint').textContent = `The clipboard is not available. Copy the text below. ${hint}`;
     $('packText').value = text;
     $('packDialog').showModal();
     $('packText').select();
@@ -3724,7 +3734,7 @@ $('rulesBtn').onclick = () => openRules();
 $('loadReqBtn').onclick = () => copyText(loadRequirementsPack(), 'Requirements load prompt', 'Paste it in a new thread and add your requirements at its end.');
 $('rulesSubmit').onclick = () => doUpdateRules();
 $('indexBtn').onclick = () => doRebuildIndex();
-$('newProjectBtn').onclick = $('welcomeNewBtn').onclick = () => copyText(newProjectPack(), 'New project prompt');
+$('newProjectBtn').onclick = $('welcomeNewBtn').onclick = () => copyText(newProjectPack(), 'New project prompt', NEW_PROJECT_HINT);
 $('reloadBtn').onclick = () => reload();
 $('refsToggle').onchange = e => { state.showRefs = e.target.checked; renderAll(); };
 $('editToggle').onchange = e => { state.editMode = e.target.checked; renderAll(); };
