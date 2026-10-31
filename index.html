@@ -1529,7 +1529,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 12;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 13;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1563,7 +1563,7 @@ const CVP_RULES = [
   'Also copy into the ## Requirements block (after Decisions; create it if missing) of the node each one belongs to, ' +
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
   'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
-  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node; if you cannot run that command, tell the owner to press "Rebuild index" in the page.',
+  'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node. If you cannot run that command and the repository has the "CVP docs" GitHub Action (.github/workflows/cvp-docs.yml), do not ask the owner for anything: it regenerates the index on the default branch after the merge. Only without that action, tell the owner to press "⚠ Rebuild index", which appears in the page header only when the index is out of date.',
   '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line); it stays in the tree as a node of its own. ' +
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
   'Each draft is a node of its own with one pending task: a new child of the node the task belongs to, never an existing node set back to draft or given a second `draft:` line. ' +

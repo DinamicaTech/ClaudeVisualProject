@@ -3,6 +3,7 @@ title: Índice de nodos
 depends_on: [model, format]
 threads:
   - 2026-10-02 12:27 · Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
+  - 2026-10-31 10:15 · Comprobar botón Rebuild index | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5uvmxBGy1W7hnfXSaJuyxh
 ---
 ## Summary
 Un fichero generado, `.index.md` en la carpeta de docs, con todos los nodos en orden de árbol: ruta, título, estado, dependencias, hijos y Summary completo.
@@ -22,9 +23,10 @@ Lo genera `node tools/build-index.mjs docs`, la página al renombrar o mover un 
 - 2026-10-03 14:40 · La carga del código de lectura y modelo de `index.html` en Node está en `tools/page-model.mjs`, compartida con la comprobación de formato (`model/comprobacion-de-formato`).
 - 2026-10-03 16:25 · La página compara al abrir la carpeta el `.index.md` con el que generaría ella. Si falta, la cabecera muestra "Add node index"; si no coincide, "⚠ Rebuild index". El botón lo escribe con la misma función que el script y recarga; es la cuarta escritura en la carpeta. No aparece en la instantánea. Así los proyectos sin las herramientas de este repositorio (y sin Node) pueden tener índice.
 - 2026-10-03 16:25 · Tras renombrar, mover o escribir las reglas, la página regenera `.index.md` si la carpeta ya lo tiene; si no, no lo crea (para eso está "Add node index").
-- 2026-10-03 16:25 · Las primeras líneas del índice dicen que se genera con "Rebuild index" en la página o con `node tools/build-index.mjs` en el repositorio de CVP, y las reglas (versión 3) piden al hilo que no pueda ejecutar el comando que avise al propietario para pulsar "Rebuild index".
+- 2026-10-03 16:25 · [replaced by 2026-10-31 10:15] Las primeras líneas del índice dicen que se genera con "Rebuild index" en la página o con `node tools/build-index.mjs` en el repositorio de CVP, y las reglas (versión 3) piden al hilo que no pueda ejecutar el comando que avise al propietario para pulsar "Rebuild index".
 - 2026-10-04 15:05 · La Action "CVP docs" regenera `.index.md` en la rama principal con cada push (en CVP y en los proyectos que la instalan), así que el workflow `Node index` ya no hace fallar los PR por un índice desactualizado y se retira. `--check` sigue disponible en el script. Los hilos pueden seguir regenerándolo en sus PR.
 - 2026-10-04 15:05 · En un proyecto de GitHub, el botón "Add node index" / "⚠ Rebuild index" solo aparece con token (escribe con un commit); sin token no aparece, porque lo mantiene la Action.
+- 2026-10-31 10:15 · Las primeras líneas del índice dicen que se genera con "Rebuild index" en la página o con `node tools/build-index.mjs` en el repositorio de CVP. Las reglas (versión 13) piden al hilo que no pueda ejecutar el comando que no pida nada al propietario si el repositorio tiene la Action "CVP docs" (la regenera tras la fusión); solo sin ella le pide pulsar "⚠ Rebuild index", que aparece en la cabecera únicamente cuando el índice está desactualizado. Motivo: los hilos de proyectos con la Action pedían pulsar un botón que el propietario no veía.
 
 ## Requirements
 - 2026-10-02 18:55 · Respecto leer el Summary, no existe algún tipo de búsqueda indexada o caché de búsqueda ?
@@ -36,3 +38,4 @@ Lo genera `node tools/build-index.mjs docs`, la página al renombrar o mover un 
 - 2026-10-03 14:40 · Derived from model/comprobacion-de-formato: el script del índice comparte con la comprobación de formato la carga del modelo de index.html.
 - 2026-10-03 16:25 · Derived from nuevo-proyecto: botón en la página para crear o regenerar el índice, con aviso en la cabecera cuando hace falta.
 - 2026-10-04 15:05 · Derived from build/github: el índice se regenera solo en GitHub con cada push a la rama principal.
+- 2026-10-31 10:15 · Existe el botón 'rebuild index' ?
