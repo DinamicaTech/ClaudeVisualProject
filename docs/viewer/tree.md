@@ -12,13 +12,13 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-02 09:13 · Las entradas de referencia se distinguen visualmente del nodo real; al seleccionarlas se salta al nodo real.
 - 2026-10-02 09:15 · Un interruptor muestra u oculta las entradas de referencia; encendido por defecto. Los hijos por jerarquía se ven siempre.
 - 2026-10-02 09:13 · Las entradas de referencia no se despliegan dentro de sí mismas, para evitar árboles infinitos con los ciclos.
-- 2026-10-02 09:13 · Clic selecciona el nodo y muestra su ficha; doble clic genera el paquete de contexto.
+- 2026-10-02 09:13 · [replaced by 2026-10-31 11:15] Clic selecciona el nodo y muestra su ficha; doble clic genera el paquete de contexto.
 - 2026-10-02 09:19 · Los nodos obsoletos y sus hijos se muestran en gris.
 - 2026-10-02 09:13 · Los nodos con avisos de formato aparecen marcados.
 - 2026-10-02 09:46 · Las entradas de referencia de un nodo son sus dependencias declaradas (no las heredadas) y van antes de sus hijos, en el orden de `depends_on`. Una dependencia a un nodo que no existe se muestra en rojo.
 - 2026-10-02 09:46 · Los hijos se ordenan alfabéticamente por el nombre de su fichero o carpeta.
 - 2026-10-02 09:46 · Al abrir por primera vez se despliegan la raíz y el primer nivel. El triángulo despliega o pliega; el clic en el nombre solo selecciona.
-- 2026-10-02 09:46 · Doble clic sobre una entrada de referencia copia el paquete de contexto del nodo real.
+- 2026-10-02 09:46 · [replaced by 2026-10-31 11:15] Doble clic sobre una entrada de referencia copia el paquete de contexto del nodo real.
 - 2026-10-02 09:46 · Las carpetas sin `README.md` se muestran en cursiva; los nodos `draft` llevan una etiqueta.
 - 2026-10-02 10:26 · Se añade a la v1 el mapa (`viewer/map`): el mismo árbol dibujado con cajas, vista por defecto; el árbol pasa a ser la vista alternativa. Sigue sin haber vista de grafo.
 - 2026-10-02 12:40 · La tecla Z (decidida en `viewer/map`) también aplica al árbol: muestra solo el nodo seleccionado y sus descendientes. El selector de vista se llama "Tree / Project".
@@ -28,7 +28,9 @@ Las dependencias aparecen dentro del propio árbol como entradas de referencia b
 - 2026-10-03 15:18 · Un nodo con trabajo abierto lleva una etiqueta "open" en azul (`viewer/map/nodos-ocupados`).
 - 2026-10-03 15:55 · [replaced by model/avisos-de-desactualizacion 2026-10-03 17:31] En la vista Project, un nodo con aviso de revisión (`model/avisos-de-desactualizacion`) lleva la etiqueta "⏱ review"; su tooltip lista las dependencias que han cambiado.
 
+- 2026-10-31 11:15 · Clic selecciona el nodo y muestra su ficha; doble clic abre su hilo más reciente, o si no tiene ninguno copia su context pack y abre el chat del proyecto para empezarlo (`viewer/node-card/abrir-conversacion`). En una entrada de referencia, lo mismo con el nodo real.
 ## Requirements
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar las ideas con su propia etiqueta.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: marcar los nodos con trabajo abierto.
 - 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la fila la marca "⏱ review" con las dependencias que han cambiado en su tooltip.
+- 2026-10-31 11:15 · Derived from viewer/node-card/abrir-conversacion: el doble clic abre el hilo más reciente del nodo en vez de copiar su context pack.

@@ -9,7 +9,7 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-02 09:13 · Muestra los bloques fijos tal como están escritos; no se genera nada al vuelo.
 - 2026-10-02 09:19 · Muestra el estado del nodo y, si es obsoleto, enlaza a su sustituto.
 - 2026-10-02 09:13 · Lista las dependencias (de quién depende) y los dependientes (quién lo usa), con un clic para saltar a cada uno.
-- 2026-10-02 09:46 · Botones "Copy context pack" (igual que el doble clic) y "Open full document", que muestra el md entero renderizado con su cabecera.
+- 2026-10-02 09:46 · [replaced by 2026-10-31 11:15] Botones "Copy context pack" (igual que el doble clic) y "Open full document", que muestra el md entero renderizado con su cabecera.
 - 2026-10-02 09:46 · Las dependencias heredadas de ascendientes se listan aparte, indicando de qué ascendiente vienen.
 - 2026-10-02 09:46 · Los enlaces relativos entre md dentro del texto saltan al nodo enlazado.
 - 2026-10-02 09:46 · Un botón en la cabecera de la página cuenta todos los avisos y los lista por nodo, con salto a cada uno.
@@ -23,6 +23,7 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 15:18 · Si una rama o un PR cambia el md del nodo, un recuadro "Open work" bajo los botones lista cada uno: el PR con su título (enlace a GitHub) o la rama si aún no tiene PR, desde cuándo y un enlace "Open thread" a su hilo (`viewer/map/nodos-ocupados`).
 - 2026-10-03 15:55 · [replaced by model/avisos-de-desactualizacion 2026-10-03 17:31] Si el nodo tiene aviso de revisión (`model/avisos-de-desactualizacion`), la ficha muestra un bloque "⏱ Review", tras los avisos de formato, con cada dependencia que ha cambiado (enlace para saltar a ella, cuántas decisiones y la fecha de la última).
 
+- 2026-10-31 11:15 · Botones "Threads ▾" (`viewer/node-card/abrir-conversacion`), "New sub-task", "Rename" y "Open full document", que muestra el md entero renderizado con su cabecera. Se quita "Copy context pack": "New thread", dentro de "Threads ▾", copia el context pack y abre el chat del proyecto.
 ## Requirements
 - 2026-10-02 11:46 · Me gustaría poder acceder a los requerimientos escritos por mí relacionados con un nodo.
 - 2026-10-03 08:30 · Derived from format/decisiones-sustituidas: atenuar las decisiones sustituidas y enlazar a la que las sustituye.
@@ -31,3 +32,4 @@ Muestra el nodo seleccionado: título, ruta, estado, chats vinculados, Summary, 
 - 2026-10-03 14:45 · Derived from context-pack/ideas: mostrar el estado `idea`.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: mostrar el trabajo abierto del nodo con enlace a su PR y a su hilo.
 - 2026-10-03 15:55 · Derived from model/avisos-de-desactualizacion: mostrar en la ficha qué dependencias han cambiado después de la última decisión del nodo.
+- 2026-10-31 11:15 · Derived from viewer/node-card/abrir-conversacion: botón "Threads ▾" con "New thread", en lugar de "Open thread" y "Copy context pack".

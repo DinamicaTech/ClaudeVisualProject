@@ -6,7 +6,7 @@ threads:
   - 2026-10-31 08:34 · Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
-Marca con el número de su PR ("#35", o "open" si la rama aún no tiene PR) en el mapa y en la vista Project los nodos cuyo md cambia una rama o un PR sin fusionar; la ficha lista ese trabajo y "Open thread" abre su hilo, para acabar de validarlo y cerrarlo.
+Marca con el número de su PR ("#35", o "open" si la rama aún no tiene PR) en el mapa y en la vista Project los nodos cuyo md cambia una rama o un PR sin fusionar; la ficha lista ese trabajo y su hilo sale en "Threads ▾" y en el doble clic, para acabar de validarlo y cerrarlo.
 El dato sale de `docs/.open-work.md`, que una GitHub Action ("Open work") reescribe en main con cada push y cada PR. Desde GitHub (`build/github`) está al día en cada recarga; desde una carpeta local, al día del último `git pull` (`Refresh.cmd`); si tiene más de un día, la cabecera lo marca como desfasada.
 En un proyecto de GitHub, "View in-progress version" muestra el md del nodo tal como lo deja la rama abierta, y los nodos que una rama crea aparecen ya en el árbol, con borde discontinuo y la etiqueta "new #N". Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribirían en su md.
 

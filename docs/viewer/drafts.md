@@ -6,7 +6,7 @@ threads:
 ---
 ## Summary
 Pestaña "Drafts" del selector de vista: una tabla con todos los nodos `draft` del proyecto (tareas pendientes guardadas en su sitio funcional y trabajo aún sin validar), ordenable por columnas.
-Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de contexto para arrancarlo.
+Clic selecciona el nodo y muestra su ficha; doble clic abre su hilo más reciente, o si no tiene ninguno lo arranca (copia su paquete de contexto y abre el chat del proyecto).
 
 ## Decisions
 - 2026-10-03 07:50 · Columnas: título, ruta, área (nodo de primer nivel, con su color), "Since" (fecha de su requisito o decisión más antiguo), última fecha, número de requisitos y número de hilos (0 = sin empezar). Clic en la cabecera ordena; otro clic invierte. Por defecto, los más recientes primero.
@@ -16,9 +16,11 @@ Clic selecciona el nodo y muestra su ficha; doble clic copia su paquete de conte
 - 2026-10-03 14:45 · Los nodos `idea` no salen en esta vista: son ideas en debate en `creative-lab`, no tareas pendientes (ver `context-pack/ideas`).
 - 2026-10-03 18:40 · Columna "Questions" con el número de preguntas abiertas de cada draft ("?N"), ordenable; al ordenar por ella, primero los que más tienen. Elegido por Ronald (18:33).
 
+- 2026-10-31 11:15 · El doble clic en una fila abre el hilo más reciente del nodo y, sin hilos, hace "New thread" (`viewer/node-card/abrir-conversacion`).
 ## Requirements
 - 2026-10-03 07:34 · Eso no quita que sea útil ver todos los drafts juntos, eso lo podríamos resolver con una nueva pestaña con una vista de drafts ordenable por columnas
 - 2026-10-03 14:45 · Derived from context-pack/ideas: no mezclar las ideas con los drafts.
 - 2026-10-03 18:33 · La primera opción [marca "?N" en las tarjetas y columna "Questions" en Drafts para ver las preguntas no críticas pendientes]
 - 2026-10-05 09:17 · Derived from viewer/map/nodos-ocupados: los nodos nuevos de ramas sin fusionar no se cuentan aquí; solo la rama principal.
 - 2026-10-05 09:56 · Derived from context-pack/ideas: la vista Questions y el "?N" del mapa cuentan también las preguntas de las ideas (status: idea).
+- 2026-10-31 11:15 · Derived from viewer/node-card/abrir-conversacion: el doble clic abre el hilo más reciente del nodo en vez de copiar su context pack.

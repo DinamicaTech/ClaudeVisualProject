@@ -7,7 +7,7 @@ threads:
   - 2026-10-03 15:24 · Rol de director (descartado) | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLErUubQKyPSJZ9n9JLiHGYs
 ---
 ## Summary
-Al hacer doble clic, copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo. Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
+"New thread" (en "Threads ▾" de la ficha, o el doble clic en un nodo sin hilos) copia al portapapeles un prompt corto para arrancar un hilo nuevo sobre ese nodo y abre el chat del proyecto para pegarlo (`viewer/node-card/abrir-conversacion`). Otro botón copia el prompt para crear una subtarea: un hilo nuevo que crea un nodo hijo y trabaja en él.
 El hilo lee los ficheros por sí mismo, así que el prompt ocupa pocas líneas; las reglas generales las lee del nodo `global-rules` (`context-pack/reglas-del-proyecto`).
 Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pack/routing`), propone un desglose (qué nodo hace cada parte, buscándolo en el índice de nodos) y espera la confirmación del propietario; después hace el cambio entero en una sola rama.
 
@@ -44,6 +44,7 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 16:12 · En un nodo `draft` con líneas `question:` en Requirements (dudas locales que dejó una carga de requisitos), el doble clic las añade al prompt antes del "Task", sin el prefijo, pidiendo resolverlas con el propietario antes de la tarea. No cuentan como tarea: si el draft no tiene líneas `draft:`, el "Task" se rellena con el resto de sus requisitos.
 - 2026-10-03 16:12 · Tercer prompt, "Load requirements" (ver `context-pack/carga-de-requisitos`): arranca en la raíz y acaba en "Task: Load requirements:" para pegar el bloque.
 
+- 2026-10-31 11:15 · El context pack ya no lo copia el doble clic ni un botón propio, sino "New thread" (`viewer/node-card/abrir-conversacion`). El contenido del prompt no cambia.
 ## Requirements
 - 2026-10-02 08:52 · Más adelante, un rol de "director": ante un requerimiento, un hilo analiza qué nodos intervienen, reparte el trabajo en subagentes, verifica y actualiza los documentos, sin que yo decida ficheros ni abra hilos a mano.
 - 2026-10-03 07:57 · draft: Rol de director: ante un requerimiento, un hilo analiza qué nodos intervienen, reparte el trabajo en subagentes, verifica y actualiza los documentos, sin que el propietario decida ficheros ni abra hilos a mano.
@@ -60,3 +61,4 @@ Antes de cambiar nada, el hilo lleva la tarea a su nodo responsable (`context-pa
 - 2026-10-03 14:45 · Derived from context-pack/ideas: regla de ideas en los dos prompts y "Task" prerrellenado en el lab y en las ideas.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: que los dos prompts referencien el nodo `global-rules` en vez de repetir las reglas, y las repitan enteras si falta o está desfasado.
 - 2026-10-03 16:12 · Derived from context-pack/carga-de-requisitos: el doble clic en un draft lleva sus preguntas `question:`, y un prompt para cargar requisitos.
+- 2026-10-31 11:15 · Derived from viewer/node-card/abrir-conversacion: el context pack se copia desde "New thread".
