@@ -308,7 +308,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open the thread where it was asked">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
     title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
@@ -1267,6 +1267,33 @@ function parseThreads(v) {
     const i = e.lastIndexOf(' | ');
     return i < 0 ? { when, title: '', link: e.trim() } : { when, title: e.slice(0, i).trim(), link: e.slice(i + 3).trim() };
   }).filter(t => t.link);
+}
+
+// Options of a question written as "A) … B) …" or "(a) … (b) …", and the one marked as recommended,
+// with "(recomendada)", "(recommended)" or ✅. Keys are upper case; the ✅ mark is left out of the text.
+function questionOptions(text) {
+  const parts = text.split(/(?:^|\s)\(?([A-Fa-f])\)\s+/);
+  const opts = [];
+  for (let i = 1; i < parts.length; i += 2) opts.push({ key: parts[i].toUpperCase(), text: parts[i + 1].trim(), mark: parts[i + 1] });
+  const rec = opts.find(o => /\((recomendad[oa]|recommended)\)|✅/i.test(o.mark));
+  return {
+    opts: opts.map(o => ({ key: o.key, text: o.text.replace(/\s*✅\s*/g, ' ').trim() })),
+    rec: rec ? rec.key : (opts[0] ? opts[0].key : ''),
+  };
+}
+
+// The thread of a node that recorded something dated `when` (viewer/threads): a thread adds its link
+// after the owner's message, so it is the node's first dated thread at or after `when`, if it is at most
+// THREAD_REACH_MIN later; when `when` is later than every dated thread, the last one. Null if none fits
+// (no date, no dated thread, or only threads that joined the node much later).
+const THREAD_REACH_MIN = 2 * 24 * 60;   // a thread's line is written at most this long after the owner's words it records
+const minutesBetween = (a, b) => (Date.parse(b.replace(' ', 'T') + 'Z') - Date.parse(a.replace(' ', 'T') + 'Z')) / 60000;
+function threadAt(threads, when) {
+  const dated = threads.filter(t => t.when).sort((a, b) => a.when.localeCompare(b.when));
+  if (!when || !dated.length) return null;
+  const t = dated.find(x => x.when >= when);
+  if (!t) return dated[dated.length - 1];
+  return minutesBetween(when, t.when) <= THREAD_REACH_MIN ? t : null;
 }
 
 function normalizeNodePath(p) {
@@ -2772,9 +2799,12 @@ function renderDrafts() {
 }
 
 // Questions: every open question of the drafts, in tree order, numbered. Double-click opens the thread
-// where to answer it: the node's own (open work or last thread), else the nearest ancestor's, which is
-// usually the thread of the requirements load that left it; with none, it starts a new thread (New thread).
-function questionThread(n) {
+// where to answer it: the one where the question was asked (the node's thread dated at or just after the
+// question line, threadAt); else the node's own (open work or last thread), else the nearest ancestor's,
+// which is usually the thread of the requirements load that left it; with none, it starts a new thread.
+function questionThread(n, r) {
+  const o = r && threadAt(n.threads, r.when);
+  if (o && isLink(o.link)) return { ...o, node: n, origin: true };
   for (let a = n; a; a = a.parent) {
     const t = threadToOpen(a);
     if (t && isLink(t.link)) return { ...t, node: a };
@@ -2786,15 +2816,6 @@ let questionRows = [];
 // Answers chosen in the Questions view, by "<node path>#<index of the line in its Requirements>":
 // { on, choice ('A', 'B'… or '' for a written answer), text }. Kept until the page reloads.
 const qAnswers = new Map();
-
-// Options of a question written as "A) … B) …", and the one marked as recommended.
-function questionOptions(text) {
-  const parts = text.split(/(?:^|\s)([A-F])\)\s+/);
-  const opts = [];
-  for (let i = 1; i < parts.length; i += 2) opts.push({ key: parts[i], text: parts[i + 1].trim() });
-  const rec = opts.find(o => /\((recomendad[oa]|recommended)\)/i.test(o.text));
-  return { opts, rec: rec ? rec.key : (opts[0] ? opts[0].key : '') };
-}
 
 function answerOf(n, r, i) {
   const k = n.path + '#' + i;
@@ -2836,27 +2857,28 @@ function renderQuestions() {
   rows.forEach(x => { x.a = answerOf(x.n, x.r, x.n.requirements.indexOf(x.r)); });
   const chosen = rows.filter(x => x.a.on && (x.a.choice || x.a.text.trim()));
   let h = `<div class="lhead"><strong>Questions</strong><span class="count">${rows.length} open question${rows.length === 1 ? '' : 's'}` +
-    `${state.zoom ? ' in this branch' : ''} · tick the ones to answer, pick or write the answer · double-click a row to open its thread</span>` +
+    `${state.zoom ? ' in this branch' : ''} · tick the ones to answer, pick or write the answer · double-click a row to open the thread where it was asked</span>` +
     (rows.length ? `<button id="qCopy" class="primary"${chosen.length ? '' : ' disabled'} title="Copy a prompt for one new thread that records these answers in their nodes">Copy answers prompt (${chosen.length})</button>` : '') + '</div>';
   if (!rows.length) h += '<p class="empty-note">No open questions. Threads leave their questions for the owner as <code>question:</code> lines in the Requirements of a draft or an idea.</p>';
   else {
     h += `<table class="qtable"><thead><tr><th><input type="checkbox" id="qAll" title="Tick or untick all"${rows.every(x => x.a.on) ? ' checked' : ''}></th><th>#</th><th>Question</th><th>Answer</th><th>Node</th><th>Since</th><th>Thread</th></tr></thead><tbody>`;
     h += rows.map(({ n, r, a }, i) => {
-      const t = questionThread(n);
+      const t = questionThread(n, r);
       const tt = t ? (t.title || 'thread') + (t.node !== n ? ` (${t.node.title})` : '') : '';
+      const tip = t ? (t.origin ? 'the thread where this question was asked' : 'the latest thread' + (t.node !== n ? ' of ' + t.node.title : ' of the node')) : '';
       const k = esc(n.path + '#' + n.requirements.indexOf(r));
       const { opts } = questionOptions(r.text);
       const sel = `<select data-q="${k}" class="qchoice">` + opts.map(o => `<option value="${o.key}"${a.choice === o.key ? ' selected' : ''} title="${esc(o.text)}">${o.key}</option>`).join('') +
         `<option value=""${a.choice ? '' : ' selected'}>Other</option></select>`;
-      return `<tr data-path="${esc(n.path)}" class="${n.path === state.selected ? 'selected' : ''}" ` +
-        `title="${esc(t ? 'Double-click to open ' + tt : 'No thread yet: double-click starts a new thread for ' + n.title + ' (copies its context pack and opens the project chat)')}">` +
+      return `<tr data-path="${esc(n.path)}" data-qrow="${i}" class="${n.path === state.selected ? 'selected' : ''}" ` +
+        `title="${esc(t ? `Double-click to open ${tip}: ${tt}` : 'No thread yet: double-click starts a new thread for ' + n.title + ' (copies its context pack and opens the project chat)')}">` +
         `<td><input type="checkbox" class="qon" data-q="${k}"${a.on ? ' checked' : ''}></td>` +
         `<td class="num">${i + 1}</td>` +
         `<td class="md">${withBase(n, () => inline(r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' ')))}</td>` +
         `<td class="qans">${sel}<input type="text" class="qtext" data-q="${k}" placeholder="your answer" value="${esc(a.text)}"${a.choice ? ' hidden' : ''}></td>` +
         `<td><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span> <span class="mono">${esc(n.path)}</span></td>` +
         `<td class="mono">${esc(r.when || '')}</td>` +
-        `<td>${t ? esc(tt) : '<span class="when">none · starts a new thread</span>'}</td></tr>`;
+        `<td>${t ? esc(tt) + (t.when ? ` <span class="when">${esc(t.when)}</span>` : '') : '<span class="when">none · starts a new thread</span>'}</td></tr>`;
     }).join('') + '</tbody></table>';
   }
   questionRows = rows;
@@ -2870,8 +2892,6 @@ function renderQuestions() {
 // node's thread whose date is the first one at or after it (a thread adds its link after the owner's
 // message), or to the node's last thread when it is later than all of them.
 const threadOpen = new Set();   // links of the thread rows unfolded in the Threads view
-const THREAD_REACH_MIN = 2 * 24 * 60;   // a thread's line is written at most this long after the owner's words it records
-const minutesBetween = (a, b) => (Date.parse(b.replace(' ', 'T') + 'Z') - Date.parse(a.replace(' ', 'T') + 'Z')) / 60000;
 const ownerAsk = r => !/^(derived from|question:|answer:)/i.test(r.text);
 
 function threadRows() {
@@ -2889,14 +2909,12 @@ function threadRows() {
       if (t.when && (!row.when || t.when < row.when)) row.when = t.when;
       if (!row.nodes.includes(n)) row.nodes.push(n);
     }
-    const dated = ts.filter(x => x.t.when).sort((a, b) => a.t.when.localeCompare(b.t.when));
     const owner = when => {
       if (!ts.length) return null;
-      if (!when || !dated.length) return ts[ts.length - 1].row;
-      const x = dated.find(y => y.t.when >= when);
-      if (!x) return dated[dated.length - 1].row;
-      // Older history of a node that a thread only joined later is not that thread's.
-      return minutesBetween(when, x.t.when) <= THREAD_REACH_MIN ? x.row : null;
+      if (!when || !ts.some(x => x.t.when)) return ts[ts.length - 1].row;
+      // Older history of a node that a thread only joined later is not that thread's (threadAt gives null).
+      const t = threadAt(n.threads, when);
+      return t ? rowOf(t.link) : null;
     };
     for (const r of n.requirements) { const row = owner(r.when); if (row) row.reqs.push({ n, d: r }); }
     for (const d of n.decisions) { const row = owner(d.when); if (row) row.decs.push({ n, d }); }
@@ -3066,7 +3084,8 @@ $('list').addEventListener('dblclick', e => {
   const row = e.target.closest('[data-path]');
   if (!row || !state.nodes.has(row.dataset.path)) return;
   const n = state.nodes.get(row.dataset.path);
-  const t = state.view === 'questions' && questionThread(n);
+  const q = state.view === 'questions' && questionRows[+row.dataset.qrow];
+  const t = state.view === 'questions' && questionThread(n, q && q.n === n ? q.r : null);
   if (t) window.open(t.link, '_blank', 'noopener');
   else if (state.view === 'questions') newThread(n);
   else openNodeThread(n);
