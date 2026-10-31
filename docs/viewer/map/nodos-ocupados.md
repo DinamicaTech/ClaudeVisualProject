@@ -3,10 +3,11 @@ title: Nodos ocupados
 depends_on: [viewer/node-card, viewer/node-card/abrir-conversacion, viewer/tree, viewer/mover-nodo, viewer/rename, build/html-autonomo]
 threads:
   - Nodos ocupados | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5bS6uc59A9NYjJ2kCxct3y
+  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Marca con el número de su PR ("#35", o "open" si la rama aún no tiene PR) en el mapa y en la vista Project los nodos cuyo md cambia una rama o un PR sin fusionar; la ficha lista ese trabajo y "Open thread" abre su hilo, para acabar de validarlo y cerrarlo.
-El dato sale de `docs/.open-work.md`, que una GitHub Action ("Open work") reescribe en main con cada push y cada PR. Desde GitHub (`build/github`) está al día en cada recarga; desde una carpeta local, al día del último `git pull` (`Refresh.cmd`).
+El dato sale de `docs/.open-work.md`, que una GitHub Action ("Open work") reescribe en main con cada push y cada PR. Desde GitHub (`build/github`) está al día en cada recarga; desde una carpeta local, al día del último `git pull` (`Refresh.cmd`); si tiene más de un día, la cabecera lo marca como desfasada.
 En un proyecto de GitHub, "View in-progress version" muestra el md del nodo tal como lo deja la rama abierta, y los nodos que una rama crea aparecen ya en el árbol, con borde discontinuo y la etiqueta "new #N". Mientras un nodo tiene trabajo abierto, Renombrar y Mover se bloquean si escribirían en su md.
 
 ## Decisions
@@ -28,6 +29,7 @@ En un proyecto de GitHub, "View in-progress version" muestra el md del nodo tal 
 - 2026-10-05 09:17 · No cuentan en Drafts, Questions, Log, el contador de avisos ni el índice de nodos, que reflejan solo la rama principal. Un interruptor "Work in progress" en la cabecera (Tree y Project, solo en proyectos de GitHub) los muestra u oculta; activado por defecto y guardado con la vista.
 - 2026-10-05 09:17 · En una carpeta local no se muestran (la página no sabe de qué repositorio es), y los nodos que una rama mueve o borra no se marcan: ya salen como "open" con "View in-progress version".
 - 2026-10-05 11:07 · La etiqueta azul muestra el número del PR en lugar de "open": "#35", o "#35 #36" si varios PR abiertos cambian el md (puede pasar aunque las reglas lo eviten); una rama sin PR sigue mostrando "open". En los nodos nuevos de una rama, "new #34". Al pasar el ratón se sigue viendo el título del PR. Acordado con Ronald (11:07).
+- 2026-10-31 08:45 · Desde una carpeta local, si la línea "Updated" de `.open-work.md` tiene más de 24 horas, la cabecera añade "out of date: run Refresh.cmd" en color de aviso y su tooltip explica que el trabajo empezado después no aparece y cómo actualizarlo. "Open thread" avisa igual (ver `viewer/node-card/abrir-conversacion`). Los proyectos nuevos reciben `Refresh.cmd` (ver `nuevo-proyecto`).
 
 ## Requirements
 - 2026-10-03 08:00 · draft: Mostrar en el mapa qué nodos tienen una rama o PR abierto que cambia su md. Antes de construirlo, decidir cómo se obtiene ese dato sin conexión.
@@ -39,3 +41,4 @@ En un proyecto de GitHub, "View in-progress version" muestra el md del nodo tal 
 - 2026-10-04 15:03 · Y poder ver los hilos no fusionados resulta realmente útil.
 - 2026-10-04 15:05 · Una vez finalizado, mira lo de que los nodos nuevos en una rama sin fusionar, que creo que resulta bastante útil, no ?
 - 2026-10-05 11:05 · Habría forma de ver el PR# en los nodos del árbol ? (no sé si un nodo puede tener más de un PR)
+- 2026-10-31 08:45 · Derived from viewer/node-card/abrir-conversacion: avisar en la cabecera cuando la lista de trabajo abierto de una carpeta local tiene más de un día.
