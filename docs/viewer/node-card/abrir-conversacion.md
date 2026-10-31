@@ -2,9 +2,9 @@
 title: Abrir la conversación del nodo
 depends_on: [build]
 threads:
-  - Abrir la conversación del nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLTy4gbfpAdMNPEtfBCTTtAt
-  - Botón Open thread | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLE6eA4o2LiqLzDixdvKh7Z8
-  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
+  - 2026-10-03 14:18 · Abrir la conversación del nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLTy4gbfpAdMNPEtfBCTTtAt
+  - 2026-10-03 14:34 · Botón Open thread | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLE6eA4o2LiqLzDixdvKh7Z8
+  - 2026-10-31 08:34 · Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Con un nodo seleccionado, el botón "Open thread" de la ficha abre su conversación en Claude para seguir el trabajo.

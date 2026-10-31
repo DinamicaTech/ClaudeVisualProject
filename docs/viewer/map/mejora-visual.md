@@ -2,7 +2,7 @@
 title: Mejora visual
 depends_on: []
 threads:
-  - Mejora visual del mapa | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLXHz2jKvhAeV5eEDc7P2x6y
+  - 2026-10-02 10:44 · Mejora visual del mapa | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLXHz2jKvhAeV5eEDc7P2x6y
 ---
 ## Summary
 Mejoras de aspecto del mapa (vista "Map") para que la jerarquía sea más clara y agradable de leer.

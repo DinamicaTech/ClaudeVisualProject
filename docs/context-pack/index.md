@@ -2,7 +2,7 @@
 title: Índice de nodos
 depends_on: [model, format]
 threads:
-  - Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
+  - 2026-10-02 12:27 · Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
 ---
 ## Summary
 Un fichero generado, `.index.md` en la carpeta de docs, con todos los nodos en orden de árbol: ruta, título, estado, dependencias, hijos y Summary completo.

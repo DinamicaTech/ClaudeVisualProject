@@ -2,7 +2,7 @@
 title: Carpeta de docs fuera de la raíz
 depends_on: [viewer/map/nodos-ocupados]
 threads:
-  - Carpeta de docs fuera de la raíz | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL3VPknaUbJxpznmzToB1LXa
+  - 2026-10-03 15:28 · Carpeta de docs fuera de la raíz | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL3VPknaUbJxpznmzToB1LXa
 ---
 ## Summary
 Permite que la carpeta de docs esté en cualquier sitio del repositorio, no solo en su raíz.

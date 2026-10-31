@@ -2,7 +2,7 @@
 title: Trabajo sobre GitHub
 depends_on: [build/selector-de-proyectos, context-pack/index, context-pack/reglas-del-proyecto, global-rules, nuevo-proyecto]
 threads:
-  - Trabajo sobre GitHub | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBCY4WmWTpiPR6EVwnf5FnB
+  - 2026-10-04 15:15 · Trabajo sobre GitHub | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBCY4WmWTpiPR6EVwnf5FnB
 ---
 ## Summary
 La página abre un proyecto directamente desde su repositorio de GitHub ("Open from GitHub": owner/repo y carpeta de docs), sin clon local ni `git pull`: lee la rama principal en cada F5 o "Reload", y también el trabajo abierto.

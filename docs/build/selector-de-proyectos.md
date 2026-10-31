@@ -2,7 +2,7 @@
 title: Selector de proyectos
 depends_on: []
 threads:
-  - Preparación para producción | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLCDrf3ayxxoXH4hvnpdYFPb
+  - 2026-10-03 17:36 · Preparación para producción | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLCDrf3ayxxoXH4hvnpdYFPb
 ---
 ## Summary
 Un desplegable en la cabecera lista los proyectos abiertos en ese navegador, cada uno con el título de su nodo raíz; elegir uno lo abre con un clic.

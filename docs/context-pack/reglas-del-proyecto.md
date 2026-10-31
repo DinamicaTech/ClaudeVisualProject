@@ -2,7 +2,7 @@
 title: Reglas del proyecto
 depends_on: [format, global-rules, viewer, build/html-autonomo]
 threads:
-  - Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
+  - 2026-10-03 14:54 · Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
 ---
 ## Summary
 Las reglas generales de los prompts (lectura, encaminado, desglose, actualización, drafts, ideas) viven en el nodo `global-rules`; los dos prompts solo piden leerlo y quedan en ruta del nodo, ficheros y Task.

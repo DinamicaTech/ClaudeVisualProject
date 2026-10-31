@@ -12,3 +12,5 @@ jobs:
         run: node tools/check-format.mjs docs
       - name: docs/global-rules.md holds the CVP rules of index.html
         run: node tools/update-rules.mjs docs --check
+      - name: Tests
+        run: node --test tests/*.test.mjs

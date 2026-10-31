@@ -2,7 +2,7 @@
 title: Carga de requisitos
 depends_on: [context-pack/routing, global-rules, viewer]
 threads:
-  - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
+  - 2026-10-03 16:08 · Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
 ---
 ## Summary
 Pegar un bloque de requisitos y que el hilo los reparta por el árbol: cada frase al nodo que funcionalmente le corresponde, creando los nodos que falten, y las tareas pendientes como drafts. Sirve para ampliar un proyecto y para uno nuevo (árbol vacío, ver `nuevo-proyecto`).

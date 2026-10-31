@@ -76,6 +76,11 @@
   #list td.mono { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
   #list td.num { text-align: right; font-family: var(--mono); font-size: 12px; }
   #list .qans { white-space: nowrap; }
+  #list .ttable td.tdesc { max-width: 420px; }
+  #list .ttable td.tdesc .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #list .ttable tr.tmore > td { background: var(--bg); border-bottom: 1px solid var(--line); }
+  #list .tfold { font-size: 12px; }
+  #list .ttable tr.tmore .entry .when { white-space: nowrap; width: auto; }
   #list .qans input[type=text] { width: 11em; margin-left: 4px; font: inherit; padding: 2px 4px; }
   #list .lhead #qCopy { margin-left: auto; }
   #list tr[data-path] { cursor: pointer; }
@@ -293,7 +298,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
     title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
@@ -482,7 +487,7 @@ const state = {
   selected: null,     // selected node path
   expanded: new Set(),
   showRefs: true,
-  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'drafts', 'questions' or 'log'
+  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'drafts', 'questions', 'threads' or 'log'
   draftSort: { key: 'when', dir: -1 },
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
@@ -494,7 +499,7 @@ const state = {
 
 const $ = id => document.getElementById(id);
 const viewCtl = $('viewCtl');   // the view switches: inside the map or on top of the Project rows
-const VIEWS = ['overview', 'map', 'tree', 'drafts', 'questions', 'log'];
+const VIEWS = ['overview', 'map', 'tree', 'drafts', 'questions', 'threads', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -1244,13 +1249,19 @@ function parseFrontMatter(lines) {
   return fm;
 }
 
-// `threads` entries: "Title | link". The link is a URL or any text that reopens the chat
-// (e.g. `claude --resume <id>`). An entry without " | " is taken as a bare link.
+// `threads` entries: "YYYY-MM-DD HH:MM · Title | link" (viewer/threads); the date is optional, older
+// entries are "Title | link". The link is a URL or any text that reopens the chat (e.g. `claude --resume <id>`).
+// An entry without " | " is taken as a bare link.
+const THREAD_DATE_RE = /^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s*·\s*/;
 function parseThreads(v) {
   if (typeof v === 'string') v = v ? [v] : [];
   return (v || []).map(e => {
+    e = e.trim();
+    const d = e.match(THREAD_DATE_RE);
+    const when = d ? d[1].replace(/\s+/, ' ') : '';
+    if (d) e = e.slice(d[0].length);
     const i = e.lastIndexOf(' | ');
-    return i < 0 ? { title: '', link: e.trim() } : { title: e.slice(0, i).trim(), link: e.slice(i + 3).trim() };
+    return i < 0 ? { when, title: '', link: e.trim() } : { when, title: e.slice(0, i).trim(), link: e.slice(i + 3).trim() };
   }).filter(t => t.link);
 }
 
@@ -1518,7 +1529,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 11;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 12;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1599,7 +1610,7 @@ const CVP_RULES = [
   '- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.\n' +
   '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
-  'as a line `  - <short title> | <link>`. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. ' +
+  'as a line `  - YYYY-MM-DD HH:MM · <short title> | <link>`, with the date and time you add it, like a decision line. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. ' +
   'A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, ' +
   'and each one gets its own thread when someone starts working on it.',
 ];
@@ -1806,7 +1817,7 @@ function subTaskPack(n, title) {
     'After the confirmation, if the sub-task stays as proposed:',
     ...steps.map((t, i) => `${i + 1}. ${t}`), '',
     '```markdown', '---', `title: ${title}`, 'depends_on: []', `status: ${idea ? 'idea' : 'draft'}`, 'threads:',
-    '  - <short title of this thread> | <link to this thread, if you can tell it>', '---',
+    '  - <YYYY-MM-DD HH:MM> · <short title of this thread> | <link to this thread, if you can tell it>', '---',
     '## Summary', '<what this sub-task is about, functional, max 5 lines>', '', '## Decisions', '', '## Requirements', '```', '',
     'The new node inherits the dependencies of its parent and ancestors; add to depends_on only its own extra ones.',
     idea ? 'Then debate the idea in that node.' : 'Then work on the sub-task in that node.', '',
@@ -1878,7 +1889,7 @@ function newProjectPack() {
     '7. When you finish, tell the owner that every later thread of this project starts in this same Claude project: the prompts the CVP page copies for this project are pasted in a new thread here.', '',
     'From step 3 on, follow the CVP rules of the global rules file below, as in any project.', '',
     'Root node (<docs>/README.md):', '````markdown', '---', 'title: <project name>', 'depends_on: []', 'threads:',
-    '  - New project | <link to this thread, if you can tell it>', '---',
+    '  - <YYYY-MM-DD HH:MM> · New project | <link to this thread, if you can tell it>', '---',
     '## Summary', '<what the project is, functional, max 5 lines; complete it after the requirements load>', '',
     '## Decisions', '- <YYYY-MM-DD HH:MM> · Project created with Claude Visual Project.', '', '## Requirements', '````', '',
     `Global rules (<docs>/${RULES_NODE}.md):`, '````markdown', updatedRulesFile(null, '<YYYY-MM-DD HH:MM>').trimEnd(), '````', '',
@@ -2308,7 +2319,7 @@ function renderAll() {
   $('tree').hidden = state.view !== 'tree';
   $('map').hidden = state.view !== 'map';
   if (state.view === 'map') $('map').prepend(viewCtl);
-  $('list').hidden = !['drafts', 'questions', 'log'].includes(state.view);
+  $('list').hidden = !['drafts', 'questions', 'threads', 'log'].includes(state.view);
   $('overview').hidden = state.view !== 'overview';
   $('card').hidden = state.view === 'overview';
   $('refsToggleLabel').hidden = !$('list').hidden;
@@ -2324,6 +2335,7 @@ function renderAll() {
   if (state.view === 'tree') renderTree();
   else if (state.view === 'drafts') renderDrafts();
   else if (state.view === 'questions') renderQuestions();
+  else if (state.view === 'threads') renderThreads();
   else if (state.view === 'log') renderLog();
   else if (state.view === 'overview') renderOverview();
   else renderMap();
@@ -2395,7 +2407,7 @@ function select(path, reveal) {
   renderAll();
   if (!reveal) return;
   if (state.view === 'map') return centerMapOn(path);
-  if (['drafts', 'questions', 'log', 'overview'].includes(state.view)) return;
+  if (['drafts', 'questions', 'threads', 'log', 'overview'].includes(state.view)) return;
   const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
   if (row) row.scrollIntoView({ block: 'nearest' });
 }
@@ -2848,6 +2860,109 @@ function renderQuestions() {
   list.scrollTop = scroll;
 }
 
+// Threads (viewer/threads): every thread of the project, newest first, from the `threads` lines of the md
+// (dated "YYYY-MM-DD HH:MM · Title | link") and the open work list (threads of branches not merged yet).
+// A thread's description is what the owner asked it: each requirement or decision of a node goes to the
+// node's thread whose date is the first one at or after it (a thread adds its link after the owner's
+// message), or to the node's last thread when it is later than all of them.
+const threadOpen = new Set();   // links of the thread rows unfolded in the Threads view
+const THREAD_REACH_MIN = 2 * 24 * 60;   // a thread's line is written at most this long after the owner's words it records
+const minutesBetween = (a, b) => (Date.parse(b.replace(' ', 'T') + 'Z') - Date.parse(a.replace(' ', 'T') + 'Z')) / 60000;
+const ownerAsk = r => !/^(derived from|question:|answer:)/i.test(r.text);
+
+function threadRows() {
+  const rows = new Map();
+  const rowOf = (link, title) => {
+    if (!rows.has(link)) rows.set(link, { link, title: '', when: '', nodes: [], reqs: [], decs: [], work: [] });
+    const r = rows.get(link);
+    if (title && !r.title) r.title = title;
+    return r;
+  };
+  for (const n of zoomNodes()) {
+    const ts = n.threads.map(t => ({ t, row: rowOf(t.link, t.title) }));
+    for (const { t, row } of ts) {
+      if (t.title) row.title = t.title;   // the latest title wins
+      if (t.when && (!row.when || t.when < row.when)) row.when = t.when;
+      if (!row.nodes.includes(n)) row.nodes.push(n);
+    }
+    const dated = ts.filter(x => x.t.when).sort((a, b) => a.t.when.localeCompare(b.t.when));
+    const owner = when => {
+      if (!ts.length) return null;
+      if (!when || !dated.length) return ts[ts.length - 1].row;
+      const x = dated.find(y => y.t.when >= when);
+      if (!x) return dated[dated.length - 1].row;
+      // Older history of a node that a thread only joined later is not that thread's.
+      return minutesBetween(when, x.t.when) <= THREAD_REACH_MIN ? x.row : null;
+    };
+    for (const r of n.requirements) { const row = owner(r.when); if (row) row.reqs.push({ n, d: r }); }
+    for (const d of n.decisions) { const row = owner(d.when); if (row) row.decs.push({ n, d }); }
+  }
+  for (const w of (state.openWork ? state.openWork.items : [])) {
+    if (!w.thread) continue;
+    const row = rowOf(w.thread, w.threadTitle);
+    row.work.push(w);
+    if (!row.when && w.since) row.when = w.since;
+    for (const f of w.files) {
+      const n = [...state.nodes.values()].find(x => x.file === f);
+      if (n && (!state.zoom || inZoom(n)) && !row.nodes.includes(n)) row.nodes.push(n);
+    }
+  }
+  const byWhen = (a, b) => (a.d.when || '').localeCompare(b.d.when || '');
+  const out = [...rows.values()];
+  for (const r of out) { r.reqs.sort(byWhen); r.decs.sort(byWhen); }
+  return out.sort((a, b) => (b.when || '').localeCompare(a.when || '') || a.title.localeCompare(b.title));
+}
+
+function threadDescription(r) {
+  const ask = r.reqs.find(x => ownerAsk(x.d)) || r.decs[0] || r.reqs[0];
+  return ask ? ask.d.text.replace(/\s*\n\s*/g, ' ') : '';
+}
+
+let threadList = [];
+function renderThreads() {
+  const list = $('list');
+  const scroll = list.scrollTop;
+  const rows = threadList = threadRows();
+  const undated = rows.filter(r => !r.when).length;
+  let h = `<div class="lhead"><strong>Threads</strong><span class="count">${rows.length} thread${rows.length === 1 ? '' : 's'}` +
+    `${state.zoom ? ' in this branch' : ''} · newest first · ▸ unfolds what it was asked and decided · double-click a row to open its thread</span></div>`;
+  if (undated) h += `<p class="empty-note">${undated} thread${undated === 1 ? ' has' : 's have'} no date and ${undated === 1 ? 'goes' : 'go'} at the end: ` +
+    'their <code>threads</code> lines are older than dated thread links. To date them from git, run <code>node tools/date-threads.mjs &lt;docs folder&gt;</code> ' +
+    '(from Claude Visual Project\'s repository) in the project\'s clone, or ask a thread to do it.</p>';
+  if (!rows.length) h += '<p class="empty-note">No threads yet. A thread adds a dated line to the <code>threads</code> field of the node it works on.</p>';
+  else {
+    h += '<table class="ttable"><thead><tr><th></th><th>Date</th><th>Thread</th><th>Asked</th><th>Nodes</th><th>Open work</th></tr></thead><tbody>';
+    rows.forEach((r, i) => {
+      const open = threadOpen.has(r.link);
+      const first = r.nodes[0];
+      const work = r.work.map(w => w.pr && isLink(w.pr.url)
+        ? `<a href="${esc(w.pr.url)}" target="_blank" rel="noopener" title="${esc(w.pr.title)}">PR #${esc(w.pr.number)}</a>`
+        : `<span class="badge" title="Branch ${esc(w.branch)} without a pull request">open</span>`).join(' ');
+      h += `<tr data-thread="${i}"${first ? ` data-path="${esc(first.path)}"` : ''} class="${first && first.path === state.selected ? 'selected' : ''}" ` +
+        `title="${esc(isLink(r.link) ? 'Double-click to open this thread in Claude' : 'Not a web link: ' + r.link)}">` +
+        `<td><button class="link tfold" data-fold="${i}" title="${open ? 'Fold' : 'Show what the owner asked this thread and what it decided'}">${open ? '▾' : '▸'}</button></td>` +
+        `<td class="mono">${esc(r.when || 'no date')}</td>` +
+        `<td>${isLink(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.title || 'thread')}</a>` : esc(r.title || r.link)}</td>` +
+        `<td class="md tdesc" title="${esc(threadDescription(r))}"><div class="clamp">${first ? withBase(first, () => inline(threadDescription(r))) : esc(threadDescription(r))}</div></td>` +
+        `<td>${r.nodes.map(n => `<button class="link" data-node="${esc(n.path)}" title="${esc(n.path || '(root)')}"><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span></button>`).join(' ')}</td>` +
+        `<td>${work}</td></tr>`;
+      if (open) {
+        const items = [...r.reqs.map(x => ({ ...x, kind: 'requirement' })), ...r.decs.map(x => ({ ...x, kind: 'decision' }))]
+          .sort((a, b) => (a.d.when || '').localeCompare(b.d.when || ''));
+        h += `<tr class="tmore"><td></td><td colspan="5">` + (items.length ? items.map(e =>
+          `<div class="entry${e.d.replacedBy ? ' replaced' : ''}" data-path="${esc(e.n.path)}"><span class="when">${esc(e.d.when || '')}</span>` +
+          `<span class="kind${e.kind === 'requirement' ? ' req' : ''}">${e.kind === 'requirement' ? 'Requirement' : 'Decision'}</span>` +
+          `<div class="body md"><span class="who" style="color:${mapColor(e.n)}">${esc(e.n.title)}<span class="p">${esc(e.n.path || '(root)')}</span></span>` +
+          withBase(e.n, () => e.d.text.split('\n').map(inline).join('<br>')) + '</div></div>').join('')
+          : '<p class="empty-note">No dated requirements or decisions in its nodes are attributed to this thread.</p>') + '</td></tr>';
+      }
+    });
+    h += '</tbody></table>';
+  }
+  list.innerHTML = h;
+  list.scrollTop = scroll;
+}
+
 function renderLog() {
   const list = $('list');
   const scroll = list.scrollTop;
@@ -2895,6 +3010,12 @@ $('list').addEventListener('click', e => {
   const kb = e.target.closest('#logKind button');
   if (kb) { state.logKind = kb.dataset.kind; return renderAll(); }
   if (e.target.closest('#logReplaced')) return toggleReplaced();
+  const fold = e.target.closest('[data-fold]');
+  if (fold) {
+    const link = threadList[+fold.dataset.fold].link;
+    if (threadOpen.has(link)) threadOpen.delete(link); else threadOpen.add(link);
+    return renderAll();
+  }
   if (e.target.closest('#qCopy')) {
     const rows = questionRows.filter(x => x.a.on && (x.a.choice || x.a.text.trim()));
     return copyText(answersPack(rows), `Answers to ${rows.length} question${rows.length === 1 ? '' : 's'}`, 'Paste it in a new thread.');
@@ -2932,6 +3053,12 @@ function updateQCopy() {
 }
 $('list').addEventListener('dblclick', e => {
   if (e.target.closest('input, select, button')) return;
+  const tr = state.view === 'threads' && e.target.closest('tr[data-thread]');
+  if (tr) {
+    const r = threadList[+tr.dataset.thread];
+    if (isLink(r.link)) window.open(r.link, '_blank', 'noopener');
+    return;
+  }
   const row = e.target.closest('[data-path]');
   if (!row || !state.nodes.has(row.dataset.path)) return;
   const n = state.nodes.get(row.dataset.path);
@@ -2995,8 +3122,8 @@ function renderCard() {
 
   h += '<section><h2>Threads</h2>' + (n.threads.length
     ? '<ul class="links">' + n.threads.map(t => /^https?:\/\//i.test(t.link)
-        ? `<li><a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.title || t.link)}</a></li>`
-        : `<li>${t.title ? esc(t.title) + ': ' : ''}<code>${esc(t.link)}</code></li>`).join('') + '</ul>'
+        ? `<li>${t.when ? `<span class="when">${esc(t.when)}</span> ` : ''}<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.title || t.link)}</a></li>`
+        : `<li>${t.when ? `<span class="when">${esc(t.when)}</span> ` : ''}${t.title ? esc(t.title) + ': ' : ''}<code>${esc(t.link)}</code></li>`).join('') + '</ul>'
     : '<p class="empty-note">No threads linked. Threads add themselves to the <code>threads</code> field when they start.</p>') + '</section>';
 
   withBase(n, () => {

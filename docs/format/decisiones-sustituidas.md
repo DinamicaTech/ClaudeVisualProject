@@ -2,7 +2,7 @@
 title: Decisiones sustituidas
 depends_on: [model, viewer/node-card, viewer/log, viewer/map, context-pack]
 threads:
-  - Decisiones sustituidas | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFiGwT9SfPXMH3YqsZ9BZHA
+  - 2026-10-03 08:32 · Decisiones sustituidas | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFiGwT9SfPXMH3YqsZ9BZHA
 ---
 ## Summary
 Una decisión que otra posterior anula se marca en su propia línea con `[replaced by <fecha hora>]` justo después de su fecha, y la ruta del nodo delante de la fecha si la nueva está en otro nodo.
