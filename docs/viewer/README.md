@@ -5,7 +5,7 @@ threads:
   - Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
 ---
 ## Summary
-La página que usa la persona: navegar el proyecto como mapa de cajas o como árbol, ver juntos los drafts (`viewer/drafts`) o el registro de decisiones y requisitos (`viewer/log`), seleccionar un nodo para ver qué es y qué se decidió, y hacer doble clic para arrancar un hilo nuevo sobre él.
+La página que usa la persona: navegar el proyecto como mapa de cajas o como árbol, ver juntos los drafts (`viewer/drafts`) o el registro de decisiones y requisitos (`viewer/log`), encontrar un nodo con el buscador de la cabecera (`viewer/buscador`), seleccionar un nodo para ver qué es y qué se decidió, y hacer doble clic para arrancar un hilo nuevo sobre él.
 Abre por la portada del proyecto (`viewer/overview`). Solo lectura, salvo renombrar un nodo (`viewer/rename`), moverlo a otra rama (`viewer/mover-nodo`), las imágenes de la portada, escribir las reglas globales ("Update rules", `context-pack/reglas-del-proyecto`) y el índice de nodos ("Rebuild index", `context-pack/index`).
 
 ## Decisions
@@ -26,6 +26,7 @@ Abre por la portada del proyecto (`viewer/overview`). Solo lectura, salvo renomb
 - 2026-10-06 11:35 · Quinta escritura en la carpeta: las imágenes de la portada (`docs/overview/`) y sus líneas en la sección `## Overview` de la raíz, con "Add image", "Replace" y "Delete" dentro de la vista Overview (`viewer/overview`).
 - 2026-10-06 15:00 · La cabecera no cambia al cambiar de vista, y el selector de vista va a la izquierda, justo después del nombre de la aplicación y antes del desplegable de proyecto, porque su efecto está en la parte izquierda de la pantalla; así no se mueve ni al cambiar de vista ni al cambiar de proyecto. Los interruptores propios de una vista ("References", "Work in progress", "Tree edit mode") van dentro de la vista, en una barra arriba a la izquierda del mapa (a la altura de "Fit") y fija encima de las filas de Project. Acordado con Ronald (14:59).
 - 2026-10-06 16:20 · Favicon de `index.html` (y de las instantáneas, que lo copian): un SVG incrustado con un nodo raíz oscuro unido a tres nodos azul, ámbar y verde, el mapa en miniatura. Elegido por Ronald (opción A, 16:17).
+- 2026-10-31 09:55 · La cabecera lleva un buscador de nodos (`viewer/buscador`) junto al selector de vista.
 
 ## Requirements
 - 2026-10-03 07:50 · Derived from context-pack/routing: ver todos los drafts juntos y consultar qué pasó con un draft absorbido por otro nodo.
@@ -40,3 +41,4 @@ Abre por la portada del proyecto (`viewer/overview`). Solo lectura, salvo renomb
 - 2026-10-05 13:11 · Cuando selecciono 'Tree', aparecen controles a la derecha de los cinco selectores (Tree, Project, Drafts, Questions, Log), cosa que hace que el panel de selectores se mueva de un lado a otro según los botones que se pulsen
 - 2026-10-06 11:35 · Derived from viewer/overview: selector Overview / Tree / Project / Drafts / Questions / Log; nueva escritura en la carpeta: las imágenes de `docs/overview/` y sus líneas en la raíz.
 - 2026-10-06 14:57 · Otro punto, el selecto Overview/tree ... etc está en la parte derecha de la pantalla, cuando su efecto realmente está en la parte izquierda
+- 2026-10-31 09:55 · Derived from viewer/buscador: un campo de búsqueda de nodos en la cabecera.

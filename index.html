@@ -271,6 +271,22 @@
     opacity: 0; pointer-events: none; transition: opacity .2s;
   }
   #toast.show { opacity: .95; }
+  /* Node search (viewer/buscador) */
+  #searchBox { position: relative; }
+  #searchInput { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; width: 210px; }
+  #searchInput:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+  #searchResults {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; width: 440px; max-width: calc(100vw - 28px); max-height: 60vh; overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); padding: 4px 0;
+  }
+  #searchResults .sr { padding: 5px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  #searchResults .sr.on { background: var(--accent-soft); }
+  #searchResults .sr .t { display: flex; align-items: center; gap: 6px; }
+  #searchResults .sr .t span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #searchResults .sr .p { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #searchResults .sr .why { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #searchResults mark { background: var(--warn-soft); color: inherit; border-radius: 2px; }
+  #searchResults .note { padding: 6px 12px; color: var(--muted); font-size: 12.5px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -278,6 +294,8 @@
 <header>
   <span class="app">Claude Visual Project</span>
   <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open its thread">Questions</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
+    title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
   <span class="folder" id="folderName"></span>
   <span id="openWorkNote" hidden></span>
@@ -664,6 +682,7 @@ async function reload() {
   $('welcome').hidden = true;
   $('app').hidden = false;
   $('viewSeg').hidden = false;
+  $('searchBox').hidden = false;
   $('loadReqBtn').hidden = false;
   for (const id of ['reloadBtn', 'exportBtn']) $(id).hidden = !!state.snapshot;
   $('openBtn').hidden = $('openGhBtn').hidden = !!state.snapshot || projects.length > 0; // the project list has its own "Open…" entries
@@ -3602,6 +3621,126 @@ async function doMove() {
     $('movSubmit').disabled = false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Node search (viewer/buscador): a box in the header that finds nodes by title, path, thread titles
+// and open work titles, ignoring case and accents, and jumps to the chosen one like any other jump.
+// ---------------------------------------------------------------------------
+
+const SEARCH_MAX = 12;
+const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const search = { results: [], active: 0 };
+
+// Each node's searchable fields, best first: a match in an earlier field ranks higher.
+function searchFields(n) {
+  const work = [...(n.wip ? [n.wip] : []), ...openWorkOf(n)];
+  return [
+    { kind: 'title', text: n.title },
+    { kind: 'path', text: n.path || '(root)' },
+    ...n.threads.filter(t => t.title).map(t => ({ kind: 'thread', text: t.title })),
+    ...work.map(i => ({ kind: 'open work', text: i.pr ? `#${i.pr.number} ${i.pr.title}` : i.branch })),
+  ];
+}
+const SEARCH_RANK = { title: 0, path: 1, thread: 2, 'open work': 3 };
+
+// Nodes where every word of q is in some field, ranked by the best field (the one holding most of the words).
+function searchNodes(q) {
+  const terms = fold(q).split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  const out = [];
+  for (const n of state.nodes.values()) {
+    const fields = searchFields(n).map(f => ({ ...f, folded: fold(f.text) }));
+    if (!terms.every(t => fields.some(f => f.folded.includes(t)))) continue;
+    let best = null, bestCount = 0;
+    for (const f of fields) {
+      const c = terms.filter(t => f.folded.includes(t)).length;
+      if (c > bestCount) { best = f; bestCount = c; }
+    }
+    const score = SEARCH_RANK[best.kind] * 10 + (bestCount < terms.length ? 5 : 0) - (best.folded.startsWith(terms[0]) ? 1 : 0);
+    out.push({ n, best, score });
+  }
+  return out.sort((a, b) => a.score - b.score || a.n.path.split('/').length - b.n.path.split('/').length || a.n.title.localeCompare(b.n.title));
+}
+
+// Text with the words of q marked; folding keeps one character per character for the usual accents.
+function markTerms(text, q) {
+  const terms = fold(q).split(/\s+/).filter(Boolean), f = fold(text);
+  if (f.length !== text.length) return esc(text);
+  const on = new Array(text.length).fill(false);
+  for (const t of terms) for (let i = f.indexOf(t); i >= 0; i = f.indexOf(t, i + 1)) on.fill(true, i, i + t.length);
+  let h = '', open = false;
+  for (let i = 0; i < text.length; i++) {
+    if (on[i] !== open) { h += on[i] ? '<mark>' : '</mark>'; open = on[i]; }
+    h += esc(text[i]);
+  }
+  return h + (open ? '</mark>' : '');
+}
+
+function renderSearch() {
+  const q = $('searchInput').value, box = $('searchResults');
+  if (!q.trim()) { box.hidden = true; search.results = []; return; }
+  const all = searchNodes(q);
+  search.results = all.slice(0, SEARCH_MAX);
+  search.active = Math.min(search.active, Math.max(0, search.results.length - 1));
+  let h = search.results.map((r, i) => {
+    const n = r.n, work = openWorkOf(n);
+    const tag = n.wip ? `<span class="badge busy">${esc(wipTag(n.wip))}</span>`
+      : work.length ? `<span class="badge busy">${esc(workTag(work))}</span>` : '';
+    const status = n.status === 'draft' ? '<span class="badge draft">draft</span>' : n.status === 'idea' ? '<span class="badge idea">idea</span>' : '';
+    return `<div class="sr${i === search.active ? ' on' : ''}" role="option" data-path="${esc(n.path)}" title="Jump to this node (Enter)">` +
+      `<div class="t"><span>${markTerms(n.title, q)}</span>${status}${tag}</div>` +
+      `<div class="p">${r.best.kind === 'path' ? markTerms(n.path || '(root)', q) : esc(n.path || '(root)')}</div>` +
+      (['thread', 'open work'].includes(r.best.kind) ? `<div class="why">${r.best.kind}: ${markTerms(r.best.text, q)}</div>` : '') + '</div>';
+  }).join('');
+  if (!all.length) h = `<div class="note">No node matches "${esc(q.trim())}". The search looks in node titles, paths, thread titles and open work titles` +
+    ' of this project; try fewer or shorter words, or open the project the node belongs to.</div>';
+  else if (all.length > SEARCH_MAX) h += `<div class="note">${all.length - SEARCH_MAX} more: type more words to narrow the list.</div>`;
+  box.innerHTML = h;
+  box.hidden = false;
+  const on = box.querySelector('.sr.on');
+  if (on) on.scrollIntoView({ block: 'nearest' });
+}
+
+function closeSearch(blur) {
+  $('searchResults').hidden = true;
+  if (blur) $('searchInput').blur();
+}
+
+// Jump to a found node: the views without the tree (Overview, Drafts, Questions, Log) switch to Tree.
+function searchJump(path) {
+  closeSearch(true);
+  if (!state.nodes.has(path)) return;
+  if (!['map', 'tree'].includes(state.view)) state.view = 'map';
+  select(path, true);
+}
+
+$('searchInput').addEventListener('input', () => { search.active = 0; renderSearch(); });
+$('searchInput').addEventListener('focus', () => { $('searchInput').select(); renderSearch(); });
+$('searchInput').addEventListener('blur', () => closeSearch(false));
+$('searchInput').addEventListener('keydown', e => {
+  const n = search.results.length;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return closeSearch(true); }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (n) { search.active = (search.active + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; renderSearch(); }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (n) searchJump(search.results[search.active].n.path);
+  }
+});
+$('searchResults').addEventListener('mousedown', e => e.preventDefault());   // keep the focus, so blur does not close it before the click
+$('searchResults').addEventListener('click', e => {
+  const r = e.target.closest('.sr');
+  if (r) searchJump(r.dataset.path);
+});
+document.addEventListener('keydown', e => {
+  if ($('searchBox').hidden || $('app').hidden || document.querySelector('dialog[open]')) return;
+  const ctrlK = (e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K');
+  const slash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest('input, textarea, select, [contenteditable]');
+  if (!ctrlK && !slash) return;
+  e.preventDefault();
+  $('searchInput').focus();
+});
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'F2' || state.snapshot || $('app').hidden || document.querySelector('dialog[open]')) return;
