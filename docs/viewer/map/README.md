@@ -2,8 +2,8 @@
 title: Mapa
 depends_on: [model]
 threads:
-  - Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
-  - Drafts en gris | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLPU5reGH3ekLHXmNgLPLVWA
+  - 2026-10-02 12:27 · Zoom y selector Tree/Project | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2rS1irvBBBCJZVEffNsN8p
+  - 2026-10-03 14:16 · Drafts en gris | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLPU5reGH3ekLHXmNgLPLVWA
 ---
 ## Summary
 Muestra el árbol del proyecto como un mapa de tarjetas, de izquierda a derecha (cada columna es un nivel). Cada área de primer nivel tiene su color, que siguen sus líneas. Las dependencias van como etiquetas dentro de la tarjeta (clic para saltar); no hay flechas cruzadas. Los nodos draft tienen la tarjeta en gris claro, como desactivados, con la etiqueta DRAFT.

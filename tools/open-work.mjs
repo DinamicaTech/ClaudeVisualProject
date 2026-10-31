@@ -69,13 +69,20 @@ for (const { name: branch, commit: { sha } } of branches.sort((a, b) => a.name <
     if (f.previous_filename && f.previous_filename.startsWith(docs + '/')) paths.add(f.previous_filename.slice(docs.length + 1));
   }
   if (!paths.size) continue;
-  // The thread: the last `threads` link the branch adds to an md, with its title ("Title | link"),
-  // else the link in the pull request's description.
+  // The thread: the last `threads` link the branch adds to an md, with its title ("[date · ]Title | link"),
+  // else the link in the pull request's description. A link the branch also removes is an existing line
+  // it only rewrites (e.g. dating it with date-threads.mjs), not the branch's own thread.
   let thread = '';
+  const removed = new Set();
+  for (const f of files) for (const line of (f.patch || '').split('\n')) {
+    const m = /^-\s+-\s+(.*)\s\|\s*(\S+)\s*$/.exec(line);
+    if (m) removed.add(m[2]);
+  }
   for (const f of files) for (const line of (f.patch || '').split('\n')) {
     const m = /^\+\s+-\s+(.*)\s\|\s*(\S+)\s*$/.exec(line);
-    const link = m && (m[2].match(THREAD_RE) || [])[0];
-    if (link) thread = m[1].trim() ? `${m[1].trim()} | ${link}` : link;
+    const link = m && !removed.has(m[2]) && (m[2].match(THREAD_RE) || [])[0];
+    const title = m && m[1].replace(/^\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s*·\s*/, '').trim();
+    if (link) thread = title ? `${title} | ${link}` : link;
   }
   if (!thread && open) thread = ((open.body || '').match(THREAD_RE) || [''])[0];
   entries.push({

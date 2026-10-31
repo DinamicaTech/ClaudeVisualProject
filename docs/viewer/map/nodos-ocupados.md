@@ -2,8 +2,8 @@
 title: Nodos ocupados
 depends_on: [viewer/node-card, viewer/node-card/abrir-conversacion, viewer/tree, viewer/mover-nodo, viewer/rename, build/html-autonomo]
 threads:
-  - Nodos ocupados | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5bS6uc59A9NYjJ2kCxct3y
-  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
+  - 2026-10-03 15:17 · Nodos ocupados | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5bS6uc59A9NYjJ2kCxct3y
+  - 2026-10-31 08:34 · Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Marca con el número de su PR ("#35", o "open" si la rama aún no tiene PR) en el mapa y en la vista Project los nodos cuyo md cambia una rama o un PR sin fusionar; la ficha lista ese trabajo y "Open thread" abre su hilo, para acabar de validarlo y cerrarlo.

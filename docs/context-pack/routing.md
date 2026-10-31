@@ -2,8 +2,8 @@
 title: Encaminado al nodo responsable
 depends_on: [context-pack/index]
 threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
-  - Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
+  - 2026-10-03 07:40 · Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
+  - 2026-10-05 10:50 · Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
 ---
 ## Summary
 Una tarea arrancada en un nodo (por ejemplo, la raíz) se desplaza al nodo funcionalmente responsable de ella antes del desglose.

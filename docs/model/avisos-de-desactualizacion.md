@@ -2,7 +2,7 @@
 title: Avisos de desactualización
 depends_on: [model/comprobacion-de-formato]
 threads:
-  - Avisos de desactualización | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBXUhhwTDvikxtVJrgak7o7
+  - 2026-10-03 15:54 · Avisos de desactualización | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBXUhhwTDvikxtVJrgak7o7
 ---
 ## Summary
 Qué hacer con los documentos que ya no reflejan la realidad o tienen dependencias rotas.

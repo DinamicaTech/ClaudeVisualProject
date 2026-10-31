@@ -1,6 +1,8 @@
 ---
 title: Formato de los md
 depends_on: []
+threads:
+  - 2026-10-31 10:05 · Pantalla con todos los hilos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLS3U2TuuagmxwdyKXyKdKhq
 ---
 ## Summary
 La convención que permite leer una carpeta de md como un mapa del proyecto, tanto a personas como a asistentes.
@@ -19,8 +21,9 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-02 09:00 · El contenido libre va después de los bloques fijos.
 - 2026-10-02 09:00 · El hilo que cambia un nodo actualiza su Summary y sus Decisions antes de terminar.
 - 2026-10-02 09:00 · Regla de lectura de un hilo que trabaja sobre un nodo: leer entero el md del nodo; leer Summary y Decisions de sus ascendientes y dependencias; abrirlos enteros solo si hace falta.
-- 2026-10-02 10:38 · Campo opcional de cabecera `threads`: lista de los chats que han trabajado el nodo, una línea por chat con el formato `- Título | enlace`. El enlace suele ser una URL; si el chat no tiene URL (p. ej. una sesión local), cualquier texto que lo reabra, como `claude --resume <id>`. Decidido por Ronald.
+- 2026-10-02 10:38 · [replaced by 2026-10-31 10:05] Campo opcional de cabecera `threads`: lista de los chats que han trabajado el nodo, una línea por chat con el formato `- Título | enlace`. El enlace suele ser una URL; si el chat no tiene URL (p. ej. una sesión local), cualquier texto que lo reabra, como `claude --resume <id>`. Decidido por Ronald.
 - 2026-10-02 10:38 · El hilo que trabaja sobre un nodo añade su propio enlace a `threads` si lo conoce.
+- 2026-10-31 10:05 · Campo opcional de cabecera `threads`: lista de los chats que han trabajado el nodo, una línea por chat con el formato `- AAAA-MM-DD HH:MM · Título | enlace`; la fecha es cuando el hilo apunta su enlace (mismo formato que Decisions) y la usa la pestaña Threads (`viewer/threads`). Las líneas antiguas sin fecha siguen siendo válidas. El enlace suele ser una URL; si el chat no tiene URL (p. ej. una sesión local), cualquier texto que lo reabra, como `claude --resume <id>`.
 - 2026-10-02 11:50 · Bloque opcional `## Requirements`, después de Decisions: los requisitos que ha pedido el propietario para ese nodo, con sus palabras literales y solo las frases que piden algo, una línea por requisito con fecha y hora (mismo formato que Decisions). Lo rellena el hilo en el momento, porque después no es fiable separarlos del resto de la conversación. Decidido por Ronald (11:47).
 - 2026-10-02 18:55 · En `## Requirements` puede haber también requisitos derivados de otro nodo: "YYYY-MM-DD HH:MM · Derived from <ruta del nodo>: <lo que este nodo debe aportar>". Los escribe el hilo que trabaja en el nodo de origen, tras confirmar el desglose (ver `context-pack`).
 - 2026-10-02 19:15 · `.index.md` en la raíz de la carpeta de docs es un fichero generado (ver `context-pack/index`), no un nodo: no se edita a mano. Derived from context-pack/index.
@@ -41,6 +44,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 - 2026-10-03 15:30 · Derived from context-pack/carpeta-de-docs: campo `docs_path` en la cabecera del nodo raíz.
 - 2026-10-03 14:58 · Derived from context-pack/reglas-del-proyecto: `global-rules` como nodo de reglas con una sección de CVP no editable y otra del proyecto.
 - 2026-10-06 11:35 · Derived from viewer/overview: sección opcional `## Overview` en el nodo raíz; `docs/overview/` guarda sus imágenes y no es un nodo.
+- 2026-10-31 10:05 · Derived from viewer/threads: fecha en cada línea de `threads`.
 
 ## Ejemplo
 ```markdown
@@ -48,7 +52,7 @@ Define cómo se corresponden nodos y jerarquía con ficheros, la cabecera, los d
 title: Login
 depends_on: [security/engine]
 threads:
-  - Diseño del login | https://claude.ai/code/...
+  - 2026-10-02 09:30 · Diseño del login | https://claude.ai/code/...
 ---
 ## Summary
 Pantalla de entrada. Autentica al usuario y abre la última empresa usada.

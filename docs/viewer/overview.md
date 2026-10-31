@@ -2,8 +2,8 @@
 title: Pestaña Overview
 depends_on: [viewer, build/github, build/html-autonomo]
 threads:
-  - Pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL6pGuKTocW1pSRkWKhGwA7T
-  - Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
+  - 2026-10-06 11:02 · Pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL6pGuKTocW1pSRkWKhGwA7T
+  - 2026-10-06 11:35 · Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
 ---
 ## Summary
 Una pestaña "Overview", a la izquierda de "Tree", que presenta el proyecto: una descripción breve y una o varias capturas de cómo se ve. Es la portada para quien abre un proyecto que no conoce, o que hace tiempo que no ve.

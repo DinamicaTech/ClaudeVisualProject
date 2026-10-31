@@ -2,8 +2,8 @@
 title: Ideas (prefijo idea:)
 depends_on: [creative-lab, context-pack/routing, format, model, viewer, viewer/map, viewer/tree, viewer/node-card, viewer/drafts]
 threads:
-  - Creative lab | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHYC3xQXTEZXFC2gNUuj8d3
-  - Ideas (prefijo idea:) | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLGB7CEw3kxtbzHQJR5VnDcM
+  - 2026-10-03 13:46 · Creative lab | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHYC3xQXTEZXFC2gNUuj8d3
+  - 2026-10-03 14:42 · Ideas (prefijo idea:) | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLGB7CEw3kxtbzHQJR5VnDcM
 ---
 ## Summary
 Una frase que empieza por "idea:" guarda una idea como nodo hijo de `creative-lab` (el lab, en la raíz) con `status: idea`, en vez de encaminarla a su nodo funcional; no se programa nada para ella.

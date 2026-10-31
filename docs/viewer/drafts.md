@@ -2,7 +2,7 @@
 title: Drafts
 depends_on: [model]
 threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
+  - 2026-10-03 07:40 · Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
 ---
 ## Summary
 Pestaña "Drafts" del selector de vista: una tabla con todos los nodos `draft` del proyecto (tareas pendientes guardadas en su sitio funcional y trabajo aún sin validar), ordenable por columnas.

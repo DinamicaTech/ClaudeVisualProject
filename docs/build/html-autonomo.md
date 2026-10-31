@@ -2,8 +2,8 @@
 title: HTML autónomo
 depends_on: [viewer/rename]
 threads:
-  - HTML autónomo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMiQxnTw7yEJ8rD8AKLa4Rb
-  - Demo publicada | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHR3uJTnX8FBEQoRiVpPWQT
+  - 2026-10-03 08:29 · HTML autónomo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMiQxnTw7yEJ8rD8AKLa4Rb
+  - 2026-10-06 15:43 · Demo publicada | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLHR3uJTnX8FBEQoRiVpPWQT
 ---
 ## Summary
 Genera un único HTML autónomo (una "instantánea") con los md dentro, para publicarlo (p. ej. en GitHub Pages) o abrirlo en navegadores que no pueden leer una carpeta local.

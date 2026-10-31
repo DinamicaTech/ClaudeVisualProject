@@ -2,7 +2,7 @@
 title: Comprobación de formato en GitHub
 depends_on: [context-pack/index]
 threads:
-  - Comprobación de formato en GitHub | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLQ6mLVg56b8FLg3Yq9xvAdE
+  - 2026-10-03 14:39 · Comprobación de formato en GitHub | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLQ6mLVg56b8FLg3Yq9xvAdE
 ---
 ## Summary
 Una comprobación de GitHub, "Docs format", pone en rojo el PR que deja algún md de docs con avisos de formato: los mismos avisos que muestra la página (dependencia rota, bloque fijo ausente o desordenado, decisión sin fecha, estado desconocido…).

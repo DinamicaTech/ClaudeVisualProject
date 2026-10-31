@@ -2,9 +2,9 @@
 title: Nuevo proyecto
 depends_on: [context-pack/reglas-del-proyecto, context-pack/carga-de-requisitos, context-pack/index, viewer, viewer/map/nodos-ocupados, global-rules]
 threads:
-  - Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
-  - Flujo de proyecto nuevo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLAawzZvi3yYomRdd5fHP8V1
-  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
+  - 2026-10-03 16:08 · Nuevo proyecto y carga de requisitos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLELi1mP27ikYaYzTTx83NTx
+  - 2026-10-28 10:16 · Flujo de proyecto nuevo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLAawzZvi3yYomRdd5fHP8V1
+  - 2026-10-31 08:34 · Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Botón "New project" (en la cabecera y en la pantalla inicial) que copia un prompt para preparar un proyecto nuevo para CVP, sin hacerlo a mano. El propietario crea antes un proyecto vacío en Claude y pega el prompt en su primer hilo, para que el montaje y todos los hilos posteriores vivan allí: es el único paso manual.

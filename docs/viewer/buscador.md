@@ -2,7 +2,7 @@
 title: Buscador de nodos
 depends_on: [viewer/map, viewer/tree, viewer/map/nodos-ocupados, viewer/map/pila-de-nodos]
 threads:
-  - Añadir buscador de nodos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL9PxVp6wo5KgnmeJRSC1BgE
+  - 2026-10-31 09:47 · Añadir buscador de nodos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL9PxVp6wo5KgnmeJRSC1BgE
 ---
 ## Summary
 Un campo "Search nodes" en la cabecera, en todas las vistas (Ctrl+K o /), que encuentra un nodo cuando el árbol ya es demasiado grande para localizarlo a ojo.

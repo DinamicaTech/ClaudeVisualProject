@@ -4,7 +4,7 @@ depends_on: [viewer/drafts, context-pack/routing, viewer/log, format, viewer/ren
 status: obsolete
 replaced_by: viewer/drafts
 threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
+  - 2026-10-03 07:40 · Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
 ---
 ## Summary
 Obsoleto. Era la lista de lo que venía después de la v1. Desde el 2026-10-03 cada pendiente es un nodo `draft` en su sitio funcional, y la vista `viewer/drafts` los reúne todos.

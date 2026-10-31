@@ -2,7 +2,7 @@
 title: Mover nodo
 depends_on: [viewer/rename, viewer/map, context-pack/index]
 threads:
-  - Mover nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLRhnxFYo5RpxrXySTFtZp98
+  - 2026-10-03 08:48 · Mover nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLRhnxFYo5RpxrXySTFtZp98
 ---
 ## Summary
 Mover un nodo (con sus descendientes) a otra rama del árbol desde la página, actualizando todas las referencias a sus rutas, como ya hace Renombrar.

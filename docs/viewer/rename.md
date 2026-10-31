@@ -2,8 +2,8 @@
 title: Renombrar
 depends_on: [format]
 threads:
-  - Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
-  - Renombrar nodos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVHTEP7mxqJMb51UEnjneoo
+  - 2026-10-03 07:40 · Hoja de ruta: mejoras | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVFRxvSDxqMyLhLQWpW5ipJ
+  - 2026-10-02 10:53 · Renombrar nodos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLVHTEP7mxqJMb51UEnjneoo
 ---
 ## Summary
 Cambia el nombre de un nodo desde la ficha (botón "Rename" o F2): su título y, si se marca la casilla, el nombre de su fichero o carpeta.

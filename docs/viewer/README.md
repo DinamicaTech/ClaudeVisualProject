@@ -2,10 +2,10 @@
 title: Visor
 depends_on: [model]
 threads:
-  - Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
+  - 2026-10-06 11:35 · Construir la pestaña Overview | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLMf9gwP7r9KvaBKjmV9vebF
 ---
 ## Summary
-La página que usa la persona: navegar el proyecto como mapa de cajas o como árbol, ver juntos los drafts (`viewer/drafts`) o el registro de decisiones y requisitos (`viewer/log`), encontrar un nodo con el buscador de la cabecera (`viewer/buscador`), seleccionar un nodo para ver qué es y qué se decidió, y hacer doble clic para arrancar un hilo nuevo sobre él.
+La página que usa la persona: navegar el proyecto como mapa de cajas o como árbol, ver juntos los drafts (`viewer/drafts`), todos los hilos (`viewer/threads`) o el registro de decisiones y requisitos (`viewer/log`), encontrar un nodo con el buscador de la cabecera (`viewer/buscador`), seleccionar un nodo para ver qué es y qué se decidió, y hacer doble clic para arrancar un hilo nuevo sobre él.
 Abre por la portada del proyecto (`viewer/overview`). Solo lectura, salvo renombrar un nodo (`viewer/rename`), moverlo a otra rama (`viewer/mover-nodo`), las imágenes de la portada, escribir las reglas globales ("Update rules", `context-pack/reglas-del-proyecto`) y el índice de nodos ("Rebuild index", `context-pack/index`).
 
 ## Decisions

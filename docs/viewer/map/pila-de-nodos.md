@@ -2,8 +2,8 @@
 title: Pila de nodos inactivos
 depends_on: [viewer/map/nodos-ocupados]
 threads:
-  - Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
-  - Pila de nodos inactivos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBvstiCEBfzdW9zQYBv5ZwS
+  - 2026-10-05 10:50 · Drafts como nodo propio | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBfZRv8FjyEtAvZrpagxERU
+  - 2026-10-05 11:35 · Pila de nodos inactivos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLBvstiCEBfzdW9zQYBv5ZwS
 ---
 ## Summary
 En el mapa, cuando un nodo tiene 5 o más hijos terminales inactivos, se dibujan como una sola pila "N nodes" con capas detrás (más cuantos más nodos), para que el árbol siga siendo manejable ahora que cada draft es un nodo propio que se queda al validarse.
