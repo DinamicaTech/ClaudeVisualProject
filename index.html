@@ -346,6 +346,14 @@
   </div>
 </dialog>
 
+<dialog id="thrDialog">
+  <div class="dhead"><span class="t">Open a thread of <span id="thrNode"></span></span><button data-close type="button">Close</button></div>
+  <div class="dbody">
+    <p class="empty-note">This node has more than one thread at work. Pick the one to open in a new tab.</p>
+    <ul class="links" id="thrList"></ul>
+  </div>
+</dialog>
+
 <dialog id="subDialog">
   <div class="dhead"><span class="t">New sub-task under <span id="subParent"></span></span><button data-close>Close</button></div>
   <form class="dbody" id="subForm">
@@ -749,13 +757,18 @@ function parseOpenWork(text) {
   let it = null, m;
   for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
     if ((m = /^Updated:\s*(.+)$/.exec(line))) work.updated = m[1].trim();
-    else if ((m = /^##\s+(.+)$/.exec(line))) work.items.push(it = { branch: m[1].trim(), pr: null, thread: '', since: '', files: [] });
+    else if ((m = /^##\s+(.+)$/.exec(line))) work.items.push(it = { branch: m[1].trim(), pr: null, thread: '', threadTitle: '', since: '', files: [] });
     else if (it && (m = /^-\s*(Pull request|Thread|Since|Files):\s*(.*)$/i.exec(line))) {
       const key = m[1].toLowerCase(), val = m[2].trim();
       if (key === 'pull request') {
         const p = val.split(' · ');
         it.pr = { number: p[0].replace(/^#/, ''), title: p.slice(1, -1).join(' · '), url: /^https?:\/\//.test(p[p.length - 1]) ? p[p.length - 1] : '' };
-      } else if (key === 'thread') it.thread = val;
+      } else if (key === 'thread') {
+        // "Title | link" since the open work list names the thread; older lists hold only the link.
+        const k = val.lastIndexOf(' | ');
+        it.thread = k < 0 ? val : val.slice(k + 3).trim();
+        it.threadTitle = k < 0 ? '' : val.slice(0, k).trim();
+      }
       else if (key === 'since') it.since = val;
       else it.files = val.split(',').map(f => f.trim()).filter(Boolean);
     }
@@ -766,7 +779,8 @@ function parseOpenWork(text) {
 // The open work that changes the md of node n, or any of these md files (paths relative to the docs folder).
 const openWorkOf = n => n.file ? openWorkOn([n.file]) : [];
 const openWorkOn = paths => state.openWork ? state.openWork.items.filter(i => i.files.some(f => paths.includes(f))) : [];
-const workLabel = i => i.pr ? `PR #${i.pr.number} (${i.pr.title})` : `branch ${i.branch} (no pull request yet)`;
+const workLabel = i => i.threadTitle ? `${i.threadTitle} (${i.pr ? 'PR #' + i.pr.number : 'no pull request yet'})`
+  : i.pr ? `PR #${i.pr.number} (${i.pr.title})` : `branch ${i.branch} (no pull request yet)`;
 // Tag text of busy or new nodes: the pull request numbers ("#35 #36"), or "open" for a branch without one
 const workTag = items => [...new Set(items.map(i => i.pr ? '#' + i.pr.number : 'open'))].join(' ');
 const wipTag = w => w.pr ? `new #${w.pr.number}` : 'new';
@@ -1485,7 +1499,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 10;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 11;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1566,7 +1580,9 @@ const CVP_RULES = [
   '- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.\n' +
   '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
-  'as a line `  - <short title> | <link>`.',
+  'as a line `  - <short title> | <link>`. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. ' +
+  'A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, ' +
+  'and each one gets its own thread when someone starts working on it.',
 ];
 const cvpRulesText = () => CVP_RULES.join('\n\n');
 const normalizeText = t => t.replace(/\r\n?/g, '\n').trim();
@@ -3016,24 +3032,56 @@ function threadToOpen(n) {
   return n.threads[n.threads.length - 1];
 }
 
+// A node with no threads has not been worked on yet: its button becomes "Start thread" and copies its context
+// pack, to paste in a new thread that adds its link to `threads` (viewer/node-card/abrir-conversacion).
+const START_THREAD_TIP = 'No thread has worked on this node yet. Copy its context pack to paste in a new thread: ' +
+  'that thread becomes the node\'s own and adds its link here, so Open thread opens it from then on.';
+
+// The threads Open thread can open: every open work's thread (newest last), then the node's last thread.
+// With more than one, the button lets the owner choose (viewer/node-card/abrir-conversacion).
+function threadChoices(n) {
+  if (n.wip) return isLink(n.wip.thread) ? [{ title: workLabel(n.wip), link: n.wip.thread, open: true }] : [];
+  const out = openWorkOf(n).filter(i => isLink(i.thread)).map(i => ({ title: workLabel(i), link: i.thread, open: true, since: i.since }));
+  const last = n.threads[n.threads.length - 1];
+  if (last && isLink(last.link) && !out.some(c => c.link === last.link)) out.push({ title: last.title || last.link, link: last.link, last: true });
+  return out;
+}
+
 function openThreadButton(n) {
-  const t = threadToOpen(n);
-  let tip = !t ? 'This node has no linked threads'
-    : t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
+  const t = threadToOpen(n), choices = threadChoices(n);
+  if (choices.length > 1) return `<button id="openThreadBtn" title="${esc('Choose which thread to open: ' +
+    choices.map(c => c.open ? 'open work ' + c.title : 'last thread ' + c.title).join('; ') +
+    (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : ''))}">Open thread…</button>`;
+  if (!t && (n.wip || n.placeholder)) return '<button id="openThreadBtn" class="off" title="This node has no linked threads">Open thread</button>';
+  if (!t) return '<button id="openThreadBtn" title="' + esc(START_THREAD_TIP + (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : '')) + '">Start thread</button>';
+  let tip = t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
     : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
     : `The node's last thread is not a link: ${t.link}`;
-  const off = !t || !isLink(t.link);
+  const off = !isLink(t.link);
   const stale = staleOpenWork();
   if (stale) tip += '\n' + staleOpenWorkNote(stale);
   return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
 }
 
 function openLastThread(n) {
+  const choices = threadChoices(n);
+  if (choices.length > 1) return chooseThread(n, choices);
   const t = threadToOpen(n);
   const stale = staleOpenWork();
-  if (!t) return toast('This node has no linked threads.' + (stale ? ' ' + staleOpenWorkNote(stale) : ''), stale ? 9000 : 2600);
+  if (!t && (n.wip || n.placeholder)) return toast('This node has no linked threads.');
+  if (!t) return copyText(contextPack(n), `Context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
   if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
   window.open(t.link, '_blank', 'noopener');
+  if (stale) toast(staleOpenWorkNote(stale), 9000);
+}
+
+function chooseThread(n, choices) {
+  $('thrNode').textContent = n.title;
+  $('thrList').innerHTML = choices.map(c => `<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.title)}</a> ` +
+    `<span class="when">${c.open ? 'open work' + (c.since ? ' since ' + esc(c.since) : '') : 'last thread of the node'}</span></li>`).join('');
+  for (const a of $('thrList').querySelectorAll('a')) a.addEventListener('click', () => $('thrDialog').close());
+  $('thrDialog').showModal();
+  const stale = staleOpenWork();
   if (stale) toast(staleOpenWorkNote(stale), 9000);
 }
 

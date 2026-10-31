@@ -5,6 +5,7 @@ threads:
   - Reglas del proyecto | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL2RpLubJUYfF1TdAhd63VyF
   - Directrices de trabajo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLSQY8JfZgrCbTmind9M6iq3
   - Tooltips y mensajes de error | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLAAfk8SVSsKDHr6SsxwBho1
+  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Las reglas que sigue todo hilo que trabaja sobre un nodo de este proyecto. Los prompts de la página apuntan aquí en vez de repetirlas.
@@ -24,6 +25,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-05 10:50 · Versión 8 de las CVP rules: en Drafts y en Routing, cada draft es un nodo hijo nuevo de su nodo funcional con una sola tarea, nunca un nodo existente puesto en draft; al validarse queda como nodo estable propio, y la frase del propietario se copia sin su prefijo "draft:" (ver `context-pack/routing`).
 - 2026-10-15 06:50 · Versión 9 de las CVP rules: nuevo bloque "Working practices" para todos los proyectos que usan CVP, actuales y futuros: Impact first (avisar y cuestionar una petición de impacto relevante), Regression tests, Ask before destroying, No secrets in the repository, Dependencies, Acceptance criteria, Definition of done, Fields fit their content y Hand-over. Descartadas por Ronald: verificar antes de decir "hecho", cambios pequeños y reversibles y registro de incidencias.
 - 2026-10-16 08:31 · Versión 10 de las CVP rules: en "Working practices", dos reglas nuevas para todos los proyectos: Useful tooltips (los controles llevan un tooltip útil y descriptivo siempre que sea posible) y No dead ends in errors (cada mensaje de error explica por qué ocurre y cómo arreglarlo, y si puede propone la solución). Se aplican al trabajo nuevo; las pantallas existentes no se revisan.
+- 2026-10-31 09:10 · Versión 11 de las CVP rules: en "Thread link", el enlace del hilo solo va al nodo en el que trabaja; un hilo que crea muchos nodos de golpe (carga de requisitos, proyecto nuevo) no se apunta en los nodos que crea, que se quedan con su decisión "Created in…" y reciben su propio hilo cuando alguien empieza a trabajar en ellos con "Start thread" (ver `viewer/node-card/abrir-conversacion`).
 
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
@@ -41,7 +43,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-16 08:29 · Siempre que aparezca un mensaje de error, aportar al usuario toda la información posible para que sepa porqué se produce cómo solucionarlo y, si es posible, que el propio mensaje proponga una solución. Se trata de no llevar al usuario a un callejón sin salida.
 
 ## CVP rules
-<!-- cvp-rules 10 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+<!-- cvp-rules 11 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
 These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
 
 **Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
@@ -90,7 +92,7 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.
 - **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.
 
-**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - <short title> | <link>`.
+**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - <short title> | <link>`. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, and each one gets its own thread when someone starts working on it.
 <!-- cvp-rules end -->
 
 ## Project rules
@@ -99,3 +101,4 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - 2026-10-03 18:15 · Derived from context-pack/carga-de-requisitos: ficheros adjuntos y reparto híbrido de requisitos largos (versión 5).
 - 2026-10-03 19:20 · Derived from context-pack/carga-de-requisitos: contestar preguntas y no quedarse parado por las de otro nodo (versión 6).
 - 2026-10-04 15:05 · Derived from build/github: el bloque CVP rules se actualiza automáticamente en GitHub.
+- 2026-10-31 09:10 · Derived from viewer/node-card/abrir-conversacion: que `threads` solo guarde las conversaciones del nodo; un hilo que crea muchos nodos de golpe no se apunta en ellos (versión 11).
