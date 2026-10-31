@@ -82,7 +82,7 @@
   #list .tfold { font-size: 12px; }
   #list .ttable tr.tmore .entry .when { white-space: nowrap; width: auto; }
   #list .qans input[type=text] { width: 11em; margin-left: 4px; font: inherit; padding: 2px 4px; }
-  #list .lhead #qCopy { margin-left: auto; }
+  #list .lhead #qDiscuss { margin-left: auto; }
   #list tr[data-path] { cursor: pointer; }
   #list tr[data-path]:hover td { background: var(--accent-soft); }
   #list tr.selected td { background: var(--accent-soft); }
@@ -308,7 +308,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to open the thread where it was asked">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to discuss it in a new thread with the questions asked with it">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
     title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
@@ -2813,6 +2813,8 @@ function questionThread(n, r) {
 }
 
 let questionRows = [];
+const DISCUSS_TIP = 'Copy a prompt for one new thread that discusses the ticked questions together: it reads the thread where they were asked, ' +
+  'sums up the conversation that led to them, presents them grouped by topic and records your answers in their nodes. It also opens the project chat.';
 // Answers chosen in the Questions view, by "<node path>#<index of the line in its Requirements>":
 // { on, choice ('A', 'B'… or '' for a written answer), text }. Kept until the page reloads.
 const qAnswers = new Map();
@@ -2844,6 +2846,52 @@ function answersPack(rows) {
   ].join('\n');
 }
 
+// Prompt for a new thread that discusses several open questions together with the owner, with the context
+// of the conversation where they were asked: the new thread reads that thread (threads of one Claude project
+// can read each other) from the owner's last message before the questions, then records the answers.
+function discussPack(rows) {
+  const root = state.nodes.get('');
+  const items = rows.map(({ n, r }, i) => {
+    const q = r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' ');
+    const t = questionThread(n, r);
+    const where = t && t.origin ? `asked in the thread "${t.title || 'thread'}" ${t.link}` : 'no thread of the node is dated where it was asked';
+    return `${i + 1}. ${repoPath(n)} (question dated ${r.when || 'without date'}; ${where})\n   Question: ${q}`;
+  });
+  return [
+    `Discuss with the owner, together, some open questions of the project "${root.title}", and record the answers.`, '',
+    `Files, with paths relative to the repository root: root node ${root.file ? repoPath(root) : docsPrefix()}; node index ${docsPrefix()}${INDEX_FILE}.`, '',
+    ...rulesLines(), '',
+    'Steps:',
+    '1. Recover the conversation that led to these questions. Each one names the thread where it was asked: if you can read that thread (a thread of this same Claude project), ' +
+    'read it, find the message where these questions were asked, and take the part of the conversation from the owner\'s last message before it up to that message: ' +
+    'the owner\'s requirements, the answer and its comments. If you cannot read a thread, or a question names none, say so in one line and work from the md files.',
+    '2. Read the md of each question\'s node, and the parts of sources/ that its Requirements reference.',
+    '3. Start your first reply with a short summary of that context (at most 10 lines). Then present all the questions together, with the numbers below, ' +
+    'grouped by topic: each one with its options, their consequence and your recommendation, and say which questions depend on others. Let the owner answer them all at once.',
+    '4. Record each answer as the "Drafts" rule says ("answer:" line, "[answered …]" mark, new decisions where an answer changes one in force), all in one branch. ' +
+    'Do not do the nodes\' tasks. Add this thread\'s link to the `threads` of each node whose questions it answers (see "Thread link").', '',
+    'Questions:', ...items,
+  ].join('\n');
+}
+
+// Opens a new thread on the given question rows: copies discussPack and opens the project chat.
+function discussQuestions(rows) {
+  if (!rows.length) return;
+  const url = projectChatUrl();
+  copyText(discussPack(rows), `Prompt to discuss ${rows.length} question${rows.length === 1 ? '' : 's'}`, url
+    ? 'Paste it as the first message of a new thread in the project chat, which opened in a new tab.'
+    : 'Paste it as the first message of a new thread in this project in Claude. (No thread link in the docs names the project, so its chat could not be opened.)');
+  if (url) window.open(url, '_blank', 'noopener');
+}
+
+// The rows a double-click discusses: every open question asked in the same thread as this one,
+// or, when no thread of its node is dated where it was asked, every open question of its node.
+function questionGroup(q) {
+  const t = questionThread(q.n, q.r);
+  if (t && t.origin) return questionRows.filter(x => { const u = questionThread(x.n, x.r); return u && u.origin && u.link === t.link; });
+  return questionRows.filter(x => x.n === q.n && !(questionThread(x.n, x.r) || {}).origin);
+}
+
 function renderQuestions() {
   const list = $('list');
   const scroll = list.scrollTop;
@@ -2856,8 +2904,10 @@ function renderQuestions() {
   walk(state.nodes.get(''));
   rows.forEach(x => { x.a = answerOf(x.n, x.r, x.n.requirements.indexOf(x.r)); });
   const chosen = rows.filter(x => x.a.on && (x.a.choice || x.a.text.trim()));
+  const ticked = rows.filter(x => x.a.on).length;
   let h = `<div class="lhead"><strong>Questions</strong><span class="count">${rows.length} open question${rows.length === 1 ? '' : 's'}` +
-    `${state.zoom ? ' in this branch' : ''} · tick the ones to answer, pick or write the answer · double-click a row to open the thread where it was asked</span>` +
+    `${state.zoom ? ' in this branch' : ''} · tick the ones to discuss or answer · double-click a row to discuss in a new thread every question asked with it</span>` +
+    (rows.length ? `<button id="qDiscuss"${ticked ? '' : ' disabled'} title="${esc(DISCUSS_TIP)}">Discuss in new thread (${ticked})</button>` : '') +
     (rows.length ? `<button id="qCopy" class="primary"${chosen.length ? '' : ' disabled'} title="Copy a prompt for one new thread that records these answers in their nodes">Copy answers prompt (${chosen.length})</button>` : '') + '</div>';
   if (!rows.length) h += '<p class="empty-note">No open questions. Threads leave their questions for the owner as <code>question:</code> lines in the Requirements of a draft or an idea.</p>';
   else {
@@ -2865,20 +2915,20 @@ function renderQuestions() {
     h += rows.map(({ n, r, a }, i) => {
       const t = questionThread(n, r);
       const tt = t ? (t.title || 'thread') + (t.node !== n ? ` (${t.node.title})` : '') : '';
-      const tip = t ? (t.origin ? 'the thread where this question was asked' : 'the latest thread' + (t.node !== n ? ' of ' + t.node.title : ' of the node')) : '';
       const k = esc(n.path + '#' + n.requirements.indexOf(r));
       const { opts } = questionOptions(r.text);
       const sel = `<select data-q="${k}" class="qchoice">` + opts.map(o => `<option value="${o.key}"${a.choice === o.key ? ' selected' : ''} title="${esc(o.text)}">${o.key}</option>`).join('') +
         `<option value=""${a.choice ? '' : ' selected'}>Other</option></select>`;
       return `<tr data-path="${esc(n.path)}" data-qrow="${i}" class="${n.path === state.selected ? 'selected' : ''}" ` +
-        `title="${esc(t ? `Double-click to open ${tip}: ${tt}` : 'No thread yet: double-click starts a new thread for ' + n.title + ' (copies its context pack and opens the project chat)')}">` +
+        `title="${esc(t && t.origin ? `Double-click to discuss in a new thread every open question asked in ${tt}, with the context of that conversation (copies a prompt and opens the project chat)`
+          : `Double-click to discuss in a new thread every open question of ${n.title} (copies a prompt and opens the project chat)`)}">` +
         `<td><input type="checkbox" class="qon" data-q="${k}"${a.on ? ' checked' : ''}></td>` +
         `<td class="num">${i + 1}</td>` +
         `<td class="md">${withBase(n, () => inline(r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' ')))}</td>` +
         `<td class="qans">${sel}<input type="text" class="qtext" data-q="${k}" placeholder="your answer" value="${esc(a.text)}"${a.choice ? ' hidden' : ''}></td>` +
         `<td><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span> <span class="mono">${esc(n.path)}</span></td>` +
         `<td class="mono">${esc(r.when || '')}</td>` +
-        `<td>${t ? esc(tt) + (t.when ? ` <span class="when">${esc(t.when)}</span>` : '') : '<span class="when">none · starts a new thread</span>'}</td></tr>`;
+        `<td>${t && t.origin ? `<a href="${esc(t.link)}" target="_blank" rel="noopener" title="Open the thread where this question was asked">${esc(tt)}</a> <span class="when">${esc(t.when)}</span>` : '<span class="when">not found</span>'}</td></tr>`;
     }).join('') + '</tbody></table>';
   }
   questionRows = rows;
@@ -3038,6 +3088,7 @@ $('list').addEventListener('click', e => {
     if (threadOpen.has(link)) threadOpen.delete(link); else threadOpen.add(link);
     return renderAll();
   }
+  if (e.target.closest('#qDiscuss')) return discussQuestions(questionRows.filter(x => x.a.on));
   if (e.target.closest('#qCopy')) {
     const rows = questionRows.filter(x => x.a.on && (x.a.choice || x.a.text.trim()));
     return copyText(answersPack(rows), `Answers to ${rows.length} question${rows.length === 1 ? '' : 's'}`, 'Paste it in a new thread.');
@@ -3072,6 +3123,11 @@ function updateQCopy() {
   const n = questionRows.filter(x => x.a.on && (x.a.choice || x.a.text.trim())).length;
   b.disabled = !n;
   b.textContent = `Copy answers prompt (${n})`;
+  const d = $('qDiscuss');
+  if (!d) return;
+  const k = questionRows.filter(x => x.a.on).length;
+  d.disabled = !k;
+  d.textContent = `Discuss in new thread (${k})`;
 }
 $('list').addEventListener('dblclick', e => {
   if (e.target.closest('input, select, button')) return;
@@ -3085,9 +3141,7 @@ $('list').addEventListener('dblclick', e => {
   if (!row || !state.nodes.has(row.dataset.path)) return;
   const n = state.nodes.get(row.dataset.path);
   const q = state.view === 'questions' && questionRows[+row.dataset.qrow];
-  const t = state.view === 'questions' && questionThread(n, q && q.n === n ? q.r : null);
-  if (t) window.open(t.link, '_blank', 'noopener');
-  else if (state.view === 'questions') newThread(n);
+  if (q && q.n === n) discussQuestions(questionGroup(q));
   else openNodeThread(n);
 });
 
