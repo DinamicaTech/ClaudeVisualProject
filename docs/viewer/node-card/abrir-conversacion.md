@@ -4,10 +4,11 @@ depends_on: [build]
 threads:
   - Abrir la conversación del nodo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLTy4gbfpAdMNPEtfBCTTtAt
   - Botón Open thread | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLE6eA4o2LiqLzDixdvKh7Z8
+  - Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
 ---
 ## Summary
 Con un nodo seleccionado, el botón "Open thread" de la ficha abre su conversación en Claude para seguir el trabajo.
-Abre en una pestaña nueva el hilo del trabajo abierto del nodo, si lo tiene, o si no el último enlace de `threads` (el hilo más reciente); los anteriores siguen en la sección Threads de la ficha. Si el nodo no tiene hilos, o el último no es una URL, el botón sale atenuado y un aviso lo explica.
+Abre en una pestaña nueva el hilo del trabajo abierto del nodo, si lo tiene, o si no el último enlace de `threads` (el hilo más reciente); los anteriores siguen en la sección Threads de la ficha. Si el nodo no tiene hilos, o el último no es una URL, el botón sale atenuado y un aviso lo explica. Desde una carpeta local con la lista de trabajo abierto de hace más de un día, el tooltip y un aviso al pulsarlo dicen que puede no ser el hilo del trabajo actual y que se actualice con `Refresh.cmd`.
 Se hace en la página HTML, sin aplicación local, y funciona también en la instantánea. Ni el HTML ni un exe pueden crear un hilo de claude.ai, mandarle el prompt o ver su estado; el seguimiento de trabajo abierto lo cubre `viewer/map/nodos-ocupados`.
 
 ## Decisions
@@ -18,8 +19,11 @@ Se hace en la página HTML, sin aplicación local, y funciona también en la ins
 - 2026-10-03 14:31 · [replaced by 2026-10-03 15:18] Botón "Open thread" en la ficha, junto a "New sub-task": abre en una pestaña nueva el último enlace de `threads` (el último de la lista, que es el más reciente porque los hilos se añaden al final); con varios hilos abre el último, sin menú para elegir (Ronald, 14:28). Si el nodo no tiene hilos, o el último enlace no es una URL, el botón sale atenuado, su tooltip lo dice y al pulsarlo un aviso lo explica. Su tooltip nombra el hilo que abre.
 - 2026-10-03 14:33 · Validado por Ronald (14:33): deja de ser draft.
 - 2026-10-03 15:18 · Botón "Open thread" en la ficha, junto a "New sub-task": si una rama o un PR cambia el md del nodo (`viewer/map/nodos-ocupados`), abre en una pestaña nueva el hilo de ese trabajo; si no, el último enlace de `threads` (el último de la lista, que es el más reciente porque los hilos se añaden al final); con varios hilos abre el último, sin menú para elegir (Ronald, 14:28). Si no hay ningún hilo, o el enlace no es una URL, el botón sale atenuado, su tooltip lo dice y al pulsarlo un aviso lo explica. Su tooltip nombra el hilo que abre.
+- 2026-10-31 08:45 · Caso de ProContaVF (Ronald, 08:21): con la carpeta local sin `git pull` desde el 29/10, `.open-work.md` no listaba el trabajo abierto del nodo `compras/factura-compra/contabilizacion`, y "Open thread" abría su último hilo de `threads`, el de la carga de requisitos, que es el hilo principal del proyecto. El botón no pierde el enlace: el dato estaba desfasado. Desde una carpeta local (no GitHub ni instantánea), si la línea "Updated" de la lista tiene más de 24 horas, el tooltip del botón lo añade y al pulsarlo, además de abrir el hilo, un aviso dice de cuándo es la lista, que puede no ser el hilo del trabajo actual y que se actualiza con doble clic en `Refresh.cmd` y F5 (Ronald, 08:32).
 
 ## Requirements
 - 2026-10-03 14:04 · me gustaría que pulsando un botón X con un nodo seleccionado, se activase la conversación de ese nodo en Claude para poder hacer seguimiento.
 - 2026-10-03 14:16 · draft: Añadir a la ficha del nodo un botón que abra en una pestaña nueva la conversación de Claude del nodo seleccionado (el último enlace de su lista `threads`); si el nodo no tiene hilos, indicarlo. Decidir al ejecutarlo qué hacer cuando hay varios hilos: abrir el último o dejar elegir.
 - 2026-10-03 15:18 · Derived from viewer/map/nodos-ocupados: con trabajo abierto, "Open thread" abre el hilo de ese trabajo.
+- 2026-10-31 08:21 · En el proyecto ProContaVF, cuando hago OpenThread, me salta al thread principal. Por ejemplo, con el nodo docs/compras/factura-compra/contabilizacion.md
+- 2026-10-31 08:32 · Ok a todo

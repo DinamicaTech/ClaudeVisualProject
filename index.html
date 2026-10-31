@@ -200,6 +200,7 @@
   .openwork ul { margin: 4px 0 0; padding-left: 18px; }
   .openwork .when { color: var(--muted); font-size: 12.5px; }
   header #openWorkNote { color: var(--muted); font-size: 12.5px; }
+  header #openWorkNote.stale { color: var(--warn); }
   .summary { font-size: 15px; }
   .summary p:first-child { margin-top: 0; }
   .decisions { list-style: none; padding: 0; margin: 0; }
@@ -728,6 +729,8 @@ const OPEN_WORK_FILE = '.open-work.md';
 // The Open work action a new project installs: it downloads tools/open-work.mjs from CVP's public repository.
 const OPEN_WORK_ACTION_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/tools/project/open-work.yml';
 // The CVP docs action a new project installs (build/github): it keeps the node index and the CVP rules up to date on GitHub.
+// Refresh.cmd a new project gets at its repository root: double-click runs git pull --ff-only (viewer/map/nodos-ocupados).
+const REFRESH_CMD_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/Refresh.cmd';
 const CVP_DOCS_ACTION_URL = 'https://raw.githubusercontent.com/DinamicaTech/ClaudeVisualProject/main/tools/project/cvp-docs.yml';
 
 async function readTextFile(dir, name) {
@@ -768,15 +771,27 @@ const workLabel = i => i.pr ? `PR #${i.pr.number} (${i.pr.title})` : `branch ${i
 const workTag = items => [...new Set(items.map(i => i.pr ? '#' + i.pr.number : 'open'))].join(' ');
 const wipTag = w => w.pr ? `new #${w.pr.number}` : 'new';
 const isLink = s => /^https?:\/\//i.test(s || '');
+// In a local folder the open work list is as fresh as the last git pull: older than a day, Open thread
+// may miss the work at hand and fall back to the node's last thread (viewer/node-card/abrir-conversacion).
+const OPEN_WORK_STALE_MS = 24 * 3600 * 1000;
+function staleOpenWork() {
+  if (state.gh || state.snapshot || !state.openWork) return '';
+  const t = Date.parse((state.openWork.updated || '').replace(/^(\S+)\s+(\S+)\s*UTC$/, '$1T$2Z'));
+  return !isNaN(t) && Date.now() - t > OPEN_WORK_STALE_MS ? state.openWork.updated : '';
+}
+const staleOpenWorkNote = when => `The list of open work in this folder is from ${when}: work started since then is missing, so this may not be the thread of the current work. ` +
+  'To update it, double-click Refresh.cmd at the repository root and press F5.';
 
 function renderOpenWorkNote() {
   const w = state.openWork, el = $('openWorkNote');
   el.hidden = !w;
   if (!w) return;
-  el.textContent = `· open work: ${w.items.length}` + (w.updated ? ` · updated ${w.updated}` : '');
-  el.title = state.snapshot ? 'Open work as it was when this snapshot was made.'
+  const stale = staleOpenWork();
+  el.textContent = `· open work: ${w.items.length}` + (w.updated ? ` · updated ${w.updated}` : '') + (stale ? ' · out of date: run Refresh.cmd' : '');
+  el.classList.toggle('stale', !!stale);
+  el.title = (stale ? staleOpenWorkNote(stale) + "\n" : "") + (state.snapshot ? 'Open work as it was when this snapshot was made.'
     : state.gh ? `From ${OPEN_WORK_FILE} on GitHub, as of the last Reload (F5).`
-    : `From ${OPEN_WORK_FILE}, as of the last git pull of this folder. To update it, double-click Refresh.cmd in the repository and press F5.`;
+    : `From ${OPEN_WORK_FILE}, as of the last git pull of this folder. To update it, double-click Refresh.cmd in the repository and press F5.`);
 }
 
 // One line per open work item, with links to its pull request and its thread; with `wip`
@@ -1812,6 +1827,8 @@ function newProjectPack() {
     '   - The attached files, unchanged, in `sources/` at the repository root (see "Requirements load").',
     '   - If the project has a GitHub repository: `.github/workflows/open-work.yml`, copied as it is from ' + OPEN_WORK_ACTION_URL +
     ' (change only its `DOCS: docs` line if the docs folder is elsewhere). It keeps <docs>/.open-work.md up to date with the branches and pull requests at work, so the page marks those nodes as "open".',
+    '   - If the project has a GitHub repository: `Refresh.cmd` at the repository root, copied as it is from ' + REFRESH_CMD_URL +
+    '. On Windows, a double-click brings the latest changes and the open work list into the owner\'s clone (git pull --ff-only); the page tells the owner to use it when that list is out of date.',
     '   - If the project has a GitHub repository: `.github/workflows/cvp-docs.yml`, copied as it is from ' + CVP_DOCS_ACTION_URL +
     ' (same `DOCS: docs` line). It keeps the node index (<docs>/.index.md) and the CVP rules of <docs>/global-rules.md up to date on the default branch.',
     '   Together with the questions of step 1, ask the owner whether to copy their personal rules (how they want assistants to work with them) into AGENTS.md from another project\'s AGENTS.md: only those rules, not its pointer to global-rules. ' +
@@ -3001,19 +3018,23 @@ function threadToOpen(n) {
 
 function openThreadButton(n) {
   const t = threadToOpen(n);
-  const tip = !t ? 'This node has no linked threads'
+  let tip = !t ? 'This node has no linked threads'
     : t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
     : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
     : `The node's last thread is not a link: ${t.link}`;
   const off = !t || !isLink(t.link);
+  const stale = staleOpenWork();
+  if (stale) tip += '\n' + staleOpenWorkNote(stale);
   return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
 }
 
 function openLastThread(n) {
   const t = threadToOpen(n);
-  if (!t) return toast('This node has no linked threads.');
+  const stale = staleOpenWork();
+  if (!t) return toast('This node has no linked threads.' + (stale ? ' ' + staleOpenWorkNote(stale) : ''), stale ? 9000 : 2600);
   if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
   window.open(t.link, '_blank', 'noopener');
+  if (stale) toast(staleOpenWorkNote(stale), 9000);
 }
 
 function openSubTask(n) {
@@ -3719,12 +3740,12 @@ function renderWarningCount() {
 // ---------------------------------------------------------------------------
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 2600) {
   const t = $('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
 for (const b of document.querySelectorAll('dialog [data-close]')) b.onclick = () => b.closest('dialog').close();
