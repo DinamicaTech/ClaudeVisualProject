@@ -3016,10 +3016,27 @@ function threadToOpen(n) {
   return n.threads[n.threads.length - 1];
 }
 
-function openThreadButton(n) {
+// A thread linked from at least this many nodes (the project's first thread, a requirements load) is shared:
+// it is not the node's own conversation, so Open thread does not open it (viewer/node-card/abrir-conversacion).
+const SHARED_THREAD_NODES = 5;
+const threadUses = link => [...state.nodes.values()].filter(m => m.threads.some(t => t.link === link)).length;
+// What Open thread does: the open work's thread, else the node's last thread of its own; with only shared
+// threads, { shared: true } and the button copies the context pack to start the node's own thread.
+function buttonThread(n) {
   const t = threadToOpen(n);
+  if (!t || t.open || !isLink(t.link)) return t;
+  const own = n.threads.filter(x => isLink(x.link) && threadUses(x.link) < SHARED_THREAD_NODES).pop();
+  return own || { ...t, shared: true, uses: threadUses(t.link) };
+}
+const sharedThreadNote = t => `This node has no thread of its own yet: its last thread, "${t.title || t.link}", is shared by ${t.uses} nodes ` +
+  '(for example, the project\'s first thread or a requirements load). Open thread copies the node\'s context pack instead: paste it in a new thread to start one. ' +
+  'The shared thread is still listed under Threads.';
+
+function openThreadButton(n) {
+  const t = buttonThread(n);
   let tip = !t ? 'This node has no linked threads'
     : t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
+    : t.shared ? sharedThreadNote(t)
     : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
     : `The node's last thread is not a link: ${t.link}`;
   const off = !t || !isLink(t.link);
@@ -3029,10 +3046,11 @@ function openThreadButton(n) {
 }
 
 function openLastThread(n) {
-  const t = threadToOpen(n);
+  const t = buttonThread(n);
   const stale = staleOpenWork();
   if (!t) return toast('This node has no linked threads.' + (stale ? ' ' + staleOpenWorkNote(stale) : ''), stale ? 9000 : 2600);
   if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
+  if (t.shared) return copyText(contextPack(n), `No thread of its own yet: context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
   window.open(t.link, '_blank', 'noopener');
   if (stale) toast(staleOpenWorkNote(stale), 9000);
 }
