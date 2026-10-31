@@ -69,10 +69,14 @@ for (const { name: branch, commit: { sha } } of branches.sort((a, b) => a.name <
     if (f.previous_filename && f.previous_filename.startsWith(docs + '/')) paths.add(f.previous_filename.slice(docs.length + 1));
   }
   if (!paths.size) continue;
-  // The thread: the last `threads` link the branch adds to an md, else the one in the pull request's description.
+  // The thread: the last `threads` link the branch adds to an md, with its title ("Title | link"),
+  // else the link in the pull request's description.
   let thread = '';
-  for (const f of files) for (const line of (f.patch || '').split('\n'))
-    if (/^\+\s+-\s.*\|/.test(line)) thread = (line.match(THREAD_RE) || [thread]).pop();
+  for (const f of files) for (const line of (f.patch || '').split('\n')) {
+    const m = /^\+\s+-\s+(.*)\s\|\s*(\S+)\s*$/.exec(line);
+    const link = m && (m[2].match(THREAD_RE) || [])[0];
+    if (link) thread = m[1].trim() ? `${m[1].trim()} | ${link}` : link;
+  }
   if (!thread && open) thread = ((open.body || '').match(THREAD_RE) || [''])[0];
   entries.push({
     branch,
