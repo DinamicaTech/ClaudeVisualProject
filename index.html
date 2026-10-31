@@ -1485,7 +1485,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 10;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 11;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1566,7 +1566,9 @@ const CVP_RULES = [
   '- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.\n' +
   '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
-  'as a line `  - <short title> | <link>`.',
+  'as a line `  - <short title> | <link>`. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. ' +
+  'A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, ' +
+  'and each one gets its own thread when someone starts working on it.',
 ];
 const cvpRulesText = () => CVP_RULES.join('\n\n');
 const normalizeText = t => t.replace(/\r\n?/g, '\n').trim();
@@ -3016,41 +3018,30 @@ function threadToOpen(n) {
   return n.threads[n.threads.length - 1];
 }
 
-// A thread linked from at least this many nodes (the project's first thread, a requirements load) is shared:
-// it is not the node's own conversation, so Open thread does not open it (viewer/node-card/abrir-conversacion).
-const SHARED_THREAD_NODES = 5;
-const threadUses = link => [...state.nodes.values()].filter(m => m.threads.some(t => t.link === link)).length;
-// What Open thread does: the open work's thread, else the node's last thread of its own; with only shared
-// threads, { shared: true } and the button copies the context pack to start the node's own thread.
-function buttonThread(n) {
-  const t = threadToOpen(n);
-  if (!t || t.open || !isLink(t.link)) return t;
-  const own = n.threads.filter(x => isLink(x.link) && threadUses(x.link) < SHARED_THREAD_NODES).pop();
-  return own || { ...t, shared: true, uses: threadUses(t.link) };
-}
-const sharedThreadNote = t => `This node has no thread of its own yet: its last thread, "${t.title || t.link}", is shared by ${t.uses} nodes ` +
-  '(for example, the project\'s first thread or a requirements load). Open thread copies the node\'s context pack instead: paste it in a new thread to start one. ' +
-  'The shared thread is still listed under Threads.';
+// A node with no threads has not been worked on yet: its button becomes "Start thread" and copies its context
+// pack, to paste in a new thread that adds its link to `threads` (viewer/node-card/abrir-conversacion).
+const START_THREAD_TIP = 'No thread has worked on this node yet. Copy its context pack to paste in a new thread: ' +
+  'that thread becomes the node\'s own and adds its link here, so Open thread opens it from then on.';
 
 function openThreadButton(n) {
-  const t = buttonThread(n);
-  let tip = !t ? 'This node has no linked threads'
-    : t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
-    : t.shared ? sharedThreadNote(t)
+  const t = threadToOpen(n);
+  if (!t && (n.wip || n.placeholder)) return '<button id="openThreadBtn" class="off" title="This node has no linked threads">Open thread</button>';
+  if (!t) return '<button id="openThreadBtn" title="' + esc(START_THREAD_TIP + (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : '')) + '">Start thread</button>';
+  let tip = t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
     : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
     : `The node's last thread is not a link: ${t.link}`;
-  const off = !t || !isLink(t.link);
+  const off = !isLink(t.link);
   const stale = staleOpenWork();
   if (stale) tip += '\n' + staleOpenWorkNote(stale);
   return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
 }
 
 function openLastThread(n) {
-  const t = buttonThread(n);
+  const t = threadToOpen(n);
   const stale = staleOpenWork();
-  if (!t) return toast('This node has no linked threads.' + (stale ? ' ' + staleOpenWorkNote(stale) : ''), stale ? 9000 : 2600);
+  if (!t && (n.wip || n.placeholder)) return toast('This node has no linked threads.');
+  if (!t) return copyText(contextPack(n), `Context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
   if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
-  if (t.shared) return copyText(contextPack(n), `No thread of its own yet: context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
   window.open(t.link, '_blank', 'noopener');
   if (stale) toast(staleOpenWorkNote(stale), 9000);
 }
