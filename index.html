@@ -346,6 +346,14 @@
   </div>
 </dialog>
 
+<dialog id="thrDialog">
+  <div class="dhead"><span class="t">Open a thread of <span id="thrNode"></span></span><button data-close type="button">Close</button></div>
+  <div class="dbody">
+    <p class="empty-note">This node has more than one thread at work. Pick the one to open in a new tab.</p>
+    <ul class="links" id="thrList"></ul>
+  </div>
+</dialog>
+
 <dialog id="subDialog">
   <div class="dhead"><span class="t">New sub-task under <span id="subParent"></span></span><button data-close>Close</button></div>
   <form class="dbody" id="subForm">
@@ -3023,8 +3031,21 @@ function threadToOpen(n) {
 const START_THREAD_TIP = 'No thread has worked on this node yet. Copy its context pack to paste in a new thread: ' +
   'that thread becomes the node\'s own and adds its link here, so Open thread opens it from then on.';
 
+// The threads Open thread can open: every open work's thread (newest last), then the node's last thread.
+// With more than one, the button lets the owner choose (viewer/node-card/abrir-conversacion).
+function threadChoices(n) {
+  if (n.wip) return isLink(n.wip.thread) ? [{ title: workLabel(n.wip), link: n.wip.thread, open: true }] : [];
+  const out = openWorkOf(n).filter(i => isLink(i.thread)).map(i => ({ title: workLabel(i), link: i.thread, open: true, since: i.since }));
+  const last = n.threads[n.threads.length - 1];
+  if (last && isLink(last.link) && !out.some(c => c.link === last.link)) out.push({ title: last.title || last.link, link: last.link, last: true });
+  return out;
+}
+
 function openThreadButton(n) {
-  const t = threadToOpen(n);
+  const t = threadToOpen(n), choices = threadChoices(n);
+  if (choices.length > 1) return `<button id="openThreadBtn" title="${esc('Choose which thread to open: ' +
+    choices.map(c => c.open ? 'open work ' + c.title : 'last thread ' + c.title).join('; ') +
+    (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : ''))}">Open thread…</button>`;
   if (!t && (n.wip || n.placeholder)) return '<button id="openThreadBtn" class="off" title="This node has no linked threads">Open thread</button>';
   if (!t) return '<button id="openThreadBtn" title="' + esc(START_THREAD_TIP + (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : '')) + '">Start thread</button>';
   let tip = t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
@@ -3037,12 +3058,24 @@ function openThreadButton(n) {
 }
 
 function openLastThread(n) {
+  const choices = threadChoices(n);
+  if (choices.length > 1) return chooseThread(n, choices);
   const t = threadToOpen(n);
   const stale = staleOpenWork();
   if (!t && (n.wip || n.placeholder)) return toast('This node has no linked threads.');
   if (!t) return copyText(contextPack(n), `Context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
   if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
   window.open(t.link, '_blank', 'noopener');
+  if (stale) toast(staleOpenWorkNote(stale), 9000);
+}
+
+function chooseThread(n, choices) {
+  $('thrNode').textContent = n.title;
+  $('thrList').innerHTML = choices.map(c => `<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.title)}</a> ` +
+    `<span class="when">${c.open ? 'open work' + (c.since ? ' since ' + esc(c.since) : '') : 'last thread of the node'}</span></li>`).join('');
+  for (const a of $('thrList').querySelectorAll('a')) a.addEventListener('click', () => $('thrDialog').close());
+  $('thrDialog').showModal();
+  const stale = staleOpenWork();
   if (stale) toast(staleOpenWorkNote(stale), 9000);
 }
 
