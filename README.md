@@ -2,7 +2,7 @@
 
 > Working name. The final name is still to be decided.
 
-Visual, navigable map of AI-developed projects. Reads the Markdown docs in your repo and shows them as a tree of nodes with cross dependencies, each with its summary and design decisions. Double-click a node to get a prompt that starts a new AI thread with the right context. Works with any assistant. Single HTML file, no install.
+Visual, navigable map of AI-developed projects. Reads the Markdown docs in your repo and shows them as a tree of nodes with cross dependencies, each with its summary and design decisions. Start a new AI thread on any node with a prompt that carries the right context, and double-click a node to jump back to its latest thread. Works with any assistant. Single HTML file, no install.
 
 **[Live demo](https://dinamicatech.github.io/ClaudeVisualProject/demo/)**: the map of Killer Flies, a small arcade game designed and built with this tool (a snapshot, read-only).
 
@@ -25,7 +25,7 @@ A project opens on its **Overview**, a cover page with its description and scree
 
 ### Working on a node
 
-Double-click a node to copy a short prompt with its context: paste it into your assistant, add the task, and the new thread already knows what to read and which rules to follow. **New sub-task** creates a new node under it. From the node you can also open the threads that worked on it.
+**Threads ▾** on a node lists the threads that worked on it, newest first, and **New thread** at the top copies a short prompt with its context and opens your project's chat in Claude: paste it as the first message of a new thread, add the task, and the new thread already knows what to read and which rules to follow. Double-click a node to open its latest thread (or start one if it has none). **New sub-task** creates a new node under it.
 
 Before changing anything, the thread checks which node is functionally responsible for the task (if it is not the one you chose, it proposes where to take it) and shows you a breakdown: which part goes to each affected node, and even which new nodes would make sense. With your OK, it makes the whole change at once and records in each node what it now has to provide.
 
@@ -46,7 +46,7 @@ From then on, you work by starting nodes.
 
 ### Planning and ideas
 
-- Start the prompt with **draft:** to save a future task: it becomes a child node with that single pending task, and double-clicking it brings the task already written into the prompt.
+- Start the prompt with **draft:** to save a future task: it becomes a child node with that single pending task, and its **New thread** prompt comes with the task already written.
 - Start it with **idea:** to put forward an idea, which lives in the **Creative lab** branch until you turn it into a draft or build it.
 
 ### Work in progress
@@ -98,7 +98,7 @@ To also fail a pull request that leaves format warnings in the docs (the same wa
 
 ### Open work (optional)
 
-To see which nodes another thread is working on, keep a list of open work next to your docs. Copy `tools/open-work.mjs` and [this workflow](.github/workflows/open-work.yml) into your repository: on every push and pull request, GitHub writes `docs/.open-work.md` on the default branch with each branch that changes md files in `docs`, its pull request, its thread link and when it started, and deletes the branch of a merged pull request. The page marks those nodes **open** in both views, lists the work in the node card, makes **Open thread** open that work's thread, and blocks renaming or moving a node while open work changes any file it would write. The list is as fresh as your last `git pull`: on Windows, double-click [`Refresh.cmd`](Refresh.cmd) and press F5.
+To see which nodes another thread is working on, keep a list of open work next to your docs. Copy `tools/open-work.mjs` and [this workflow](.github/workflows/open-work.yml) into your repository: on every push and pull request, GitHub writes `docs/.open-work.md` on the default branch with each branch that changes md files in `docs`, its pull request, its thread link and when it started, and deletes the branch of a merged pull request. The page marks those nodes **open** in both views, lists the work in the node card, puts that work's thread first in **Threads ▾** and on double-click, and blocks renaming or moving a node while open work changes any file it would write. The list is as fresh as your last `git pull`: on Windows, double-click [`Refresh.cmd`](Refresh.cmd) and press F5.
 
 ## Status
 

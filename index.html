@@ -192,6 +192,16 @@
   #card h1 { font-size: 22px; margin: 0 0 2px; }
   #card .path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   #card .actions { display: flex; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+  .menu { position: fixed; z-index: 50; min-width: 260px; max-width: min(460px, calc(100vw - 32px)); max-height: 60vh; overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+  .menu .mi { display: flex; gap: 8px; align-items: baseline; width: 100%; border: 0; border-radius: 6px; background: none;
+    padding: 6px 10px; text-align: left; color: inherit; text-decoration: none; cursor: pointer; }
+  .menu .mi:hover, .menu .mi:focus { background: var(--accent-soft); outline: none; }
+  .menu .mi.off { opacity: .5; cursor: default; background: none; }
+  .menu .mi .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .menu .mi .when { color: var(--muted); font-size: 12px; flex: none; }
+  .menu .mi.new .t { font-weight: 600; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
   #card section { margin-top: 22px; }
   #card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
   .status { display: inline-block; font-size: 12px; border-radius: 10px; padding: 0 8px; margin-left: 8px; vertical-align: middle; }
@@ -369,13 +379,7 @@
   </div>
 </dialog>
 
-<dialog id="thrDialog">
-  <div class="dhead"><span class="t">Open a thread of <span id="thrNode"></span></span><button data-close type="button">Close</button></div>
-  <div class="dbody">
-    <p class="empty-note">This node has more than one thread at work. Pick the one to open in a new tab.</p>
-    <ul class="links" id="thrList"></ul>
-  </div>
-</dialog>
+<div id="thrMenu" class="menu" role="menu" hidden></div>
 
 <dialog id="subDialog">
   <div class="dhead"><span class="t">New sub-task under <span id="subParent"></span></span><button data-close>Close</button></div>
@@ -809,7 +813,7 @@ const workLabel = i => i.threadTitle ? `${i.threadTitle} (${i.pr ? 'PR #' + i.pr
 const workTag = items => [...new Set(items.map(i => i.pr ? '#' + i.pr.number : 'open'))].join(' ');
 const wipTag = w => w.pr ? `new #${w.pr.number}` : 'new';
 const isLink = s => /^https?:\/\//i.test(s || '');
-// In a local folder the open work list is as fresh as the last git pull: older than a day, Open thread
+// In a local folder the open work list is as fresh as the last git pull: older than a day, the Threads menu and double-click
 // may miss the work at hand and fall back to the node's last thread (viewer/node-card/abrir-conversacion).
 const OPEN_WORK_STALE_MS = 24 * 3600 * 1000;
 function staleOpenWork() {
@@ -1918,7 +1922,7 @@ async function copyText(text, what, hint = 'Paste it in a new thread.') {
 }
 
 function copyPack(n) {
-  if (n.wip) return toast(`"${n.title}" exists only in ${workLabel(n.wip)}: continue it from its thread (Open thread).`);
+  if (n.wip) return toast(`"${n.title}" exists only in ${workLabel(n.wip)}: continue it from its thread (Threads).`);
   return copyText(contextPack(n), `Context pack for "${n.title}"`);
 }
 
@@ -2455,7 +2459,7 @@ $('tree').addEventListener('dblclick', e => {
   const row = e.target.closest('.row');
   if (!row || e.target.classList.contains('twisty')) return;
   const path = row.dataset.ref ?? row.dataset.path;
-  if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
+  if (path !== undefined && state.nodes.has(path)) openNodeThread(state.nodes.get(path));
 });
 
 
@@ -2556,7 +2560,7 @@ function renderMap() {
     const summary = it.depth <= 1 && n.summary ? plain(n.summary.split('\n')[0]) : '';
     const busy = openWorkOf(n);
     const chips = state.showRefs && n.depLinks.length ? `<div class="chips">${n.depLinks.map(l => l.node
-      ? `<span class="chip" data-ref="${esc(l.node.path)}" title="Depends on ${esc(l.node.title)}. Click to jump, double-click to copy its context"><b>↗</b> ${esc(l.node.title)}</span>`
+      ? `<span class="chip" data-ref="${esc(l.node.path)}" title="Depends on ${esc(l.node.title)}. Click to jump, double-click to open its latest thread"><b>↗</b> ${esc(l.node.title)}</span>`
       : `<span class="chip missing" title="Missing dependency: ${esc(l.path)}"><b>↗</b> ${esc(l.path)} (missing)</span>`).join('')}</div>` : '';
     boxes += `<g class="${cls}" data-path="${esc(n.path)}" transform="translate(${it.x} ${it.y})">` +
       `<title>${esc(n.title)}\n${esc(n.file ? repoPath(n) : n.path)}${n.warnings.length ? '\n⚠ ' + esc(n.warnings.join('\n⚠ ')) : ''}</title>` +
@@ -2711,7 +2715,7 @@ function centerMapOn(path) {
     if (e.target.closest('.tog')) return;
     const g = e.target.closest('[data-ref]') || e.target.closest('.node');
     const path = g && (g.dataset.ref ?? g.dataset.path);
-    if (path !== undefined && state.nodes.has(path)) copyPack(state.nodes.get(path));
+    if (path !== undefined && state.nodes.has(path)) openNodeThread(state.nodes.get(path));
   });
   $('fitBtn').onclick = () => fitMap();
   window.addEventListener('resize', applyMapView);
@@ -2747,7 +2751,7 @@ function renderDrafts() {
   const dir = state.draftSort.dir;
   drafts.sort((a, b) => { const x = col.val(a), y = col.val(b); return (x < y ? -1 : x > y ? 1 : a.path.localeCompare(b.path)) * dir; });
   let h = `<div class="lhead"><strong>Drafts</strong><span class="count">${drafts.length} node${drafts.length === 1 ? '' : 's'}` +
-    `${state.zoom ? ' in this branch' : ''} · pending tasks and work not yet validated · click a column to sort · double-click to copy its context pack</span></div>`;
+    `${state.zoom ? ' in this branch' : ''} · pending tasks and work not yet validated · click a column to sort · double-click to open its latest thread</span></div>`;
   if (!drafts.length) h += '<p class="empty-note">No draft nodes. A thread saves a task as a draft (<code>status: draft</code>) in the node where it belongs when the owner decides to leave it for later.</p>';
   else {
     h += '<table><thead><tr>' + DRAFT_COLS.map(c => `<th data-sort="${c.key}"${c.title ? ` title="${esc(c.title)}"` : ''}>` +
@@ -2769,7 +2773,7 @@ function renderDrafts() {
 
 // Questions: every open question of the drafts, in tree order, numbered. Double-click opens the thread
 // where to answer it: the node's own (open work or last thread), else the nearest ancestor's, which is
-// usually the thread of the requirements load that left it; with none, it copies the node's context pack.
+// usually the thread of the requirements load that left it; with none, it starts a new thread (New thread).
 function questionThread(n) {
   for (let a = n; a; a = a.parent) {
     const t = threadToOpen(a);
@@ -2845,14 +2849,14 @@ function renderQuestions() {
       const sel = `<select data-q="${k}" class="qchoice">` + opts.map(o => `<option value="${o.key}"${a.choice === o.key ? ' selected' : ''} title="${esc(o.text)}">${o.key}</option>`).join('') +
         `<option value=""${a.choice ? '' : ' selected'}>Other</option></select>`;
       return `<tr data-path="${esc(n.path)}" class="${n.path === state.selected ? 'selected' : ''}" ` +
-        `title="${esc(t ? 'Double-click to open ' + tt : 'No thread yet: double-click copies the context pack of ' + n.title)}">` +
+        `title="${esc(t ? 'Double-click to open ' + tt : 'No thread yet: double-click starts a new thread for ' + n.title + ' (copies its context pack and opens the project chat)')}">` +
         `<td><input type="checkbox" class="qon" data-q="${k}"${a.on ? ' checked' : ''}></td>` +
         `<td class="num">${i + 1}</td>` +
         `<td class="md">${withBase(n, () => inline(r.text.replace(/^question:\s*/i, '').replace(/\s*\n\s*/g, ' ')))}</td>` +
         `<td class="qans">${sel}<input type="text" class="qtext" data-q="${k}" placeholder="your answer" value="${esc(a.text)}"${a.choice ? ' hidden' : ''}></td>` +
         `<td><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span> <span class="mono">${esc(n.path)}</span></td>` +
         `<td class="mono">${esc(r.when || '')}</td>` +
-        `<td>${t ? esc(tt) : '<span class="when">none · copies the prompt</span>'}</td></tr>`;
+        `<td>${t ? esc(tt) : '<span class="when">none · starts a new thread</span>'}</td></tr>`;
     }).join('') + '</tbody></table>';
   }
   questionRows = rows;
@@ -3064,7 +3068,8 @@ $('list').addEventListener('dblclick', e => {
   const n = state.nodes.get(row.dataset.path);
   const t = state.view === 'questions' && questionThread(n);
   if (t) window.open(t.link, '_blank', 'noopener');
-  else copyPack(n);
+  else if (state.view === 'questions') newThread(n);
+  else openNodeThread(n);
 });
 
 // ---------------------------------------------------------------------------
@@ -3100,9 +3105,8 @@ function renderCard() {
     (n.status !== 'stable' ? `<span class="status ${n.status}">${n.status}</span>` : '') + `</h1>`;
   h += `<div class="path">${esc(n.file ? repoPath(n) : (docsPrefix() + n.path + '/'))}</div>`;
   h += '<div class="actions">' +
-    (n.wip ? '' : '<button id="copyPackBtn" class="primary" title="Same as double-clicking the node in the tree">Copy context pack</button>' +
-      '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>') +
-    openThreadButton(n) +
+    threadsButton(n) +
+    (n.wip ? '' : '<button id="subTaskBtn" title="Copy a prompt for a new thread that creates a child node and works on it">New sub-task</button>') +
     (state.snapshot || n.wip ? '' : '<button id="renameBtn" title="Change the title and, optionally, the file or folder name (F2)">Rename</button>') +
     (n.file ? '<button id="openDocBtn">Open full document</button>' : '') + '</div>';
 
@@ -3158,19 +3162,19 @@ function renderCard() {
 
   card.innerHTML = h;
   card.scrollTop = 0;
-  if (!n.wip) {
-    $('copyPackBtn').onclick = () => copyPack(n);
-    $('subTaskBtn').onclick = () => openSubTask(n);
-  }
-  $('openThreadBtn').onclick = () => openLastThread(n);
+  if (!n.wip) $('subTaskBtn').onclick = () => openSubTask(n);
+  $('threadsBtn').onclick = e => { e.stopPropagation(); toggleThreadsMenu(n, $('threadsBtn')); };
   if (!state.snapshot && !n.wip) $('renameBtn').onclick = () => openRename(n);
   if (n.file) $('openDocBtn').onclick = () => openDoc(n);
   for (const b of card.querySelectorAll('[data-wip]')) b.onclick = () => showWip(n, b.dataset.wip);
 }
 
-// "Open thread" opens the thread of the node's open work, if a branch or pull request is changing it,
-// and otherwise its last `threads` entry (the most recent chat), in a new tab.
-// Earlier threads stay listed in the card's Threads section.
+// The node's threads (viewer/node-card/abrir-conversacion). The card's "Threads ▾" button opens a menu:
+// "New thread" first, then the thread of each open work on the node (a branch or pull request changing
+// its md), then every `threads` entry, newest first. Double-clicking a node opens its latest thread.
+
+// The node's latest thread: its open work's thread, if a branch or pull request is changing it,
+// and otherwise its last `threads` entry (threads are added at the end, so the last is the newest).
 function threadToOpen(n) {
   if (n.wip) return isLink(n.wip.thread) ? { title: workLabel(n.wip), link: n.wip.thread, open: true } : null;
   const w = openWorkOf(n).filter(i => isLink(i.thread)).pop();
@@ -3178,58 +3182,94 @@ function threadToOpen(n) {
   return n.threads[n.threads.length - 1];
 }
 
-// A node with no threads has not been worked on yet: its button becomes "Start thread" and copies its context
-// pack, to paste in a new thread that adds its link to `threads` (viewer/node-card/abrir-conversacion).
-const START_THREAD_TIP = 'No thread has worked on this node yet. Copy its context pack to paste in a new thread: ' +
-  'that thread becomes the node\'s own and adds its link here, so Open thread opens it from then on.';
+// The project chat in Claude, where the owner starts a new thread: the address of any thread link of the
+// project without its "?thread=…" part (https://claude.ai/code/project/<id>). Null if no link names it.
+function projectChatUrl() {
+  const links = [];
+  for (const n of state.nodes.values()) for (const t of n.threads) links.push(t.link);
+  for (const i of (state.openWork ? state.openWork.items : [])) links.push(i.thread);
+  for (const l of links) {
+    const m = /^(https:\/\/claude\.ai\/(?:code\/)?project\/[^/?#\s]+)/i.exec(l || '');
+    if (m) return m[1];
+  }
+  return null;
+}
 
-// The threads Open thread can open: every open work's thread (newest last), then the node's last thread.
-// With more than one, the button lets the owner choose (viewer/node-card/abrir-conversacion).
-function threadChoices(n) {
-  if (n.wip) return isLink(n.wip.thread) ? [{ title: workLabel(n.wip), link: n.wip.thread, open: true }] : [];
-  const out = openWorkOf(n).filter(i => isLink(i.thread)).map(i => ({ title: workLabel(i), link: i.thread, open: true, since: i.since }));
-  const last = n.threads[n.threads.length - 1];
-  if (last && isLink(last.link) && !out.some(c => c.link === last.link)) out.push({ title: last.title || last.link, link: last.link, last: true });
+const NEW_THREAD_TIP = 'Copy this node\'s context pack and open the project chat in Claude in a new tab: ' +
+  'paste the context pack there as the first message of a new thread. That thread adds its link to this node\'s threads.';
+
+// "New thread": the page cannot create a Claude thread or send it a prompt, so it copies the context pack
+// and opens the project chat, where the owner pastes it to start the thread. The clipboard is written
+// before the new tab takes the focus.
+function newThread(n) {
+  if (n.wip) return copyPack(n);
+  const url = projectChatUrl();
+  copyText(contextPack(n), `Context pack for "${n.title}"`, url
+    ? 'Paste it as the first message of a new thread in the project chat, which opened in a new tab.'
+    : 'Paste it as the first message of a new thread in this project in Claude. (No thread link in the docs names the project, so its chat could not be opened.)');
+  if (url) window.open(url, '_blank', 'noopener');
+}
+
+// Double-click on a node: open its latest thread; with none, start a new one.
+function openNodeThread(n) {
+  const t = threadToOpen(n);
+  if (!t) return newThread(n);
+  if (!isLink(t.link)) return toast(`The latest thread of "${n.title}" is not a web link, so it cannot be opened: ${t.link}. Open it from Claude, or pick another one in Threads.`, 9000);
+  window.open(t.link, '_blank', 'noopener');
+  const stale = staleOpenWork();
+  if (stale) toast(staleOpenWorkNote(stale), 9000);
+}
+
+// The menu entries after "New thread": open work first (newest last, as listed), then `threads` newest first.
+function threadMenuItems(n) {
+  if (n.wip) return isLink(n.wip.thread) ? [{ title: workLabel(n.wip), link: n.wip.thread, note: 'open work' }] : [];
+  const out = openWorkOf(n).filter(i => isLink(i.thread))
+    .map(i => ({ title: workLabel(i), link: i.thread, note: 'open work' + (i.since ? ' since ' + i.since : '') }));
+  for (const t of [...n.threads].reverse()) if (!out.some(c => c.link === t.link)) out.push({ title: t.title || t.link, link: t.link, note: t.when || '' });
   return out;
 }
 
-function openThreadButton(n) {
-  const t = threadToOpen(n), choices = threadChoices(n);
-  if (choices.length > 1) return `<button id="openThreadBtn" title="${esc('Choose which thread to open: ' +
-    choices.map(c => c.open ? 'open work ' + c.title : 'last thread ' + c.title).join('; ') +
-    (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : ''))}">Open thread…</button>`;
-  if (!t && (n.wip || n.placeholder)) return '<button id="openThreadBtn" class="off" title="This node has no linked threads">Open thread</button>';
-  if (!t) return '<button id="openThreadBtn" title="' + esc(START_THREAD_TIP + (staleOpenWork() ? '\n' + staleOpenWorkNote(staleOpenWork()) : '')) + '">Start thread</button>';
-  let tip = t.open ? `Open the thread of the open work on this node in a new tab: ${t.title}`
-    : isLink(t.link) ? `Open the node's last thread in a new tab: ${t.title || t.link}`
-    : `The node's last thread is not a link: ${t.link}`;
-  const off = !isLink(t.link);
+function threadsButton(n) {
+  const items = threadMenuItems(n);
+  let tip = n.wip ? 'Open the thread of the work that is creating this node'
+    : `Start a new thread for this node, or open one of its threads in a new tab (${items.length})`;
+  const t = threadToOpen(n);
+  if (t && isLink(t.link)) tip += `. Latest: ${t.title || t.link} (also double-click the node)`;
+  if (!n.wip && !items.length) tip += '. No thread has worked on this node yet';
   const stale = staleOpenWork();
   if (stale) tip += '\n' + staleOpenWorkNote(stale);
-  return `<button id="openThreadBtn"${off ? ' class="off"' : ''} title="${esc(tip)}">Open thread</button>`;
+  const off = n.wip && !items.length;
+  return `<button id="threadsBtn"${off ? ' class="off"' : ''} aria-haspopup="menu" title="${esc(off ? 'This node has no linked threads' : tip)}">Threads ▾</button>`;
 }
 
-function openLastThread(n) {
-  const choices = threadChoices(n);
-  if (choices.length > 1) return chooseThread(n, choices);
-  const t = threadToOpen(n);
-  const stale = staleOpenWork();
-  if (!t && (n.wip || n.placeholder)) return toast('This node has no linked threads.');
-  if (!t) return copyText(contextPack(n), `Context pack for "${n.title}"`, 'Paste it in a new thread to start this node\'s own thread.');
-  if (!isLink(t.link)) return toast('The last thread of this node is not a link, so it cannot be opened.');
-  window.open(t.link, '_blank', 'noopener');
-  if (stale) toast(staleOpenWorkNote(stale), 9000);
+function closeThreadsMenu() { $('thrMenu').hidden = true; }
+function toggleThreadsMenu(n, btn) {
+  const m = $('thrMenu');
+  if (!m.hidden) return closeThreadsMenu();
+  const items = threadMenuItems(n);
+  if (n.wip && !items.length) return toast(`"${n.title}" has no linked threads: the work creating it has no thread link in the open work list.`);
+  let h = n.wip ? '' : `<button class="mi new" data-new role="menuitem" title="${esc(NEW_THREAD_TIP)}"><span class="t">＋ New thread</span></button>` + (items.length ? '<hr>' : '');
+  h += items.map(c => isLink(c.link)
+    ? `<a class="mi" role="menuitem" href="${esc(c.link)}" target="_blank" rel="noopener" title="${esc('Open in a new tab: ' + c.title)}"><span class="t">${esc(c.title)}</span><span class="when">${esc(c.note)}</span></a>`
+    : `<span class="mi off" title="${esc('Not a web link, so it cannot be opened from here: ' + c.link)}"><span class="t">${esc(c.title)}</span><span class="when">not a link</span></span>`).join('');
+  m.innerHTML = h;
+  const nb = m.querySelector('[data-new]');
+  if (nb) nb.onclick = () => { closeThreadsMenu(); newThread(n); };
+  for (const a of m.querySelectorAll('a')) a.addEventListener('click', () => {
+    closeThreadsMenu();
+    const stale = staleOpenWork();
+    if (stale) toast(staleOpenWorkNote(stale), 9000);
+  });
+  m.hidden = false;
+  const r = btn.getBoundingClientRect(), w = m.offsetWidth;
+  m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+  m.style.top = Math.min(r.bottom + 4, window.innerHeight - m.offsetHeight - 8) + 'px';
+  (m.querySelector('.mi:not(.off)') || m).focus?.();
 }
-
-function chooseThread(n, choices) {
-  $('thrNode').textContent = n.title;
-  $('thrList').innerHTML = choices.map(c => `<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.title)}</a> ` +
-    `<span class="when">${c.open ? 'open work' + (c.since ? ' since ' + esc(c.since) : '') : 'last thread of the node'}</span></li>`).join('');
-  for (const a of $('thrList').querySelectorAll('a')) a.addEventListener('click', () => $('thrDialog').close());
-  $('thrDialog').showModal();
-  const stale = staleOpenWork();
-  if (stale) toast(staleOpenWorkNote(stale), 9000);
-}
+document.addEventListener('click', e => { if (!e.target.closest('#thrMenu')) closeThreadsMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeThreadsMenu(); });
+window.addEventListener('resize', closeThreadsMenu);
+document.addEventListener('scroll', e => { if (!e.target.closest?.('#thrMenu')) closeThreadsMenu(); }, true);
 
 function openSubTask(n) {
   $('subParent').textContent = n.title;

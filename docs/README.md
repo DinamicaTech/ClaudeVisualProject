@@ -58,7 +58,7 @@ Conclusiones de un proyecto anterior desarrollado en muchos hilos de IA:
 ## Overview
 Claude Visual Project (CVP) convierte la carpeta de docs de un proyecto desarrollado con IA en un mapa que se recorre con el ratón: cada caja es un nodo (una parte funcional del proyecto) con su resumen, sus decisiones fechadas y los requisitos del propietario con sus propias palabras.
 
-Desde el mapa se arranca el trabajo: el doble clic sobre un nodo copia el prompt que abre un hilo nuevo con el contexto justo, y las vistas Drafts, Questions y Log reúnen lo pendiente, las preguntas abiertas y la historia de las decisiones.
+Desde el mapa se arranca el trabajo: el doble clic sobre un nodo abre su conversación en Claude, y "New thread" copia el prompt que arranca un hilo nuevo con el contexto justo, y las vistas Drafts, Questions y Log reúnen lo pendiente, las preguntas abiertas y la historia de las decisiones.
 
 Es una sola página HTML, sin servidor ni instalación, que lee los md de una carpeta local o directamente de GitHub. No depende de ningún asistente: solo de una convención de ficheros md.
 
