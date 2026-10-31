@@ -28,7 +28,10 @@ const stamp = iso => { const d = new Date(iso); return `${d.getUTCFullYear()}-${
 const cache = new Map();
 function firstDate(link) {
   if (!cache.has(link)) {
-    const out = git('log', '--reverse', '--format=%cI', '-S', link, '--', '.');
+    // -S finds the commit that adds the link; -G (any changed line holding it) covers the rare history
+    // where -S finds none, e.g. a line that was rewritten in the same commit that moved it.
+    const out = git('log', '--reverse', '--format=%cI', '-S', link, '--', '.') ||
+      git('log', '--reverse', '--format=%cI', '-G', link.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), '--', '.');
     cache.set(link, out ? stamp(out.split('\n')[0]) : '');
   }
   return cache.get(link);
