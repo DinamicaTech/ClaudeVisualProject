@@ -77,6 +77,10 @@
   #list td.num { text-align: right; font-family: var(--mono); font-size: 12px; }
   #list .qans { white-space: nowrap; }
   #list .ttable td.tdesc { max-width: 420px; }
+  #list .ftable td.fdesc { max-width: 460px; }
+  #list .ftable td.fdesc .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #list .ftable td.ffile { white-space: nowrap; }
+  #list .ftable .fmd { margin-left: 6px; font-size: 11px; }
   #list .ttable td.tdesc .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   #list .ttable tr.tmore > td { background: var(--bg); border-bottom: 1px solid var(--line); }
   #list .tfold { font-size: 12px; }
@@ -308,7 +312,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to discuss it in a new thread with the questions asked with it">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="files" title="Every md file of the docs folder: its node, a short description and the thread that manages it; open the md or the thread from its row">Files</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to discuss it in a new thread with the questions asked with it">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
     title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
@@ -491,8 +495,9 @@ const state = {
   selected: null,     // selected node path
   expanded: new Set(),
   showRefs: true,
-  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'drafts', 'questions', 'threads' or 'log'
+  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'files', 'drafts', 'questions', 'threads' or 'log'
   draftSort: { key: 'when', dir: -1 },
+  fileSort: { key: 'file', dir: 1 },   // Files view (viewer/ficheros)
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
@@ -503,7 +508,7 @@ const state = {
 
 const $ = id => document.getElementById(id);
 const viewCtl = $('viewCtl');   // the view switches: inside the map or on top of the Project rows
-const VIEWS = ['overview', 'map', 'tree', 'drafts', 'questions', 'threads', 'log'];
+const VIEWS = ['overview', 'map', 'tree', 'files', 'drafts', 'questions', 'threads', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -727,7 +732,7 @@ function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
       selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
-      draftSort: state.draftSort, logKind: state.logKind, showReplaced: state.showReplaced, showWip: state.showWip,
+      draftSort: state.draftSort, fileSort: state.fileSort, logKind: state.logKind, showReplaced: state.showReplaced, showWip: state.showWip,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -746,6 +751,7 @@ function restoreViewState() {
       state.showRefs = v.showRefs !== false;
       state.view = VIEWS.includes(v.view) ? v.view : 'overview';
       if (v.draftSort && v.draftSort.key) state.draftSort = v.draftSort;
+      if (v.fileSort && v.fileSort.key) state.fileSort = v.fileSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
       state.showReplaced = v.showReplaced === true;
       state.showWip = v.showWip !== false;
@@ -2350,7 +2356,7 @@ function renderAll() {
   $('tree').hidden = state.view !== 'tree';
   $('map').hidden = state.view !== 'map';
   if (state.view === 'map') $('map').prepend(viewCtl);
-  $('list').hidden = !['drafts', 'questions', 'threads', 'log'].includes(state.view);
+  $('list').hidden = !['files', 'drafts', 'questions', 'threads', 'log'].includes(state.view);
   $('overview').hidden = state.view !== 'overview';
   $('card').hidden = state.view === 'overview';
   $('refsToggleLabel').hidden = !$('list').hidden;
@@ -2364,6 +2370,7 @@ function renderAll() {
   $('mapLegend').hidden = state.editMode;
   for (const b of document.querySelectorAll('#viewSeg button')) b.classList.toggle('on', b.dataset.view === state.view);
   if (state.view === 'tree') renderTree();
+  else if (state.view === 'files') renderFiles();
   else if (state.view === 'drafts') renderDrafts();
   else if (state.view === 'questions') renderQuestions();
   else if (state.view === 'threads') renderThreads();
@@ -2798,6 +2805,60 @@ function renderDrafts() {
   list.scrollTop = scroll;
 }
 
+// ---------------------------------------------------------------------------
+// Files (viewer/ficheros): every md of the docs folder in one sortable table. Each md is a node, so a row
+// is a node with a file: its path, its node, the first sentence of its Summary, the thread that manages it
+// (its open work's thread, else its last `threads` entry) and its last change. "md" shows the whole file in
+// the page; from GitHub, "↗" opens it on github.com. Placeholder folders without README.md have no md.
+// ---------------------------------------------------------------------------
+
+const firstSentence = t => { const l = (t || '').split('\n')[0].trim(); const m = /^.*?[.!?](?=\s|$)/.exec(l); return m ? m[0] : l; };
+const ghFileUrl = (g, file) => `https://github.com/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/blob/${encPath(g.branch || 'main')}/${encPath(ghPath(g, file))}`;
+
+const FILE_COLS = [
+  { key: 'file', label: 'File', val: n => n.file.toLowerCase() },
+  { key: 'title', label: 'Node', val: n => n.title.toLowerCase() },
+  { key: 'desc', label: 'Description', val: n => firstSentence(n.summary).toLowerCase(), title: 'First sentence of its Summary; hover a row for the whole Summary' },
+  { key: 'thread', label: 'Thread', val: n => { const t = threadToOpen(n); return t ? (t.open ? '0' : '1') + (t.title || '').toLowerCase() : '2'; },
+    title: 'The thread that manages it: the thread of its open work if a branch or pull request is changing it, else the last thread that worked on it' },
+  { key: 'last', label: 'Last change', val: n => datesOf(n).pop() || '', title: 'Date of its newest requirement or decision' },
+];
+
+function renderFiles() {
+  const list = $('list');
+  const scroll = list.scrollTop;
+  const files = zoomNodes().filter(n => n.file);
+  const col = FILE_COLS.find(c => c.key === state.fileSort.key) || FILE_COLS[0];
+  const dir = state.fileSort.dir;
+  files.sort((a, b) => { const x = col.val(a), y = col.val(b); return (x < y ? -1 : x > y ? 1 : a.file.localeCompare(b.file)) * dir; });
+  let h = `<div class="lhead"><strong>Files</strong><span class="count">${files.length} md file${files.length === 1 ? '' : 's'}` +
+    `${state.zoom ? ' in this branch' : ''} · click a column to sort · "md" shows the whole file · double-click a row to open its latest thread</span></div>`;
+  if (!files.length) h += '<p class="empty-note">No md files.</p>';
+  else {
+    h += '<table class="ftable"><thead><tr>' + FILE_COLS.map(c => `<th data-sort="${c.key}"${c.title ? ` title="${esc(c.title)}"` : ''}>` +
+      `${c.label}${c === col ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr></thead><tbody>';
+    h += files.map(n => {
+      const t = threadToOpen(n), d = datesOf(n);
+      const work = openWorkOf(n);
+      const thread = !t ? '<span style="color: var(--muted)">none yet</span>'
+        : (t.open && work.length ? `<span class="badge busy" title="Open work: ${esc(work.map(workLabel).join(', '))}">${esc(workTag(work))}</span> ` : '') +
+          (isLink(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener" title="Open this thread in Claude">${esc(t.open ? (work[work.length - 1].threadTitle || t.title) : t.title || 'thread')}</a>`
+            : `<span title="Not a web link: ${esc(t.link)}">${esc(t.title || t.link)}</span>`);
+      return `<tr data-path="${esc(n.path)}" class="${n.path === state.selected ? 'selected' : ''}" title="${esc(n.summary || '')}">` +
+        `<td class="mono ffile">${esc(n.file)}<button class="link fmd" data-md="${esc(n.path)}" title="Show the whole md in the page">md</button>` +
+        (state.gh ? ` <a class="fmd" href="${esc(ghFileUrl(state.gh, n.file))}" target="_blank" rel="noopener" title="Open it on github.com">↗</a>` : '') + '</td>' +
+        `<td><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span>` +
+        (n.status === 'draft' || n.status === 'idea' || n.status === 'obsolete' ? ` <span class="badge ${n.status}">${n.status}</span>` : '') +
+        (n.warnings.length ? ` <span class="badge warn" title="${esc(n.warnings.join('\n'))}">⚠ ${n.warnings.length}</span>` : '') + '</td>' +
+        `<td class="md fdesc"><div class="clamp">${withBase(n, () => inline(firstSentence(n.summary)))}</div></td>` +
+        `<td>${thread}</td>` +
+        `<td class="mono">${esc(d.length ? d[d.length - 1] : '')}</td></tr>`;
+    }).join('') + '</tbody></table>';
+  }
+  list.innerHTML = h;
+  list.scrollTop = scroll;
+}
+
 // Questions: every open question of the drafts, in tree order, numbered. Double-click opens the thread
 // where to answer it: the one where the question was asked (the node's thread dated at or just after the
 // question line, threadAt); else the node's own (open work or last thread), else the nearest ancestor's,
@@ -3076,9 +3137,12 @@ $('list').addEventListener('click', e => {
   const th = e.target.closest('th[data-sort]');
   if (th) {
     const k = th.dataset.sort;
-    state.draftSort = { key: k, dir: state.draftSort.key === k ? -state.draftSort.dir : (k === 'when' || k === 'last' || k === 'questions' ? -1 : 1) };
+    const key = state.view === 'files' ? 'fileSort' : 'draftSort';
+    state[key] = { key: k, dir: state[key].key === k ? -state[key].dir : (k === 'when' || k === 'last' || k === 'questions' ? -1 : 1) };
     return renderAll();
   }
+  const md = e.target.closest('[data-md]');
+  if (md && state.nodes.has(md.dataset.md)) return openDoc(state.nodes.get(md.dataset.md));
   const kb = e.target.closest('#logKind button');
   if (kb) { state.logKind = kb.dataset.kind; return renderAll(); }
   if (e.target.closest('#logReplaced')) return toggleReplaced();
