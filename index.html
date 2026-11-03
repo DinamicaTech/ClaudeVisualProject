@@ -1570,7 +1570,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 13;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 14;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1650,6 +1650,10 @@ const CVP_RULES = [
   '- **Useful tooltips.** In a user interface, whenever possible, every control has a tooltip that is useful and descriptive for the user: it says what the control does, not just its name.\n' +
   '- **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.\n' +
   '- **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.',
+  '**Claude project.** The line `- Claude project: <link>` under ## Project rules names the Claude project whose chat starts this project\'s threads ' +
+  '(its address, https://claude.ai/code/project/<id>, without "?thread=…"); the page opens that chat to start new threads. ' +
+  'If the line is missing and you can tell the address of the Claude project you are in, add it. If it names a different Claude project from yours, ' +
+  'tell the owner and change it only with their OK: the project may have moved to another Claude project.',
   '**Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, ' +
   'as a line `  - YYYY-MM-DD HH:MM · <short title> | <link>`, with the date and time you add it, like a decision line. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. ' +
   'A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, ' +
@@ -1714,6 +1718,21 @@ function updatedRulesFile(text, stamp) {
   const p = t.search(/^##\s+Project rules\s*$/m);
   const block = '## CVP rules\n' + rulesMarkedBlock() + '\n\n';
   return p >= 0 ? t.slice(0, p) + block + t.slice(p) : t.replace(/\n*$/, '\n\n') + block + '## Project rules\n';
+}
+
+// The project's Claude project (viewer/node-card/abrir-conversacion): its address, the project chat where new threads start.
+const CLAUDE_PROJECT_RE = /^(https:\/\/claude\.ai\/(?:code\/)?project\/[^/?#\s]+)/i;
+
+// The Claude project named by the "- Claude project: <link>" line of the "## Project rules" section, or null.
+function claudeProjectLine(text) {
+  const t = (text || '').replace(/\r\n?/g, '\n');
+  const p = t.search(/^##\s+Project rules\s*$/m);
+  if (p < 0) return null;
+  const next = t.slice(p + 1).search(/^##\s/m);
+  const sec = next < 0 ? t.slice(p) : t.slice(p, p + 1 + next);
+  const m = /^\s*-\s*(?:\d{4}-\d\d-\d\d \d\d:\d\d · )?Claude project:\s*<?(\S+?)>?\s*$/mi.exec(sec);
+  const u = m && CLAUDE_PROJECT_RE.exec(m[1]);
+  return u ? u[1] : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1908,7 +1927,7 @@ function newProjectPack() {
     '2. Write every doc in the language the owner writes in (headings such as "## Summary" and the front matter keys stay as they are).',
     '3. Create the skeleton, with <docs> standing for the docs folder:',
     '   - <docs>/README.md, the root node, from the template below, with the description as its Summary. If the docs folder is not `docs` at the repository root, add `docs_path: <its path from the repository root, no trailing slash>` to its front matter.',
-    '   - <docs>/global-rules.md, the global rules file below, copied as it is (you may translate its Summary and Decisions, never the block between the cvp-rules markers); then add under its "## Project rules" the line "- Working docs are written in <language>."',
+    '   - <docs>/global-rules.md, the global rules file below, copied as it is (you may translate its Summary and Decisions, never the block between the cvp-rules markers); then add under its "## Project rules" the line "- Working docs are written in <language>." and, if you can tell the address of this Claude project, the line "- Claude project: <that address, without ?thread=…>"',
     '   - <docs>/creative-lab.md, the lab where ideas are debated, from the template below.',
     '   - AGENTS.md at the repository root, from the template below, and CLAUDE.md at the repository root with the single line `@AGENTS.md`.',
     '   - The attached files, unchanged, in `sources/` at the repository root (see "Requirements load").',
@@ -1972,12 +1991,14 @@ function showPack(text, hint, steps = null, go = null) {
 // and its button copies the prompt and then opens the project chat. The copy runs inside the click, with this page focused,
 // and the chat tab opens only once the copy has finished, because a tab that takes the focus first makes the browser refuse the copy.
 function startThreadWith(text, what) {
-  const url = projectChatUrl();
+  const chat = projectChatUrl(), url = chat && chat.url;
+  const fix = `To set it, add the line "- Claude project: <link of the project in Claude>" under "## Project rules" of ${RULES_NODE}.md.`;
   const steps = url
     ? ['Press "Copy and open chat": it copies the text below and opens the project chat in Claude in a new tab.',
        'Paste it in the project chat and send it: a new thread starts with it.']
-    : ['Press "Copy": it copies the text below. No thread link in the docs names the project, so its chat cannot be opened from here.',
+    : ['Press "Copy": it copies the text below. The docs do not say which Claude project this is, so its chat cannot be opened from here. ' + fix,
        'Open this project in Claude, paste the text in the project chat and send it: a new thread starts with it.'];
+  if (chat && chat.from === 'threads') steps.push(`The project chat was deduced from a thread link in the docs (${url}), so it may be an old Claude project. ${fix}`);
   showPack(text, '', steps, {
     label: url ? 'Copy and open chat' : 'Copy',
     tip: url ? 'Copy the text below to the clipboard and open the project chat in Claude in a new tab, to paste it there'
@@ -3360,15 +3381,20 @@ function threadToOpen(n) {
   return n.threads[n.threads.length - 1];
 }
 
-// The project chat in Claude, where the owner starts a new thread: the address of any thread link of the
-// project without its "?thread=…" part (https://claude.ai/code/project/<id>). Null if no link names it.
+// The project chat in Claude, where the owner starts a new thread (https://claude.ai/code/project/<id>):
+// the "- Claude project: <link>" line under "## Project rules" of global-rules, which the owner changes when the
+// project moves to another Claude project; without it, deduced from any thread link of the docs without its "?thread=…" part.
+// Returns { url, from: 'rules' | 'threads' }, or null if nothing names it.
 function projectChatUrl() {
+  const g = state.nodes.get(RULES_NODE);
+  const set = g && g.file ? claudeProjectLine(g.text) : null;
+  if (set) return { url: set, from: 'rules' };
   const links = [];
   for (const n of state.nodes.values()) for (const t of n.threads) links.push(t.link);
   for (const i of (state.openWork ? state.openWork.items : [])) links.push(i.thread);
   for (const l of links) {
-    const m = /^(https:\/\/claude\.ai\/(?:code\/)?project\/[^/?#\s]+)/i.exec(l || '');
-    if (m) return m[1];
+    const m = CLAUDE_PROJECT_RE.exec(l || '');
+    if (m) return { url: m[1], from: 'threads' };
   }
   return null;
 }
