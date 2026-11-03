@@ -8,6 +8,7 @@ threads:
   - 2026-10-31 08:34 · Arreglar OpenThread en ProContaVF | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLFVWKXWzxuxjhjzvwLKHz8E
   - 2026-10-31 10:05 · Pantalla con todos los hilos | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLS3U2TuuagmxwdyKXyKdKhq
   - 2026-10-31 10:15 · Comprobar botón Rebuild index | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzL5uvmxBGy1W7hnfXSaJuyxh
+  - 2026-11-03 10:30 · Pasar ProContaVF a proyecto nuevo | https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL?thread=cmsg_01GmFabmbZMkMrshz1aTJxzLME5txa1YPu7r6oJMqrch83
 ---
 ## Summary
 Las reglas que sigue todo hilo que trabaja sobre un nodo de este proyecto. Los prompts de la página apuntan aquí en vez de repetirlas.
@@ -31,6 +32,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-31 10:05 · Versión 12 de las CVP rules: en "Thread link", la línea de `threads` lleva delante la fecha y hora en que el hilo la añade, como una decisión (`- YYYY-MM-DD HH:MM · <título> | <enlace>`), para la pestaña Threads (ver `viewer/threads`).
 - 2026-10-31 10:15 · Versión 13 de las CVP rules: tras cambiar un nodo, el hilo que no pueda ejecutar el comando del índice no pide nada al propietario si el repositorio tiene la Action "CVP docs", que lo regenera tras la fusión; solo sin esa Action le pide pulsar "⚠ Rebuild index", que aparece en la cabecera únicamente cuando el índice está desactualizado (ver `context-pack/index`).
 
+- 2026-11-03 10:23 · Versión 14 de las CVP rules: nueva regla "Claude project". La línea `- Claude project: <enlace>` de las Project rules dice en qué proyecto de Claude arrancan los hilos del proyecto; la página abre ese chat para empezar hilos nuevos. Un hilo que no la encuentra y sabe la dirección de su proyecto de Claude la añade; si nombra otro proyecto de Claude distinto del suyo, avisa al propietario y solo la cambia con su OK, porque el proyecto puede haberse movido (ver `viewer/node-card/abrir-conversacion`). El prompt de "New project" la añade al crear `global-rules`.
 ## Requirements
 - 2026-10-03 14:44 · Sería un nodo paralelo por debajo a la raiz del proyecto. Creo que es bueno que sea accesible para permitir al operador (u otro hilo) añadir sus propias reglas globales (aunque supongo que esto hay que gestionarlo con cariño)
 - 2026-10-03 16:12 · Derived from context-pack/carga-de-requisitos: regla "Requirements load" y línea `question:` de los drafts en las CVP rules (versión 2).
@@ -47,7 +49,7 @@ Las reglas personales del propietario sobre cómo trabajar con él no van aquí 
 - 2026-10-16 08:29 · Siempre que aparezca un mensaje de error, aportar al usuario toda la información posible para que sepa porqué se produce cómo solucionarlo y, si es posible, que el propio mensaje proponga una solución. Se trata de no llevar al usuario a un callejón sin salida.
 
 ## CVP rules
-<!-- cvp-rules 13 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
+<!-- cvp-rules 14 begin · Written by Claude Visual Project ("Update rules" in the page). Do not edit: an update replaces everything up to the end marker. Add your own rules under ## Project rules. -->
 These rules apply to every thread that works on a node of this project. The prompt that starts the thread names the node it starts from (for a new sub-task, the new node it proposes), the files to read and the task. Paths are relative to the docs folder unless they say otherwise.
 
 **Reading.** Read the node file in full. For its ancestors and dependencies, read only the Summary and Decisions blocks; open them in full only if needed. Ignore every decision marked "[replaced by ...]": a later decision overrides it.
@@ -96,10 +98,13 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - **No dead ends in errors.** Every error message tells the user everything that helps: why it happened and how to fix it, and when possible it offers the fix itself (a button, a link or the corrected value), so that the user is never left at a dead end.
 - **Hand-over.** If a thread stops before finishing, or grows long, it writes in its node what it did and what is left, so that another thread can go on without reading the conversation.
 
+**Claude project.** The line `- Claude project: <link>` under ## Project rules names the Claude project whose chat starts this project's threads (its address, https://claude.ai/code/project/<id>, without "?thread=…"); the page opens that chat to start new threads. If the line is missing and you can tell the address of the Claude project you are in, add it. If it names a different Claude project from yours, tell the owner and change it only with their OK: the project may have moved to another Claude project.
+
 **Thread link.** If you can tell the link to this thread, add it to the `threads` list in the front matter of the node you work on, as a line `  - YYYY-MM-DD HH:MM · <short title> | <link>`, with the date and time you add it, like a decision line. Only there: `threads` lists the conversations that worked on a node, and the page opens the last one. A thread that creates many nodes at once (a requirements load, a new project) does not add its link to the nodes it creates; their "Created in…" decision is enough, and each one gets its own thread when someone starts working on it.
 <!-- cvp-rules end -->
 
 ## Project rules
+- Claude project: https://claude.ai/code/project/chan_01GmFabmbZMkMrshz1aTJxzL
 - Working docs in `docs/` are in Spanish. Code, code comments, UI and public-facing docs (README) are in English.
 - After changing any node, run `node tools/build-index.mjs docs`; CI fails if `docs/.index.md` is out of date. If you change the CVP rules in `index.html`, raise `RULES_VERSION` and run `node tools/update-rules.mjs docs`; CI fails if `docs/global-rules.md` does not match.
 - 2026-10-03 18:15 · Derived from context-pack/carga-de-requisitos: ficheros adjuntos y reparto híbrido de requisitos largos (versión 5).
@@ -107,3 +112,4 @@ Once confirmed, the change is atomic: do all of it in this thread and one branch
 - 2026-10-04 15:05 · Derived from build/github: el bloque CVP rules se actualiza automáticamente en GitHub.
 - 2026-10-31 09:10 · Derived from viewer/node-card/abrir-conversacion: que `threads` solo guarde las conversaciones del nodo; un hilo que crea muchos nodos de golpe no se apunta en ellos (versión 11).
 - 2026-10-31 10:05 · Derived from viewer/threads: fecha en las líneas de `threads` (versión 12).
+- 2026-11-03 10:23 · Derived from viewer/node-card/abrir-conversacion: línea "Claude project" en las Project rules con la dirección del proyecto de Claude (versión 14).
