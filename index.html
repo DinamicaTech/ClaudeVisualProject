@@ -252,6 +252,8 @@
   dialog .dhead { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
   dialog .dhead .t { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   dialog .dbody { padding: 6px 22px 20px; }
+  #packSteps { margin: 6px 0 10px; padding-left: 22px; line-height: 1.6; }
+  #packGoRow { margin: 0 0 12px; }
   dialog textarea { width: 100%; height: 320px; font-family: var(--mono); font-size: 12.5px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
   #subTitle, #renTitle, #renName { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
   .md table { border-collapse: collapse; }
@@ -379,6 +381,8 @@
   <div class="dhead"><span class="t">Context pack</span><button data-close>Close</button></div>
   <div class="dbody">
     <p class="empty-note" id="packHint">The clipboard is not available. Copy the text below and paste it in a new thread.</p>
+    <ol id="packSteps" hidden></ol>
+    <p id="packGoRow" hidden><button class="primary" id="packGo" type="button"></button></p>
     <textarea id="packText" readonly></textarea>
   </div>
 </dialog>
@@ -1947,11 +1951,52 @@ async function copyText(text, what, hint = 'Paste it in a new thread.') {
     await navigator.clipboard.writeText(text);
     toast(`${what} copied. ${hint}`);
   } catch (e) {
-    $('packHint').textContent = `The clipboard is not available. Copy the text below. ${hint}`;
-    $('packText').value = text;
-    $('packDialog').showModal();
-    $('packText').select();
+    showPack(text, `The clipboard is not available. Copy the text below. ${hint}`);
   }
+}
+
+// The context pack window. `steps` and `go` are only for "New thread": the steps to follow and the button that does the first one.
+function showPack(text, hint, steps = null, go = null) {
+  $('packHint').textContent = hint;
+  $('packHint').hidden = !hint;
+  $('packSteps').innerHTML = steps ? steps.map(s => `<li>${esc(s)}</li>`).join('') : '';
+  $('packSteps').hidden = !steps;
+  $('packGoRow').hidden = !go;
+  if (go) { $('packGo').textContent = go.label; $('packGo').title = go.tip; $('packGo').onclick = go.run; }
+  $('packText').value = text;
+  $('packDialog').showModal();
+  if (go) $('packGo').focus(); else $('packText').select();
+}
+
+// "New thread" and "Discuss in new thread": the page cannot start a Claude thread, so the window tells the owner what to do,
+// and its button copies the prompt and then opens the project chat. The copy runs inside the click, with this page focused,
+// and the chat tab opens only once the copy has finished, because a tab that takes the focus first makes the browser refuse the copy.
+function startThreadWith(text, what) {
+  const url = projectChatUrl();
+  const steps = url
+    ? ['Press "Copy and open chat": it copies the text below and opens the project chat in Claude in a new tab.',
+       'Paste it in the project chat and send it: a new thread starts with it.']
+    : ['Press "Copy": it copies the text below. No thread link in the docs names the project, so its chat cannot be opened from here.',
+       'Open this project in Claude, paste the text in the project chat and send it: a new thread starts with it.'];
+  showPack(text, '', steps, {
+    label: url ? 'Copy and open chat' : 'Copy',
+    tip: url ? 'Copy the text below to the clipboard and open the project chat in Claude in a new tab, to paste it there'
+             : 'Copy the text below to the clipboard, to paste it in the project chat in Claude',
+    run: async () => {
+      let copied = true;
+      try { await navigator.clipboard.writeText(text); } catch (e) { copied = false; }
+      if (copied) {
+        $('packDialog').close();
+        toast(`${what} copied. ${url ? 'Paste it in the project chat, which opened in a new tab.' : 'Paste it in the project chat in Claude.'}`, 6000);
+      } else {
+        $('packHint').textContent = 'The clipboard is not available: select the text below (Ctrl+A) and copy it (Ctrl+C) before pasting it in the project chat' +
+          (url ? ', which opened in a new tab.' : '.');
+        $('packHint').hidden = false;
+        $('packText').select();
+      }
+      if (url) window.open(url, '_blank', 'noopener');
+    },
+  });
 }
 
 function copyPack(n) {
@@ -2875,7 +2920,7 @@ function questionThread(n, r) {
 
 let questionRows = [];
 const DISCUSS_TIP = 'Copy a prompt for one new thread that discusses the ticked questions together: it reads the thread where they were asked, ' +
-  'sums up the conversation that led to them, presents them grouped by topic and records your answers in their nodes. It also opens the project chat.';
+  'sums up the conversation that led to them, presents them grouped by topic and records your answers in their nodes. A window shows it with the steps; its button copies it and opens the project chat.';
 // Answers chosen in the Questions view, by "<node path>#<index of the line in its Requirements>":
 // { on, choice ('A', 'B'… or '' for a written answer), text }. Kept until the page reloads.
 const qAnswers = new Map();
@@ -2938,11 +2983,7 @@ function discussPack(rows) {
 // Opens a new thread on the given question rows: copies discussPack and opens the project chat.
 function discussQuestions(rows) {
   if (!rows.length) return;
-  const url = projectChatUrl();
-  copyText(discussPack(rows), `Prompt to discuss ${rows.length} question${rows.length === 1 ? '' : 's'}`, url
-    ? 'Paste it as the first message of a new thread in the project chat, which opened in a new tab.'
-    : 'Paste it as the first message of a new thread in this project in Claude. (No thread link in the docs names the project, so its chat could not be opened.)');
-  if (url) window.open(url, '_blank', 'noopener');
+  startThreadWith(discussPack(rows), `Prompt to discuss ${rows.length} question${rows.length === 1 ? '' : 's'}`);
 }
 
 // The rows a double-click discusses: every open question asked in the same thread as this one,
@@ -3332,19 +3373,14 @@ function projectChatUrl() {
   return null;
 }
 
-const NEW_THREAD_TIP = 'Copy this node\'s context pack and open the project chat in Claude in a new tab: ' +
-  'paste the context pack there as the first message of a new thread. That thread adds its link to this node\'s threads.';
+const NEW_THREAD_TIP = 'Show this node\'s context pack with the steps to start a new thread: its button copies it and opens the project chat in Claude ' +
+  'in a new tab, where you paste it. That thread adds its link to this node\'s threads.';
 
-// "New thread": the page cannot create a Claude thread or send it a prompt, so it copies the context pack
-// and opens the project chat, where the owner pastes it to start the thread. The clipboard is written
-// before the new tab takes the focus.
+// "New thread": the page cannot create a Claude thread or send it a prompt, so its window shows the context pack
+// and the steps; its button copies it and opens the project chat, where the owner pastes it to start the thread.
 function newThread(n) {
   if (n.wip) return copyPack(n);
-  const url = projectChatUrl();
-  copyText(contextPack(n), `Context pack for "${n.title}"`, url
-    ? 'Paste it as the first message of a new thread in the project chat, which opened in a new tab.'
-    : 'Paste it as the first message of a new thread in this project in Claude. (No thread link in the docs names the project, so its chat could not be opened.)');
-  if (url) window.open(url, '_blank', 'noopener');
+  startThreadWith(contextPack(n), `Context pack for "${n.title}"`);
 }
 
 // Double-click on a node: open its latest thread; with none, start a new one.
@@ -4240,7 +4276,13 @@ function toast(msg, ms = 2600) {
 }
 
 for (const b of document.querySelectorAll('dialog [data-close]')) b.onclick = () => b.closest('dialog').close();
-for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) d.close(); });
+// A click on the backdrop closes a window, but only when the press started there too: releasing the mouse outside
+// after selecting text inside the window is not a click outside.
+for (const d of document.querySelectorAll('dialog')) {
+  let downOutside = false;
+  d.addEventListener('mousedown', e => { downOutside = e.target === d; });
+  d.addEventListener('click', e => { if (e.target === d && downOutside) d.close(); downOutside = false; });
+}
 $('warnBtn').onclick = () => $('warnDialog').showModal();
 $('rulesBtn').onclick = () => openRules();
 $('loadReqBtn').onclick = () => copyText(loadRequirementsPack(), 'Requirements load prompt', 'Paste it in a new thread and add your requirements at its end.');
