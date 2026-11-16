@@ -503,6 +503,7 @@ const state = {
   draftSort: { key: 'when', dir: -1 },
   fileSort: { key: 'file', dir: 1 },   // Files view (viewer/ficheros)
   logKind: 'all',     // 'all', 'decision' or 'requirement'
+  threadKind: 'all',  // Threads view: 'all' threads or only those with 'open' work
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
   editMode: false,    // Tree edit mode: cards can be dragged onto a new parent (not kept across F5)
@@ -736,7 +737,7 @@ function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
       selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
-      draftSort: state.draftSort, fileSort: state.fileSort, logKind: state.logKind, showReplaced: state.showReplaced, showWip: state.showWip,
+      draftSort: state.draftSort, fileSort: state.fileSort, logKind: state.logKind, threadKind: state.threadKind, showReplaced: state.showReplaced, showWip: state.showWip,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -757,6 +758,7 @@ function restoreViewState() {
       if (v.draftSort && v.draftSort.key) state.draftSort = v.draftSort;
       if (v.fileSort && v.fileSort.key) state.fileSort = v.fileSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
+      state.threadKind = v.threadKind === 'open' ? 'open' : 'all';
       state.showReplaced = v.showReplaced === true;
       state.showWip = v.showWip !== false;
       state.zoom = v.zoom || '';
@@ -1304,6 +1306,13 @@ function threadAt(threads, when) {
   const t = dated.find(x => x.when >= when);
   if (!t) return dated[dated.length - 1];
   return minutesBetween(when, t.when) <= THREAD_REACH_MIN ? t : null;
+}
+
+// The rows the Threads view shows (viewer/threads): "all" is every thread; "open" keeps only the threads with
+// open work (a branch or pull request not merged yet), plus the open work that names no thread, so that no
+// pull request is missed. Rows of open work without a thread are flagged `noThread` and only "open" shows them.
+function filterThreadRows(rows, kind) {
+  return kind === 'open' ? rows.filter(r => r.work.length) : rows.filter(r => !r.noThread);
 }
 
 function normalizeNodePath(p) {
@@ -3093,8 +3102,9 @@ function threadRows() {
     for (const d of n.decisions) { const row = owner(d.when); if (row) row.decs.push({ n, d }); }
   }
   for (const w of (state.openWork ? state.openWork.items : [])) {
-    if (!w.thread) continue;
-    const row = rowOf(w.thread, w.threadTitle);
+    // Open work that names no thread gets a row of its own, shown only by the "Open work" filter.
+    const row = w.thread ? rowOf(w.thread, w.threadTitle) : rowOf('branch:' + w.branch, w.pr ? w.pr.title : w.branch);
+    if (!w.thread) row.noThread = true;
     row.work.push(w);
     if (!row.when && w.since) row.when = w.since;
     for (const f of w.files) {
@@ -3117,31 +3127,48 @@ let threadList = [];
 function renderThreads() {
   const list = $('list');
   const scroll = list.scrollTop;
-  const rows = threadList = threadRows();
+  const all = threadRows();
+  const open = state.threadKind === 'open';
+  const openCount = filterThreadRows(all, 'open').length;
+  const rows = threadList = filterThreadRows(all, state.threadKind);
   const undated = rows.filter(r => !r.when).length;
-  let h = `<div class="lhead"><strong>Threads</strong><span class="count">${rows.length} thread${rows.length === 1 ? '' : 's'}` +
+  const kinds = [['all', 'All', 'Every thread of the project'],
+    ['open', `Open work (${openCount})`, 'Only the threads with a branch or pull request not merged yet, and the open branches that name no thread']];
+  let h = `<div class="lhead"><strong>Threads</strong><div class="seg" id="threadKind">` +
+    kinds.map(([k, l, t]) => `<button data-kind="${k}" class="${state.threadKind === k ? 'on' : ''}" title="${esc(t)}">${esc(l)}</button>`).join('') + '</div>' +
+    `<span class="count">${rows.length} ${open ? 'with open work' : 'thread' + (rows.length === 1 ? '' : 's')}` +
     `${state.zoom ? ' in this branch' : ''} · newest first · ▸ unfolds what it was asked and decided · double-click a row to open its thread</span></div>`;
+  if (open) {
+    const stale = staleOpenWork();
+    h += `<p class="empty-note">A thread counts as open while its branch or pull request is not merged: the page cannot tell whether ` +
+      `a Claude thread itself is resolved, and a thread that never made a branch does not show here.` +
+      (stale ? ` The open work list of this folder was updated ${esc(stale)}: press F5 after <code>Refresh.cmd</code>, or open the project from GitHub, to see the latest.` : '') + '</p>';
+  }
+  if (open && !state.openWork) h += '<p class="empty-note">This project has no open work list (<code>.open-work.md</code>): it is written by the "Open work" GitHub Action, so without it the page cannot tell which pull requests are not merged.</p>';
+  else if (open && !rows.length) h += '<p class="empty-note">No open work: every branch and pull request is merged.</p>';
   if (undated) h += `<p class="empty-note">${undated} thread${undated === 1 ? ' has' : 's have'} no date and ${undated === 1 ? 'goes' : 'go'} at the end: ` +
     'their <code>threads</code> lines are older than dated thread links. To date them from git, run <code>node tools/date-threads.mjs &lt;docs folder&gt;</code> ' +
     '(from Claude Visual Project\'s repository) in the project\'s clone, or ask a thread to do it.</p>';
-  if (!rows.length) h += '<p class="empty-note">No threads yet. A thread adds a dated line to the <code>threads</code> field of the node it works on.</p>';
-  else {
+  if (!rows.length && !open) h += '<p class="empty-note">No threads yet. A thread adds a dated line to the <code>threads</code> field of the node it works on.</p>';
+  if (rows.length) {
     h += '<table class="ttable"><thead><tr><th></th><th>Date</th><th>Thread</th><th>Asked</th><th>Nodes</th><th>Open work</th></tr></thead><tbody>';
     rows.forEach((r, i) => {
-      const open = threadOpen.has(r.link);
+      const unfolded = threadOpen.has(r.link);
       const first = r.nodes[0];
       const work = r.work.map(w => w.pr && isLink(w.pr.url)
         ? `<a href="${esc(w.pr.url)}" target="_blank" rel="noopener" title="${esc(w.pr.title)}">PR #${esc(w.pr.number)}</a>`
         : `<span class="badge" title="Branch ${esc(w.branch)} without a pull request">open</span>`).join(' ');
       h += `<tr data-thread="${i}"${first ? ` data-path="${esc(first.path)}"` : ''} class="${first && first.path === state.selected ? 'selected' : ''}" ` +
-        `title="${esc(isLink(r.link) ? 'Double-click to open this thread in Claude' : 'Not a web link: ' + r.link)}">` +
-        `<td><button class="link tfold" data-fold="${i}" title="${open ? 'Fold' : 'Show what the owner asked this thread and what it decided'}">${open ? '▾' : '▸'}</button></td>` +
+        `title="${esc(r.noThread ? `Branch ${r.work[0].branch}: no thread has written its link yet, so open its pull request from the Open work column`
+          : isLink(r.link) ? 'Double-click to open this thread in Claude' : 'Not a web link: ' + r.link)}">` +
+        `<td><button class="link tfold" data-fold="${i}" title="${unfolded ? 'Fold' : 'Show what the owner asked this thread and what it decided'}">${unfolded ? '▾' : '▸'}</button></td>` +
         `<td class="mono">${esc(r.when || 'no date')}</td>` +
-        `<td>${isLink(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.title || 'thread')}</a>` : esc(r.title || r.link)}</td>` +
+        `<td>${r.noThread ? `<span class="empty-note">no thread</span> ${esc(r.title)}`
+          : isLink(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.title || 'thread')}</a>` : esc(r.title || r.link)}</td>` +
         `<td class="md tdesc" title="${esc(threadDescription(r))}"><div class="clamp">${first ? withBase(first, () => inline(threadDescription(r))) : esc(threadDescription(r))}</div></td>` +
         `<td>${r.nodes.map(n => `<button class="link" data-node="${esc(n.path)}" title="${esc(n.path || '(root)')}"><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span></button>`).join(' ')}</td>` +
         `<td>${work}</td></tr>`;
-      if (open) {
+      if (unfolded) {
         const items = [...r.reqs.map(x => ({ ...x, kind: 'requirement' })), ...r.decs.map(x => ({ ...x, kind: 'decision' }))]
           .sort((a, b) => (a.d.when || '').localeCompare(b.d.when || ''));
         h += `<tr class="tmore"><td></td><td colspan="5">` + (items.length ? items.map(e =>
@@ -3207,6 +3234,8 @@ $('list').addEventListener('click', e => {
   if (md && state.nodes.has(md.dataset.md)) return openDoc(state.nodes.get(md.dataset.md));
   const kb = e.target.closest('#logKind button');
   if (kb) { state.logKind = kb.dataset.kind; return renderAll(); }
+  const tk = e.target.closest('#threadKind button');
+  if (tk) { state.threadKind = tk.dataset.kind; return renderAll(); }
   if (e.target.closest('#logReplaced')) return toggleReplaced();
   const fold = e.target.closest('[data-fold]');
   if (fold) {

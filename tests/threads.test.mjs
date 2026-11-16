@@ -41,3 +41,14 @@ test('date-threads dates undated lines from git and keeps dated ones', () => {
   const out = readFileSync(join(repo, 'docs', 'README.md'), 'utf8');
   assert.match(out, /\n {2}- 2026-10-02 10:38 · First \| https:\/\/t\/1\n {2}- 2026-10-05 09:00 · Second \| https:\/\/t\/2\n/);
 });
+
+test('filterThreadRows: "open" keeps threads with open work and open work without a thread', () => {
+  const { filterThreadRows } = pageApi(['filterThreadRows']);
+  const rows = [
+    { link: 'https://t/1', work: [] },
+    { link: 'https://t/2', work: [{ branch: 'b2' }] },
+    { link: 'branch:b3', work: [{ branch: 'b3' }], noThread: true },
+  ];
+  assert.deepEqual(filterThreadRows(rows, 'all').map(r => r.link), ['https://t/1', 'https://t/2']);
+  assert.deepEqual(filterThreadRows(rows, 'open').map(r => r.link), ['https://t/2', 'branch:b3']);
+});
