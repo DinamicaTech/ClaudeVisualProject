@@ -189,6 +189,10 @@
   .row.ref.missing .title, .row.ref.missing .arrow { color: var(--error); }
   .badge { font-size: 11px; border-radius: 10px; padding: 0 6px; flex: none; }
   .badge.warn { color: var(--warn); background: var(--warn-soft); }
+  .badge[class*="pr-"] { white-space: nowrap; display: inline-block; }
+  .badge.pr-open { color: var(--accent); background: var(--accent-soft); }
+  .badge.pr-merged { color: var(--idea); background: var(--idea-soft); }
+  .badge.pr-closed { color: var(--muted); border: 1px solid var(--line); }
   .badge.draft { color: var(--draft); border: 1px solid var(--draft); }
   .badge.idea { color: var(--idea); background: var(--idea-soft); border: 1px solid var(--idea); }
   .badge.busy { color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); }
@@ -314,7 +318,7 @@
 <body>
 <header>
   <span class="app">Claude Visual Project</span>
-  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="files" title="Every md file of the docs folder: its node, a short description and the thread that manages it; open the md or the thread from its row">Files</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to discuss it in a new thread with the questions asked with it">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
+  <div class="seg" id="viewSeg" hidden><button data-view="overview" title="The project's cover page: what it is and how it looks">Overview</button><button data-view="map">Tree</button><button data-view="tree">Project</button><button data-view="files" title="Every md file of the docs folder: its node, a short description and the thread that manages it; open the md or the thread from its row">Files</button><button data-view="drafts" title="Every draft node: pending tasks and work not yet validated">Drafts</button><button data-view="questions" title="Every open question (question: lines) of drafts and ideas; double-click one to discuss it in a new thread with the questions asked with it">Questions</button><button data-view="threads" title="Every thread of the project, newest first: its date, the nodes it worked on, what it was asked and its open pull request; double-click one to open it">Threads</button><button data-view="pulls" title="Every pull request of the repository, open, merged and closed, newest first, with its thread and nodes; read from GitHub, so only a project opened from GitHub shows them all">Pull requests</button><button data-view="log" title="Every decision and requirement of the project, newest first">Log</button></div>
   <div id="searchBox" hidden><input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search nodes (Ctrl+K)" aria-label="Search nodes" aria-controls="searchResults"
     title="Find a node by its title, its path, the titles of its threads or the title of its open work, and jump to it. Ctrl+K or / to focus; ↑ ↓ to choose, Enter to jump, Esc to close"><div id="searchResults" role="listbox" hidden></div></div>
   <select id="projectSel" hidden title="Projects opened in this browser: choose one to open it"></select>
@@ -499,11 +503,13 @@ const state = {
   selected: null,     // selected node path
   expanded: new Set(),
   showRefs: true,
-  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'files', 'drafts', 'questions', 'threads' or 'log'
+  view: 'overview',   // 'overview', 'map' (Tree), 'tree' (Project), 'files', 'drafts', 'questions', 'threads', 'pulls' or 'log'
   draftSort: { key: 'when', dir: -1 },
   fileSort: { key: 'file', dir: 1 },   // Files view (viewer/ficheros)
   logKind: 'all',     // 'all', 'decision' or 'requirement'
   threadKind: 'all',  // Threads view: 'all' threads or only those with 'open' work
+  pullKind: 'all',    // Pull requests view: 'all', 'open', 'merged' or 'closed'
+  pulls: null,        // pull requests read from GitHub ({ items, error }), or null when the project is not read from GitHub
   showReplaced: false, // show decisions marked [replaced by ...] in the card and the Log
   zoom: '',           // node path shown as the root of both views (Z); '' = whole project
   editMode: false,    // Tree edit mode: cards can be dragged onto a new parent (not kept across F5)
@@ -513,7 +519,7 @@ const state = {
 
 const $ = id => document.getElementById(id);
 const viewCtl = $('viewCtl');   // the view switches: inside the map or on top of the Project rows
-const VIEWS = ['overview', 'map', 'tree', 'files', 'drafts', 'questions', 'threads', 'log'];
+const VIEWS = ['overview', 'map', 'tree', 'files', 'drafts', 'questions', 'threads', 'pulls', 'log'];
 // ---------------------------------------------------------------------------
 // Folder access (File System Access API) and handle persistence for F5
 // ---------------------------------------------------------------------------
@@ -686,7 +692,10 @@ async function readFolder(dir) {
 
 async function reload() {
   try {
+    // The pull requests come from GitHub's API, in parallel with the docs; a failure there does not stop the docs.
+    const pulls = state.gh && !state.snapshot ? ghPulls(state.gh).then(items => ({ items, error: '' }), e => ({ items: [], error: e.message })) : null;
     const d = state.snapshot ? { files: state.snapshot.files, openWork: state.snapshot.openWork, indexText: null } : await readDocs();
+    state.pulls = pulls ? await pulls : null;
     state.mainFiles = d.files;
     state.images = state.snapshot ? new Map(Object.keys(state.snapshot.images || {}).map(p => [p, {}]))
       : d.entries ? new Map(d.entries.filter(e => isOverviewImage(e.path)).map(e => [e.path, { sha: e.sha }]))
@@ -737,7 +746,7 @@ function saveViewState() {
   try {
     localStorage.setItem(viewKey(), JSON.stringify({
       selected: state.selected, expanded: [...state.expanded], showRefs: state.showRefs, view: state.view, zoom: state.zoom,
-      draftSort: state.draftSort, fileSort: state.fileSort, logKind: state.logKind, threadKind: state.threadKind, showReplaced: state.showReplaced, showWip: state.showWip,
+      draftSort: state.draftSort, fileSort: state.fileSort, logKind: state.logKind, threadKind: state.threadKind, pullKind: state.pullKind, showReplaced: state.showReplaced, showWip: state.showWip,
     }));
   } catch (e) { /* storage unavailable: nothing to keep */ }
 }
@@ -759,6 +768,7 @@ function restoreViewState() {
       if (v.fileSort && v.fileSort.key) state.fileSort = v.fileSort;
       if (['all', 'decision', 'requirement'].includes(v.logKind)) state.logKind = v.logKind;
       state.threadKind = v.threadKind === 'open' ? 'open' : 'all';
+      state.pullKind = ['open', 'merged', 'closed'].includes(v.pullKind) ? v.pullKind : 'all';
       state.showReplaced = v.showReplaced === true;
       state.showWip = v.showWip !== false;
       state.zoom = v.zoom || '';
@@ -990,6 +1000,19 @@ async function ghWipFiles(g, s, openWorkText) {
   }
   const read = await mapLimit(wanted, 6, async w => ({ ...w, text: await branchFile(g, w.item.branch, w.path).catch(() => null) }));
   return read.filter(w => w.text != null);
+}
+
+// Every pull request of the repository (viewer/pull-requests), newest first, 100 per request. Stops after
+// PULLS_MAX_PAGES requests so that a very busy repository does not use up the hourly limit of the API.
+const PULLS_MAX_PAGES = 10;
+async function ghPulls(g) {
+  const out = [];
+  for (let page = 1; page <= PULLS_MAX_PAGES; page++) {
+    const batch = await ghFetch(`${ghRepoApi(g)}/pulls?state=all&sort=created&direction=desc&per_page=100&page=${page}`);
+    out.push(...batch.map(parsePull));
+    if (batch.length < 100) break;
+  }
+  return out;
 }
 
 // The md files of the open project, with its open work and node index: from GitHub, or from the folder.
@@ -1314,6 +1337,22 @@ function threadAt(threads, when) {
 function filterThreadRows(rows, kind) {
   return kind === 'open' ? rows.filter(r => r.work.length) : rows.filter(r => !r.noThread);
 }
+
+// A pull request as GitHub's API gives it, reduced to what the Pull requests view shows (viewer/pull-requests).
+// Its thread is the first link to a Claude project thread in its description: threads write it there.
+const PULL_THREAD_RE = /https:\/\/claude\.ai\/code\/project\/[^\s)\]>"'<]+/;
+function parsePull(p) {
+  const merged = !!p.merged_at;
+  return {
+    number: String(p.number), title: p.title || '', url: p.html_url || '', branch: (p.head && p.head.ref) || '',
+    state: merged ? 'merged' : p.state === 'open' ? 'open' : 'closed', draft: !!p.draft,
+    created: p.created_at || '', closed: p.merged_at || p.closed_at || '',
+    thread: ((p.body || '').match(PULL_THREAD_RE) || [''])[0],
+  };
+}
+// Two links name the same thread when they carry the same "thread=" id (the rest of the link may differ).
+const threadKey = link => ((link || '').match(/[?&]thread=([^&#\s]+)/) || [])[1] || link || '';
+const filterPulls = (pulls, kind) => kind === 'all' ? pulls : pulls.filter(p => p.state === kind);
 
 function normalizeNodePath(p) {
   return String(p).trim().replace(/\\/g, '/').replace(/^\.?\//, '').replace(/\.md$/i, '')
@@ -2431,7 +2470,7 @@ function renderAll() {
   $('tree').hidden = state.view !== 'tree';
   $('map').hidden = state.view !== 'map';
   if (state.view === 'map') $('map').prepend(viewCtl);
-  $('list').hidden = !['files', 'drafts', 'questions', 'threads', 'log'].includes(state.view);
+  $('list').hidden = !['files', 'drafts', 'questions', 'threads', 'pulls', 'log'].includes(state.view);
   $('overview').hidden = state.view !== 'overview';
   $('card').hidden = state.view === 'overview';
   $('refsToggleLabel').hidden = !$('list').hidden;
@@ -2449,6 +2488,7 @@ function renderAll() {
   else if (state.view === 'drafts') renderDrafts();
   else if (state.view === 'questions') renderQuestions();
   else if (state.view === 'threads') renderThreads();
+  else if (state.view === 'pulls') renderPulls();
   else if (state.view === 'log') renderLog();
   else if (state.view === 'overview') renderOverview();
   else renderMap();
@@ -2520,7 +2560,7 @@ function select(path, reveal) {
   renderAll();
   if (!reveal) return;
   if (state.view === 'map') return centerMapOn(path);
-  if (['drafts', 'questions', 'threads', 'log', 'overview'].includes(state.view)) return;
+  if (['drafts', 'questions', 'threads', 'pulls', 'log', 'overview'].includes(state.view)) return;
   const row = $('tree').querySelector(`.row[data-path="${CSS.escape(path)}"]`);
   if (row) row.scrollIntoView({ block: 'nearest' });
 }
@@ -3112,6 +3152,12 @@ function threadRows() {
       if (n && (!state.zoom || inZoom(n)) && !row.nodes.includes(n)) row.nodes.push(n);
     }
   }
+  // Pull requests read from GitHub (viewer/pull-requests): each thread also lists its merged and closed ones.
+  const byKey = new Map([...rows.values()].map(r => [threadKey(r.link), r]));
+  for (const p of (state.pulls ? state.pulls.items : [])) {
+    const r = p.thread && byKey.get(threadKey(p.thread));
+    if (r && !r.work.some(w => w.pr && w.pr.number === p.number)) (r.pulls = r.pulls || []).push(p);
+  }
   const byWhen = (a, b) => (a.d.when || '').localeCompare(b.d.when || '');
   const out = [...rows.values()];
   for (const r of out) { r.reqs.sort(byWhen); r.decs.sort(byWhen); }
@@ -3151,13 +3197,14 @@ function renderThreads() {
     '(from Claude Visual Project\'s repository) in the project\'s clone, or ask a thread to do it.</p>';
   if (!rows.length && !open) h += '<p class="empty-note">No threads yet. A thread adds a dated line to the <code>threads</code> field of the node it works on.</p>';
   if (rows.length) {
-    h += '<table class="ttable"><thead><tr><th></th><th>Date</th><th>Thread</th><th>Asked</th><th>Nodes</th><th>Open work</th></tr></thead><tbody>';
+    h += '<table class="ttable"><thead><tr><th></th><th>Date</th><th>Thread</th><th>Asked</th><th>Nodes</th><th title="Its open work (branch or pull request not merged yet) and, in a project opened from GitHub, its merged and closed pull requests">Pull requests</th></tr></thead><tbody>';
     rows.forEach((r, i) => {
       const unfolded = threadOpen.has(r.link);
       const first = r.nodes[0];
       const work = r.work.map(w => w.pr && isLink(w.pr.url)
         ? `<a href="${esc(w.pr.url)}" target="_blank" rel="noopener" title="${esc(w.pr.title)}">PR #${esc(w.pr.number)}</a>`
-        : `<span class="badge" title="Branch ${esc(w.branch)} without a pull request">open</span>`).join(' ');
+        : `<span class="badge" title="Branch ${esc(w.branch)} without a pull request">open</span>`)
+        .concat((r.pulls || []).map(pullLink)).join(' ');
       h += `<tr data-thread="${i}"${first ? ` data-path="${esc(first.path)}"` : ''} class="${first && first.path === state.selected ? 'selected' : ''}" ` +
         `title="${esc(r.noThread ? `Branch ${r.work[0].branch}: no thread has written its link yet, so open its pull request from the Open work column`
           : isLink(r.link) ? 'Double-click to open this thread in Claude' : 'Not a web link: ' + r.link)}">` +
@@ -3178,6 +3225,85 @@ function renderThreads() {
           withBase(e.n, () => e.d.text.split('\n').map(inline).join('<br>')) + '</div></div>').join('')
           : '<p class="empty-note">No dated requirements or decisions in its nodes are attributed to this thread.</p>') + '</td></tr>';
       }
+    });
+    h += '</tbody></table>';
+  }
+  list.innerHTML = h;
+  list.scrollTop = scroll;
+}
+
+// Pull requests (viewer/pull-requests): every pull request of the repository, read from GitHub's API when the
+// project is opened from GitHub; otherwise only the open ones that the open work list names.
+const PULL_STATES = { open: 'Open', merged: 'Merged', closed: 'Closed' };
+const pullLink = p => isLink(p.url)
+  ? `<a href="${esc(p.url)}" target="_blank" rel="noopener" class="badge pr-${p.state}" title="${esc(`${PULL_STATES[p.state]}: ${p.title}`)}">PR #${esc(p.number)}</a>`
+  : `<span class="badge pr-${p.state}" title="${esc(p.title)}">PR #${esc(p.number)}</span>`;
+const pad2 = n => String(n).padStart(2, '0');
+function localTime(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? iso || '' : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function pullSource() {
+  if (state.pulls) return state.pulls.items;
+  return (state.openWork ? state.openWork.items : []).filter(w => w.pr).map(w => ({
+    number: w.pr.number, title: w.pr.title, url: w.pr.url, branch: w.branch, state: 'open', draft: false,
+    created: '', since: w.since, closed: '', thread: w.thread,
+  }));
+}
+
+// The thread title and nodes of a pull request: the nodes whose `threads` name its thread, plus the md files
+// its branch changes when it is open work.
+function pullContext(p) {
+  const key = p.thread && threadKey(p.thread);
+  let title = '';
+  const nodes = [];
+  if (key) for (const n of zoomNodes()) {
+    const t = n.threads.find(x => threadKey(x.link) === key);
+    if (t) { if (t.title) title = t.title; nodes.push(n); }
+  }
+  for (const w of (state.openWork ? state.openWork.items : [])) {
+    if (w.branch !== p.branch) continue;
+    if (!title && w.threadTitle) title = w.threadTitle;
+    for (const f of w.files) {
+      const n = [...state.nodes.values()].find(x => x.file === f);
+      if (n && (!state.zoom || inZoom(n)) && !nodes.includes(n)) nodes.push(n);
+    }
+  }
+  return { threadTitle: title, nodes };
+}
+
+let pullList = [];
+function renderPulls() {
+  const list = $('list');
+  const scroll = list.scrollTop;
+  const all = pullSource().map(p => ({ ...p, ...pullContext(p) }))
+    .filter(p => !state.zoom || p.nodes.length);   // zoomed (Z): only the pull requests of that branch's nodes
+  const rows = pullList = filterPulls(all, state.pullKind);
+  const kinds = [['all', `All (${all.length})`, 'Every pull request']]
+    .concat(Object.entries(PULL_STATES).map(([k, l]) => [k, `${l} (${filterPulls(all, k).length})`,
+      k === 'open' ? 'Not merged nor closed yet' : k === 'merged' ? 'Merged into the default branch' : 'Closed without merging']));
+  let h = `<div class="lhead"><strong>Pull requests</strong><div class="seg" id="pullKind">` +
+    kinds.map(([k, l, t]) => `<button data-kind="${k}" class="${state.pullKind === k ? 'on' : ''}" title="${esc(t)}">${esc(l)}</button>`).join('') + '</div>' +
+    `<span class="count">${rows.length} pull request${rows.length === 1 ? '' : 's'}${state.zoom ? ' in this branch' : ''} · newest first · ` +
+    'double-click a row to open it on GitHub</span></div>';
+  if (state.pulls && state.pulls.error) h += `<p class="empty-note">The pull requests could not be read from GitHub: ${esc(state.pulls.error)} ` +
+    'The rest of the project is not affected; press Reload to try again.</p>';
+  else if (!state.pulls) h += '<p class="empty-note">Only the open pull requests that the open work list names are shown: merged and closed ones ' +
+    'can only be read from GitHub. To see them all, open the project with "Open from GitHub" (a private repository needs the saved token).</p>';
+  if (!rows.length) h += `<p class="empty-note">No ${state.pullKind === 'all' ? '' : PULL_STATES[state.pullKind].toLowerCase() + ' '}pull requests${state.zoom ? ' in this branch' : ''}.</p>`;
+  else {
+    h += '<table class="ttable"><thead><tr><th>Pull request</th><th>State</th><th>Opened</th><th>Merged / closed</th><th>Thread</th><th>Nodes</th></tr></thead><tbody>';
+    rows.forEach((p, i) => {
+      const first = p.nodes[0];
+      h += `<tr data-pull="${i}"${first ? ` data-path="${esc(first.path)}"` : ''} class="${first && first.path === state.selected ? 'selected' : ''}" ` +
+        `title="${esc(`Branch ${p.branch}${isLink(p.url) ? ' · double-click to open it on GitHub' : ''}`)}">` +
+        `<td>${isLink(p.url) ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">#${esc(p.number)}</a>` : '#' + esc(p.number)} ${esc(p.title)}</td>` +
+        `<td><span class="badge pr-${p.state}">${p.draft && p.state === 'open' ? 'Draft' : PULL_STATES[p.state]}</span></td>` +
+        `<td class="mono">${esc(p.created ? localTime(p.created) : p.since || '')}</td>` +
+        `<td class="mono">${esc(p.closed ? localTime(p.closed) : '')}</td>` +
+        `<td>${isLink(p.thread) ? `<a href="${esc(p.thread)}" target="_blank" rel="noopener">${esc(p.threadTitle || 'thread')}</a>` : '<span class="empty-note">none</span>'}</td>` +
+        `<td>${p.nodes.map(n => `<button class="link" data-node="${esc(n.path)}" title="${esc(n.path || '(root)')}"><span class="area" style="--c:${mapColor(n)}">${esc(n.title)}</span></button>`).join(' ')}</td></tr>`;
     });
     h += '</tbody></table>';
   }
@@ -3236,6 +3362,8 @@ $('list').addEventListener('click', e => {
   if (kb) { state.logKind = kb.dataset.kind; return renderAll(); }
   const tk = e.target.closest('#threadKind button');
   if (tk) { state.threadKind = tk.dataset.kind; return renderAll(); }
+  const pk = e.target.closest('#pullKind button');
+  if (pk) { state.pullKind = pk.dataset.kind; return renderAll(); }
   if (e.target.closest('#logReplaced')) return toggleReplaced();
   const fold = e.target.closest('[data-fold]');
   if (fold) {
@@ -3286,6 +3414,12 @@ function updateQCopy() {
 }
 $('list').addEventListener('dblclick', e => {
   if (e.target.closest('input, select, button')) return;
+  const pr = state.view === 'pulls' && e.target.closest('tr[data-pull]');
+  if (pr) {
+    const p = pullList[+pr.dataset.pull];
+    if (isLink(p.url)) window.open(p.url, '_blank', 'noopener');
+    return;
+  }
   const tr = state.view === 'threads' && e.target.closest('tr[data-thread]');
   if (tr) {
     const r = threadList[+tr.dataset.thread];

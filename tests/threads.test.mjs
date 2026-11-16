@@ -52,3 +52,21 @@ test('filterThreadRows: "open" keeps threads with open work and open work withou
   assert.deepEqual(filterThreadRows(rows, 'all').map(r => r.link), ['https://t/1', 'https://t/2']);
   assert.deepEqual(filterThreadRows(rows, 'open').map(r => r.link), ['https://t/2', 'branch:b3']);
 });
+
+test('parsePull reads the state, dates and thread of a GitHub pull request', () => {
+  const { parsePull, threadKey, filterPulls } = pageApi(['parsePull', 'threadKey', 'filterPulls']);
+  const base = { number: 59, title: 'T', html_url: 'https://github.com/o/r/pull/59', head: { ref: 'b' }, created_at: '2026-11-16T15:37:00Z' };
+  const merged = parsePull({ ...base, state: 'closed', merged_at: '2026-11-16T15:42:00Z', closed_at: '2026-11-16T15:42:00Z',
+    body: '_Requested by **R** · [project thread](https://claude.ai/code/project/chan_1?thread=cmsg_2)_' });
+  assert.equal(merged.state, 'merged');
+  assert.equal(merged.closed, '2026-11-16T15:42:00Z');
+  assert.equal(merged.thread, 'https://claude.ai/code/project/chan_1?thread=cmsg_2');
+  assert.equal(threadKey(merged.thread), 'cmsg_2');
+  const closed = parsePull({ ...base, number: 60, state: 'closed', merged_at: null, closed_at: '2026-11-16T16:00:00Z', body: null });
+  assert.equal(closed.state, 'closed');
+  assert.equal(closed.thread, '');
+  const open = parsePull({ ...base, number: 61, state: 'open', draft: true });
+  assert.equal(open.state, 'open');
+  assert.deepEqual(filterPulls([merged, closed, open], 'merged').map(p => p.number), ['59']);
+  assert.equal(filterPulls([merged, closed, open], 'all').length, 3);
+});
