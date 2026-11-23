@@ -1618,7 +1618,7 @@ function nodeIndex(nodes) {
 // Also run by the tools in Node (tools/update-rules.mjs): keep it free of DOM access and of `state`.
 
 const RULES_NODE = 'global-rules';
-const RULES_VERSION = 14;   // raise it whenever the text of CVP_RULES changes
+const RULES_VERSION = 15;   // raise it whenever the text of CVP_RULES changes
 const RULES_BEGIN_RE = /^<!--\s*cvp-rules\s+(\d+)\s+begin\b.*-->[ \t]*$/m;
 const RULES_END_RE = /^<!--\s*cvp-rules\s+end\s*-->[ \t]*$/m;
 const LAB = 'creative-lab';   // the lab where ideas are debated (context-pack/ideas)
@@ -1653,7 +1653,9 @@ const CVP_RULES = [
   'as agreed in the breakdown, every requirement the owner states in this thread: only the sentences that ask for something, ' +
   'word for word, one line each, starting with "YYYY-MM-DD HH:MM · ". ' +
   'If the docs folder has a node index (.index.md), regenerate it as its first lines say after changing any node. If you cannot run that command and the repository has the "CVP docs" GitHub Action (.github/workflows/cvp-docs.yml), do not ask the owner for anything: it regenerates the index on the default branch after the merge. Only without that action, tell the owner to press "⚠ Rebuild index", which appears in the page header only when the index is out of date.',
-  '**Drafts.** A node with `status: draft` is pending or not yet validated: leave it as draft until the owner validates the change, then set it to stable (remove the status line); it stays in the tree as a node of its own. ' +
+  '**Drafts.** A node with `status: draft` is pending or not yet validated. The owner validates it in the thread that did the work: a message saying they tested it and it is fine (e.g. "tested, it\'s ok", "validated") is the validation, and no second OK is needed. ' +
+  'That thread then removes the status line (the node becomes stable and stays in the tree as a node of its own), adds the decision "Validated by the owner" with the date of the OK, and includes it in the same pull request before merging it, or in a commit to the default branch right after if it was already merged, or in a small pull request if the default branch does not accept direct commits. ' +
+  'An OK to merge without testing does not validate: the node stays draft and the thread says what is left to test. If the node still has other pending parts, it stays draft and its Summary says what is left. ' +
   'An owner\'s sentence starting with "draft:" asks to save a pending task, not to do it; so does a sentence that defers work (e.g. "later we will review X"), from which you deduce it. ' +
   'Each draft is a node of its own with one pending task: a new child of the node the task belongs to, never an existing node set back to draft or given a second `draft:` line. ' +
   'Propose the draft node\'s path (<path of that node>/<short name of the task>) and the exact line "draft: <task>", a self-contained instruction, and wait for the owner\'s OK. ' +
@@ -1662,7 +1664,8 @@ const CVP_RULES = [
   'A line starting with "question:" in a draft\'s Requirements is an open question about its task, left by a requirements load: resolve it with the owner before doing the task. ' +
   'When the owner answers a question, copy the answer to the same Requirements as a dated line "answer: <the question, in short> → <the answer>" and mark the question line, right after its date, with "[answered YYYY-MM-DD HH:MM] " (the answer\'s date and time): ' +
   'it is no longer open. If the answer changes a decision in force, write the new decision and mark the old one as replaced. ' +
-  'If an open question of another node blocks your task, do not wait for that node\'s thread: ask the owner here, then record the answer in that node in the same way.',
+  'If an open question of another node blocks your task, do not wait for that node\'s thread: ask the owner here, then record the answer in that node in the same way. ' +
+  'When a thread finishes, its final report says whether the node it worked on is still draft and why.',
   '**Ideas.** An owner\'s sentence starting with "idea:" saves an idea to debate, not a task: do not route it and do not build anything for it. ' +
   `Ideas live in the lab, the root node \`${LAB}\` (create it if it is missing). Propose the idea's path, \`${LAB}/<idea>\`, and wait for the owner's OK; ` +
   'then create that node with `status: idea` and the line "idea: <idea>", a self-contained sentence, in its Requirements (with its date and time), and debate it there. ' +
